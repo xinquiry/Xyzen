@@ -35,15 +35,15 @@ while read -r branch; do
     if [[ -z "$branch" || "$branch" == *"*"* ]]; then continue; fi
 
     branch_name=$(echo "$branch" | awk '{print $1}')
-    
+
     # 检查是否远程分支已删除 ([gone])
     if ! echo "$branch" | grep -q '\[gone\]'; then
         continue
     fi
-    
+
     # 获取最后提交时间戳
     last_commit=$(git log -1 --format="%at" "$branch_name")
-    
+
     # 判断是否超过 7 天
     if [[ $last_commit -lt $seven_days_ago ]]; then
         to_delete+=("$branch_name")

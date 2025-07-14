@@ -29,4 +29,3 @@ declare -x BRIGHT_YELLOW='\033[1;33m'
 declare -x BRIGHT_BLUE='\033[1;34m'
 declare -x BRIGHT_MAGENTA='\033[1;35m'
 declare -x BRIGHT_CYAN='\033[1;36m'
-

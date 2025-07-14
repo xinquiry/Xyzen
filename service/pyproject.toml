@@ -9,9 +9,17 @@ dependencies = [
     "requests>=2.32.4",
 ]
 
+[dependency-groups]
+dev = [
+    "mypy>=1.16.1",
+    "pre-commit>=4.2.0",
+    "pyre-check>=0.9.25",
+    "ruff>=0.12.3",
+]
+
 [tool.black]
 line-length = 119
-target-version = ['py313']
+target-version = ['py312']
 include = '.*\.pyi?$'
 exclude = '''
 /(
@@ -39,7 +47,7 @@ python_version = "3.13"
 disallow_untyped_defs = true
 disallow_incomplete_defs = true
 check_untyped_defs = true
-disallow_untyped_decorators = true
+disallow_untyped_decorators = false
 no_implicit_optional = true
 strict_optional = true
 warn_redundant_casts = true

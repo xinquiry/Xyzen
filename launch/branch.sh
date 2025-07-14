@@ -8,7 +8,7 @@ function print_icon() {
   local COLOR_TAIL="\033[38;5;220m"    # OL部分颜色（黄色）
   local ITALIC="\033[3m"           # 斜体控制
   local RESET="\033[0m"            # 重置样式
-  
+
   echo -e "${ITALIC}${COLOR_HEAD}"
   echo -e " ██████${COLOR_DECO}╗ ${COLOR_HEAD} ██████╗ ██╗ ███████╗ ███╗   ██╗  ██████╗ ███████╗ ${COLOR_TAIL} ██████╗  ██╗     ${RESET}${ITALIC}${COLOR_HEAD}"
   echo -e "██${COLOR_DECO}╔════╝ ${COLOR_HEAD}██╔════╝ ██║ ██╔════╝ ██╔██╗ ██║ ██╔════╝ ██╔════╝ ${COLOR_TAIL}██╔═══██╗ ██║     ${RESET}${ITALIC}${COLOR_HEAD}"

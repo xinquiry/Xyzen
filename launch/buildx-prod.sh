@@ -141,4 +141,3 @@ else
   echo "3. 镜像是否成功推送到仓库${RESET}"
   exit 1
 fi
-

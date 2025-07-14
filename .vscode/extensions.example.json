@@ -4,18 +4,14 @@
     "ms-python.vscode-pylance",
     "ms-python.black-formatter",
     "ms-python.flake8",
-    "batisteo.vscode-django",
+    "ms-python.mypy-type-checker",
 
     "dbaeumer.vscode-eslint",
     "esbenp.prettier-vscode",
 
     "bradlc.vscode-tailwindcss",
 
-    "ms-azuretools.vscode-docker",
-
     "redhat.vscode-yaml",
-    "davidanson.vscode-markdownlint",
-    "yzhang.markdown-all-in-one",
 
     "eamodio.gitlens"
   ]

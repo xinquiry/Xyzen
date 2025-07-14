@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-# Usage: ./tag.sh 
+# Usage: ./tag.sh
 # Automatically create a tag on dev and push to origin
 
 # -------------------------------
@@ -48,7 +48,7 @@ if [ -z "$LOCAL_TAGS" ] && [ -z "$REMOTE_TAGS" ]; then
     NEXT_TAG="v0.1.0"
 else
     # 使用更兼容的方式处理标签分类，避免使用关联数组
-    
+
     # 显示同步的标签
     echo -e "${GREEN}本地和远程同步的标签:${NC}"
     BOTH_TAGS=""
@@ -59,7 +59,7 @@ else
         fi
     done
     [ -z "$BOTH_TAGS" ] && echo "  (无)"
-    
+
     # 显示仅本地的标签
     echo -e "${YELLOW}仅本地存在的标签:${NC}"
     LOCAL_ONLY_TAGS=""
@@ -70,7 +70,7 @@ else
         fi
     done
     [ -z "$LOCAL_ONLY_TAGS" ] && echo "  (无)"
-    
+
     # 显示仅远程的标签
     echo -e "${BLUE}仅远程存在的标签:${NC}"
     REMOTE_ONLY_TAGS=""
@@ -81,18 +81,18 @@ else
         fi
     done
     [ -z "$REMOTE_ONLY_TAGS" ] && echo "  (无)"
-    
+
     # 获取最新标签用于建议下一个版本号
     # 从所有标签中找出最新的一个
     ALL_TAGS=$(echo -e "$LOCAL_TAGS\n$REMOTE_TAGS" | sort -V | uniq)
     LATEST_TAG=$(echo "$ALL_TAGS" | tail -n1)
-    
+
     # 计算下一个推荐tag
     if [ -n "$LATEST_TAG" ] && [[ "$LATEST_TAG" =~ v([0-9]+)\.([0-9]+)\.([0-9]+) ]]; then
         MAJOR="${BASH_REMATCH[1]}"
         MINOR="${BASH_REMATCH[2]}"
         PATCH="${BASH_REMATCH[3]}"
-        
+
         # 默认增加补丁版本
         NEXT_PATCH=$((PATCH + 1))
         NEXT_TAG="v${MAJOR}.${MINOR}.${NEXT_PATCH}"
