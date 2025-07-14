@@ -5,6 +5,7 @@ description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
+    "fastapi[standard]>=0.116.1",
     "fastmcp>=2.10.5",
     "requests>=2.32.4",
 ]
@@ -13,8 +14,6 @@ dependencies = [
 dev = [
     "mypy>=1.16.1",
     "pre-commit>=4.2.0",
-    "pyre-check>=0.9.25",
-    "ruff>=0.12.3",
 ]
 
 [tool.black]

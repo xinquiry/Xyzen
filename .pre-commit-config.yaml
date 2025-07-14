@@ -43,5 +43,4 @@ repos:
       - id: mypy
         args:
           - --config-file=service/pyproject.toml
-          - --ignore-missing-imports
         files: ^service/

@@ -75,7 +75,7 @@ check_precommit() {
   if [ ! -f "${PROJECT_DIR}/.git/hooks/pre-commit" ] || ! grep -q "pre-commit" "${PROJECT_DIR}/.git/hooks/pre-commit"; then
     echo -e "${BRIGHT_YELLOW}⚠️  pre-commit 钩子未安装在本项目${RESET}"
     echo -e "${BRIGHT_CYAN}▶ 正在安装 pre-commit 钩子...${RESET}"
-    (cd "${PROJECT_DIR}" && pre-commit install)
+    (cd "${PROJECT_DIR}" && uv run --frozen pre-commit install)
     if [ $? -ne 0 ]; then
       echo -e "${BRIGHT_RED}❌ pre-commit 钩子安装失败${RESET}"
       return 1
