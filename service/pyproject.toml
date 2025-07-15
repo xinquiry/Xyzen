@@ -15,6 +15,7 @@ dependencies = [
 dev = [
     "mypy>=1.16.1",
     "pre-commit>=4.2.0",
+    "types-pyyaml>=6.0.12.20250516",
 ]
 
 [tool.black]
@@ -44,10 +45,10 @@ src_paths = ["."]
 
 [tool.mypy]
 python_version = "3.13"
+disallow_untyped_decorators = false
 disallow_untyped_defs = true
 disallow_incomplete_defs = true
 check_untyped_defs = true
-disallow_untyped_decorators = false
 no_implicit_optional = true
 strict_optional = true
 warn_redundant_casts = true
@@ -56,3 +57,8 @@ warn_unused_ignores = true
 files = "."
 ignore_missing_imports = true
 exclude = ["*/migrations/*", "migrations/"]
+
+# 针对特定模块的配置
+[[tool.mypy.overrides]]
+module = "yaml"
+ignore_missing_imports = true

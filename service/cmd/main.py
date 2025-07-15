@@ -1,72 +1,65 @@
-import logging
 from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
 
 import uvicorn
 from fastapi import FastAPI
-from fastmcp.server.http import StreamableHTTPSessionManager
+from fastmcp.server.http import create_streamable_http_app
 from starlette.routing import Mount
 from starlette.types import Receive, Scope, Send
 
 from handler.mcp import lab_mcp, other_mcp
+from internal import configs
+from middleware.auth.casdoor import casdoor_mcp_auth
 from middleware.logger import LOGGING_CONFIG
-from utils.scope import serialize_scope
-
-logger = logging.getLogger(__name__)
 
 
 # TODO: 自动化 MCP Server 发现并自动挂载到 FastAPI 主路由
-# 创建会话管理器
-lab_session_manager = StreamableHTTPSessionManager(
-    app=lab_mcp._mcp_server,
-    event_store=None,
-    json_response=False,
-    stateless=False,
-)
-
-other_session_manager = StreamableHTTPSessionManager(
-    app=other_mcp._mcp_server,
-    event_store=None,
-    json_response=False,
-    stateless=False,
-)
-
-
-# ASGI 处理器
-async def handle_lab_asgi(scope: Scope, receive: Receive, send: Send) -> None:
-    logger.info(f"Handling request for lab MCP: {scope['path']}")
-    logger.debug(f"Scope: {serialize_scope(scope)}")
-
-    # Get Auth header from scope if needed
-    token = next((v.decode() for k, v in scope.get("headers", []) if k == b"authorization"), None)
-    if token:
-        logger.debug(f"Authorization token: {token}")
-
-    await lab_session_manager.handle_request(scope, receive, send)
-
-
-async def handle_other_asgi(scope: Scope, receive: Receive, send: Send) -> None:
-    await other_session_manager.handle_request(scope, receive, send)
-
-
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
-    async with lab_session_manager.run(), other_session_manager.run():
+    # Laboratory MCP Application
+    lab_app = create_streamable_http_app(
+        server=lab_mcp,  # FastMCP Instance, don't need to pass auth
+        streamable_http_path="/",  # Relative path for the MCP server
+        debug=configs.Debug,
+        auth=casdoor_mcp_auth,
+    )
+
+    other_app = create_streamable_http_app(
+        server=other_mcp,
+        streamable_http_path="/",
+        debug=configs.Debug,
+    )
+
+    # 将 FastMCP 应用的生命周期管理器集成到 FastAPI 中
+    async with lab_app.router.lifespan_context(lab_app), other_app.router.lifespan_context(other_app):
+        # 将应用存储在 FastAPI 的状态中，以便在路由中使用
+        app.state.lab_app = lab_app
+        app.state.other_app = other_app
         yield
 
 
 app = FastAPI(
-    title="Xyzen Service - Optimized",
-    description="FastAPI + MCP integrated service",
+    title="Xyzen FastAPI Service",
+    description="Xyzen is AI-powered service with FastAPI and MCP",
     version="0.1.0",
     lifespan=lifespan,
 )
 
-# 使用 Mount 但直接挂载 ASGI 处理器（最优性能）
+
+# Router Handlers
+async def lab_handler(scope: Scope, receive: Receive, send: Send) -> None:
+    await app.state.lab_app(scope, receive, send)
+
+
+async def other_handler(scope: Scope, receive: Receive, send: Send) -> None:
+    await app.state.other_app(scope, receive, send)
+
+
+# Use Mount to register the MCP applications
 app.router.routes.extend(
     [
-        Mount("/mcp/lab", handle_lab_asgi),
-        Mount("/mcp/other", handle_other_asgi),
+        Mount("/mcp/lab", lab_handler),
+        Mount("/mcp/other", other_handler),
     ]
 )
 
