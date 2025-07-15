@@ -1,7 +1,7 @@
+import logging
 from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
 
-import anyio
 import uvicorn
 from fastapi import FastAPI
 from fastmcp.server.http import StreamableHTTPSessionManager
@@ -9,6 +9,11 @@ from starlette.routing import Mount
 from starlette.types import Receive, Scope, Send
 
 from handler.mcp import lab_mcp, other_mcp
+from middleware.logger import LOGGING_CONFIG
+from utils.scope import serialize_scope
+
+logger = logging.getLogger(__name__)
+
 
 # TODO: 自动化 MCP Server 发现并自动挂载到 FastAPI 主路由
 # 创建会话管理器
@@ -29,6 +34,14 @@ other_session_manager = StreamableHTTPSessionManager(
 
 # ASGI 处理器
 async def handle_lab_asgi(scope: Scope, receive: Receive, send: Send) -> None:
+    logger.info(f"Handling request for lab MCP: {scope['path']}")
+    logger.debug(f"Scope: {serialize_scope(scope)}")
+
+    # Get Auth header from scope if needed
+    token = next((v.decode() for k, v in scope.get("headers", []) if k == b"authorization"), None)
+    if token:
+        logger.debug(f"Authorization token: {token}")
+
     await lab_session_manager.handle_request(scope, receive, send)
 
 
@@ -59,6 +72,11 @@ app.router.routes.extend(
 
 
 if __name__ == "__main__":
-    config = uvicorn.Config(app, host="127.0.0.1", port=48200)
-    server = uvicorn.Server(config)
-    anyio.run(server.serve)
+    uvicorn.run(
+        "cmd.main:app",
+        host="127.0.0.1",
+        port=48200,
+        log_config=LOGGING_CONFIG,
+        log_level="debug",
+        reload=True,
+    )
