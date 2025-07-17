@@ -1,6 +1,5 @@
+from cmd.main import app
 from typing import Any
-
-from service.cmd.mainbak import app
 
 
 @app.get("/")

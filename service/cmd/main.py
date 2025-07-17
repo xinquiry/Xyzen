@@ -67,9 +67,9 @@ app.router.routes.extend(
 if __name__ == "__main__":
     uvicorn.run(
         "cmd.main:app",
-        host="127.0.0.1",
-        port=48200,
+        host=configs.Host,
+        port=configs.Port,
         log_config=LOGGING_CONFIG,
-        log_level="debug",
-        reload=True,
+        log_level=configs.Logger.Level,
+        reload=configs.Debug,
     )
