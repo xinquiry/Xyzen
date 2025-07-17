@@ -13,8 +13,36 @@
   },
 
   "python.languageServer": "Pylance",
-  "python.analysis.addImport.exactMatchOnly": true,
-  "python.analysis.typeCheckingMode": "standard",
+  "python.analysis.typeCheckingMode": "basic",
+  "python.analysis.extraPaths": ["./service"],
+  "python.analysis.autoImportCompletions": true,
+  "python.analysis.autoSearchPaths": true,
+  "python.autoComplete.extraPaths": ["./service"],
+
+  "python.analysis.diagnosticSeverityOverrides": {
+    "reportUnknownVariableType": "none",
+    "reportUnknownMemberType": "none",
+    "reportUnknownArgumentType": "none",
+    "reportUnknownLambdaType": "none",
+    "reportUnknownParameterType": "none",
+    "reportMissingTypeStubs": "none",
+
+    "reportUndefinedVariable": "error",
+    "reportAssertAlwaysTrue": "warning",
+    "reportSelfClsParameterName": "warning",
+    "reportImplicitStringConcatenation": "none"
+  },
+
+  "mypy-type-checker.args": [
+    "--config-file=service/pyproject.toml",
+    "--ignore-missing-imports"
+  ],
+  "mypy-type-checker.importStrategy": "fromEnvironment",
+  "mypy-type-checker.severity": {
+    "error": "Error",
+    "warning": "Warning",
+    "information": "Information"
+  },
 
   "black-formatter.args": ["--line-length", "119"],
 
@@ -25,54 +53,122 @@
     "F401 W503 F541 F841 E226"
   ],
 
-  "prettier.semi": true,
-  "prettier.singleQuote": true,
-  "tailwind-fold.autoFold": true,
-  "tailwind-fold.foldLengthThreshold": 0,
-  "tailwind-fold.unfoldIfLineSelected": false,
-  "tailwind-fold.unfoldedTextOpacity": 0.7,
-  "[jsonc]": {
-    "editor.defaultFormatter": "esbenp.prettier-vscode",
-    "editor.formatOnSave": true
+  "todo-tree.highlights.defaultHighlight": {
+    "icon": "alert",
+    "type": "text",
+    "foreground": "#9efff4",
+    "opacity": 100,
+    "iconColour": "#ffca56"
   },
-  "[typescript]": {
-    "editor.defaultFormatter": "esbenp.prettier-vscode",
-    "editor.formatOnSave": true,
-    "editor.codeActionsOnSave": {
-      "source.organizeImports": "explicit"
+  "todo-tree.highlights.customHighlight": {
+    "TODO": {
+      "icon": "star",
+      "type": "text-and-comment",
+      "foreground": "#FFD700",
+      "background": "#FFD70020",
+      "fontWeight": "600",
+      "iconColour": "#FFD700",
+      "gutterIcon": true,
+      "borderRadius": "3px"
+    },
+    "FIXME": {
+      "icon": "tools",
+      "type": "tag-and-comment",
+      "foreground": "#FF6B9D",
+      "background": "#FF6B9D15",
+      "fontWeight": "600",
+      "iconColour": "#FF6B9D",
+      "gutterIcon": true,
+      "borderRadius": "3px"
+    },
+    "BUG": {
+      "icon": "bug",
+      "type": "tag-and-comment",
+      "foreground": "#FF4757",
+      "background": "#FF475720",
+      "fontWeight": "700",
+      "iconColour": "#FF4757",
+      "gutterIcon": true,
+      "borderRadius": "3px"
+    },
+    "CASE": {
+      "icon": "briefcase",
+      "type": "tag-and-comment",
+      "foreground": "#A8E6CF",
+      "background": "#A8E6CF18",
+      "fontWeight": "600",
+      "iconColour": "#A8E6CF",
+      "gutterIcon": true,
+      "borderRadius": "3px"
+    },
+    "END": {
+      "icon": "check-circle",
+      "type": "tag-and-comment",
+      "foreground": "#7ED321",
+      "background": "#7ED32115",
+      "fontWeight": "600",
+      "iconColour": "#7ED321",
+      "gutterIcon": true,
+      "borderRadius": "3px"
+    },
+    "EXPLAIN:": {
+      "icon": "light-bulb",
+      "type": "tag-and-comment",
+      "foreground": "#74B9FF",
+      "background": "#74B9FF18",
+      "fontWeight": "500",
+      "fontStyle": "italic",
+      "iconColour": "#74B9FF",
+      "gutterIcon": true,
+      "borderRadius": "3px"
+    },
+    "NOTE": {
+      "icon": "note",
+      "type": "tag-and-comment",
+      "foreground": "#B8A9FF",
+      "background": "#B8A9FF15",
+      "fontWeight": "500",
+      "fontStyle": "italic",
+      "iconColour": "#B8A9FF",
+      "gutterIcon": true,
+      "borderRadius": "3px"
+    },
+    "WRONG": {
+      "icon": "x-circle",
+      "type": "tag-and-comment",
+      "foreground": "#FF7675",
+      "background": "#FF767520",
+      "fontWeight": "600",
+      "iconColour": "#FF7675",
+      "gutterIcon": true,
+      "borderRadius": "3px"
+    },
+    "WARNING": {
+      "icon": "alert",
+      "type": "tag-and-comment",
+      "foreground": "#FDCB6E",
+      "background": "#FDCB6E18",
+      "fontWeight": "600",
+      "iconColour": "#FDCB6E",
+      "gutterIcon": true,
+      "borderRadius": "3px"
     }
   },
-  "[javascript]": {
-    "editor.defaultFormatter": "esbenp.prettier-vscode",
-    "editor.formatOnSave": true,
-    "editor.codeActionsOnSave": {
-      "source.organizeImports": "explicit"
-    }
-  },
-  "[typescriptreact]": {
-    "editor.defaultFormatter": "esbenp.prettier-vscode",
-    "editor.formatOnSave": true,
-    "editor.codeActionsOnSave": {
-      "source.organizeImports": "explicit"
-    }
-  },
-  "[css]": {
-    "editor.defaultFormatter": "vscode.css-language-features"
-  },
+  "todo-tree.general.tags": [
+    "BUG",
+    "WARNING",
+    "WRONG:",
+    "FIXME",
+    "TODO",
+    "CASE",
+    "END",
+    "EXPLAIN:",
+    "NOTE:",
+    "[x]"
+  ],
 
-  "[javascriptreact]": {
-    "editor.defaultFormatter": "esbenp.prettier-vscode"
-  },
-  "editor.codeActionsOnSave": {
-    "source.fixAll.eslint": "explicit"
-  },
-  "eslint.format.enable": true,
-  "eslint.validate": [
-    "javascript",
-    "javascriptreact",
-    "html",
-    "vue",
-    "typescript",
-    "typescriptreact"
-  ]
+  "files.exclude": {
+    "**/.mypy_cache": true,
+    "**/.python-version": true
+  }
 }

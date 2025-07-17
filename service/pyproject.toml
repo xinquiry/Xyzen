@@ -46,17 +46,38 @@ src_paths = ["."]
 [tool.mypy]
 python_version = "3.13"
 disallow_untyped_decorators = false
+ignore_missing_imports = false
 disallow_untyped_defs = true
 disallow_incomplete_defs = true
+mypy_path = "."
+namespace_packages = true
 check_untyped_defs = true
 no_implicit_optional = true
 strict_optional = true
 warn_redundant_casts = true
 warn_return_any = true
 warn_unused_ignores = true
-files = "."
-ignore_missing_imports = true
-exclude = ["*/migrations/*", "migrations/"]
+
+
+exclude = [
+    ".*/migrations/.*",
+    "migrations/.*",
+    ".*/__pycache__/.*",
+    ".*/\\.mypy_cache/.*",
+    "\\.venv/.*"
+]
+
+[tool.pylance]
+extraPaths = ["."]
+autoImportCompletions = true
+autoSearchPaths = true
+
+[tool.pyright]
+include = ["."]
+exclude = ["**/__pycache__", "**/.mypy_cache", "*/migrations/*", "migrations/"]
+extraPaths = ["."]
+pythonVersion = "3.13"
+typeCheckingMode = "basic"
 
 # 针对特定模块的配置
 [[tool.mypy.overrides]]

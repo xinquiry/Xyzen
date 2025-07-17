@@ -1,0 +1,51 @@
+name: Pre-commit Checks
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'service/**'
+      - '.pre-commit-config.yaml'
+      - '.github/workflows/pre-commit.yml'
+
+jobs:
+  pre-commit:
+    runs-on: ubuntu-latest
+    name: Run pre-commit hooks
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v4
+        with:
+          version: "latest"
+          enable-cache: true
+
+      - name: Create uv.lock if not exists
+        run: |
+          if [ ! -f "service/uv.lock" ]; then
+            echo "Creating uv.lock file..."
+            cd service && uv lock
+          fi
+
+      - name: Install dependencies with uv
+        working-directory: ./service
+        run: |
+          echo "Syncing dependencies..."
+          uv sync --dev
+          echo "Dependencies installed successfully"
+
+      - name: Install and run pre-commit
+        uses: pre-commit/action@v3.0.1
+        with:
+          extra_args: --all-files
+        env:
+          # 确保 uv 可以在 pre-commit 中使用
+          PATH: ${{ env.PATH }}:/home/runner/.local/bin
