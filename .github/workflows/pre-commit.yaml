@@ -30,22 +30,15 @@ jobs:
           version: 'latest'
           enable-cache: true
 
-      - name: Create uv.lock if not exists
-        run: |
-          if [ ! -f "service/uv.lock" ]; then
-            echo "Creating uv.lock file..."
-            cd service && uv lock
-          fi
-
-      - name: Install dependencies with uv
+      - name: Install dependencies
         working-directory: ./service
         run: |
           echo "Syncing dependencies..."
           uv sync --dev
           echo "Dependencies installed successfully"
+          uv run pre-commit install
+          echo "Pre-commit hooks installed successfully"
 
-      - name: Install and run pre-commit
-        uses: pre-commit/action@v3.0.1
-        env:
-          # 确保 uv 可以在 pre-commit 中使用
-          PATH: ${{ env.PATH }}:/home/runner/.local/bin
+      - name: Run pre-commit checks
+        working-directory: .
+        run: pre-commit run --all-files
