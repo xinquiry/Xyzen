@@ -9,6 +9,7 @@ dependencies = [
     "fastmcp>=2.10.5",
     "pydantic-settings>=2.10.1",
     "requests>=2.32.4",
+    "types-requests>=2.32.4.20250611",
     "websockets>=13.0,<14.0",
 ]
 

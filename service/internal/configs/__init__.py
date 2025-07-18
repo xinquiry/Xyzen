@@ -1,6 +1,8 @@
 from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
+from internal.configs.lab import LabConfig
+
 from .auth import AuthConfig
 from .logger import LoggerConfig
 
@@ -39,6 +41,11 @@ class AppConfig(BaseSettings):
     Auth: AuthConfig = Field(
         default_factory=lambda: AuthConfig(),
         description="认证配置",
+    )
+
+    Lab: LabConfig = Field(
+        default_factory=lambda: LabConfig(),
+        description="实验室API配置",
     )
 
 
