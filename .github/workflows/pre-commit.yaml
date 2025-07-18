@@ -30,7 +30,7 @@ jobs:
           version: 'latest'
           enable-cache: true
 
-      - name: Install dependencies
+      - name: Install dependencies and Run
         working-directory: ./service
         run: |
           echo "Syncing dependencies..."
