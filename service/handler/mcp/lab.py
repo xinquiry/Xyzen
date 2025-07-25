@@ -1,4 +1,5 @@
 import logging
+from typing import Literal
 
 import requests
 from fastmcp import FastMCP
@@ -31,10 +32,13 @@ async def show_user_info() -> dict[str, str]:
 
 
 @lab_mcp.tool
-async def list_laboratory_devices() -> dict:
+async def list_laboratory_devices(category: Literal["device"] | None = None) -> dict:
     """
     Lists laboratory devices by calling an internal lab API.
     Authentication is handled automatically on the server.
+
+    Args:
+        - category (Literal["device"] | None): If none, list just resources, otherwise list devices.
 
     Returns:
         A dictionary containing the result of the operation.
@@ -52,7 +56,7 @@ async def list_laboratory_devices() -> dict:
             raise ValueError("API SecretKey is not configured on the server.")
 
         url = f"{configs.Lab.Api}/api/environment/lab/mcp"
-        params = {"secret_key": api_secret}
+        params = {"secret_key": api_secret, "type": category}
 
         logger.info(f"Making request to {url}...")
 
@@ -135,6 +139,7 @@ async def list_device_actions(device_id: str) -> dict:
 async def perform_device_action(device_id: str, action_type: str, action: str, params: dict) -> dict:
     """
     Performs a specific action on a device by calling the internal lab API.
+
 
     Args:
         device_id: The ID of the device to perform action on

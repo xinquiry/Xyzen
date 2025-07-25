@@ -1,5 +1,7 @@
 # Use the official Python image as a base
-FROM python:3.13.5-alpine
+FROM registry.scienceol.tech/library/python:3.13.5-alpine
+
+RUN apk add --no-cache ca-certificates
 
 COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
 
