@@ -10,6 +10,7 @@ from starlette.types import Receive, Scope, Send
 from handler.api import api_router
 from handler.mcp import lab_mcp, other_mcp
 from internal import configs
+from middleware import database
 from middleware.auth.casdoor import casdoor_mcp_auth
 from middleware.logger import LOGGING_CONFIG
 
@@ -17,6 +18,9 @@ from middleware.logger import LOGGING_CONFIG
 # TODO: 自动化 MCP Server 发现并自动挂载到 FastAPI 主路由
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
+    # Connect to the database
+    await database.connect()
+
     # Laboratory MCP Application
     lab_app = create_streamable_http_app(
         server=lab_mcp,  # FastMCP Instance, don't need to pass auth
@@ -37,6 +41,9 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
         app.state.lab_app = lab_app
         app.state.other_app = other_app
         yield
+
+    # Disconnect from the database
+    await database.disconnect()
 
 
 app = FastAPI(

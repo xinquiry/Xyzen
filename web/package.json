@@ -34,9 +34,8 @@
     "dist"
   ],
   "scripts": {
-    "dev": "vite",
+    "dev": "vite --host --port 32233 --strictPort",
     "build": "rimraf site && tsc -b && vite build",
-    "prepare": "yarn build:lib",
     "build:lib": "rimraf dist && cross-env BUILD_MODE=library vite build",
     "lint": "eslint .",
     "preview": "vite preview"

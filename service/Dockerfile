@@ -16,6 +16,6 @@ ADD . /app
 # Install dependencies
 RUN uv sync --locked
 
-EXPOSE 48200
+EXPOSE 48196
 
 CMD ["uv", "run", "python", "-m", "cmd.main"]
