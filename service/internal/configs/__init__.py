@@ -30,7 +30,7 @@ class AppConfig(BaseSettings):
     )
     Env: str = Field(default=r"dev", description="环境")
     Debug: bool = Field(default=True, description="调试模式")
-    Host: str = Field(default="localhost", description="服务器主机")
+    Host: str = Field(default="0.0.0.0", description="服务器主机")
     Port: int = Field(default=48196, description="服务器端口")
     Workers: int = Field(default=1, description="Gunicorn 工作进程数")
 

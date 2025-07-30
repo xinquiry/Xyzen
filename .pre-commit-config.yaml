@@ -44,4 +44,4 @@ repos:
         args:
           - --config-file=service/pyproject.toml
         files: ^service/
-        entry: bash -c 'cd service && uv run mypy .'
+        entry: bash -c 'cd service && uv run --active mypy .'

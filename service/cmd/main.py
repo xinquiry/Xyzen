@@ -10,16 +10,16 @@ from starlette.types import Receive, Scope, Send
 from handler.api import api_router
 from handler.mcp import lab_mcp, other_mcp
 from internal import configs
-from middleware import database
 from middleware.auth.casdoor import casdoor_mcp_auth
+from middleware.database import create_db_and_tables
 from middleware.logger import LOGGING_CONFIG
 
 
 # TODO: 自动化 MCP Server 发现并自动挂载到 FastAPI 主路由
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
-    # Connect to the database
-    await database.connect()
+    # Create database tables
+    await create_db_and_tables()
 
     # Laboratory MCP Application
     lab_app = create_streamable_http_app(
@@ -42,8 +42,8 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
         app.state.other_app = other_app
         yield
 
-    # Disconnect from the database
-    await database.disconnect()
+    # Disconnect from the database, if needed (SQLModel manages sessions)
+    pass
 
 
 app = FastAPI(
@@ -51,6 +51,9 @@ app = FastAPI(
     description="Xyzen is AI-powered service with FastAPI and MCP",
     version="0.1.0",
     lifespan=lifespan,
+    docs_url="/api/docs",
+    redoc_url="/api/redoc",
+    openapi_url="/api/openapi.json",
 )
 
 app.include_router(
