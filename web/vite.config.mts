@@ -14,6 +14,7 @@ export default defineConfig(() => {
     plugins.push(
       dts({
         insertTypesEntry: true,
+        tsconfigPath: "./tsconfig.app.json",
       }),
     );
   }
