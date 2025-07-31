@@ -2,7 +2,7 @@
   "name": "@sciol/xyzen",
   "packageManager": "yarn@1.22.22",
   "private": false,
-  "version": "0.0.5",
+  "version": "0.0.6",
   "description": "A modern, lightweight, and extensible chat component for React.",
   "author": "Haohui <harveyque@outlook.com>",
   "license": "GPL-3.0-only",
@@ -82,7 +82,7 @@
     "rimraf": "^6.0.1",
     "typescript": "~5.8.3",
     "typescript-eslint": "^8.35.1",
-    "vite": "^7.0.4",
+    "vite": "^7",
     "vite-plugin-dts": "^4.5.4"
   }
 }
