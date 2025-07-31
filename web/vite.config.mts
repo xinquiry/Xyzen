@@ -24,7 +24,7 @@ export default defineConfig(() => {
 
   if (isLibBuild) {
     build.lib = {
-      entry: path.resolve(import.meta.dirname, "src/app/App.tsx"),
+      entry: path.resolve(import.meta.dirname, "src/index.ts"),
       name: "Xyzen",
       fileName: (format: string) => `xyzen.${format}.js`,
     };

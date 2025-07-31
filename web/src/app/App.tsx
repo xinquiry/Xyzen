@@ -57,7 +57,7 @@ const DragHandle = ({
   );
 };
 
-export default function Xyzen() {
+export function Xyzen() {
   const {
     isXyzenOpen,
     closeXyzen,
