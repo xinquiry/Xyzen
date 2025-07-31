@@ -1,3 +1,5 @@
+from internal import configs
+
 LOGGING_CONFIG = {
     "version": 1,
     "disable_existing_loggers": False,
@@ -28,12 +30,17 @@ LOGGING_CONFIG = {
         },
     },
     "loggers": {
-        "": {  # root logger
-            "level": "DEBUG",
+        "": {
+            "level": configs.Logger.Level.upper(),
             "handlers": ["default"],
         },
         "cmd.main": {
             "level": "DEBUG",
+            "handlers": ["default"],
+            "propagate": False,
+        },
+        "sqlalchemy.engine": {
+            "level": "WARNING",
             "handlers": ["default"],
             "propagate": False,
         },

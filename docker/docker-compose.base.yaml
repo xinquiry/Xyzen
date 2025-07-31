@@ -80,6 +80,16 @@ services:
     depends_on:
       postgresql:
         condition: service_healthy
+    healthcheck:
+      test:
+        [
+          'CMD-SHELL',
+          'wget -q --spider --proxy=off http://localhost:8000/api/health || exit 1',
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
     environment:
       RUNNING_IN_DOCKER: 'true'
       driverName: 'postgres'
@@ -97,6 +107,8 @@ services:
       postgresql:
         condition: service_healthy
       redis:
+        condition: service_healthy
+      casdoor:
         condition: service_healthy
     healthcheck:
       test:

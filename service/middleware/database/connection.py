@@ -6,6 +6,8 @@ from sqlmodel.ext.asyncio.session import AsyncSession
 
 from internal import configs
 
+# Import all models here to ensure they are registered with SQLModel's metadata
+
 DATABASE_URL = ""
 if configs.Database.Engine == "postgres":
     DATABASE_URL = (
@@ -21,11 +23,14 @@ else:
 
 
 # The engine is the gateway to the database.
-engine = create_async_engine(DATABASE_URL, echo=configs.Debug, future=True)
+engine = create_async_engine(DATABASE_URL, echo=False, future=True)
 
 
 async def create_db_and_tables() -> None:
     async with engine.begin() as conn:
+        # In development, drop all tables first to ensure schema is in sync
+        if configs.Debug:
+            await conn.run_sync(SQLModel.metadata.drop_all)
         await conn.run_sync(SQLModel.metadata.create_all)
 
 

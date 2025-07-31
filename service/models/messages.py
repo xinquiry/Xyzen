@@ -1,11 +1,10 @@
 from typing import TYPE_CHECKING
-from uuid import UUID
+from uuid import UUID, uuid4
 
 from sqlmodel import Field, Relationship, SQLModel
 
 if TYPE_CHECKING:
     from .topics import Topic
-    from .users import User
 
 
 class MessageBase(SQLModel):
@@ -15,20 +14,17 @@ class MessageBase(SQLModel):
 
     role: str  # user, assistant, system, tool
     content: str
-    user_id: UUID = Field(foreign_key="user.id")
-    topic_id: UUID = Field(foreign_key="topic.id")
-    thread_id: str | None = Field(default=None, foreign_key="thread.id")
 
 
 class Message(MessageBase, table=True):
-    id: UUID = Field(default=None, primary_key=True, index=True)
+    id: UUID = Field(default_factory=uuid4, primary_key=True, index=True)
+    topic_id: UUID = Field(foreign_key="topic.id")
 
-    user: "User" = Relationship(back_populates="messages")
     topic: "Topic" = Relationship(back_populates="messages")
 
 
 class MessageCreate(MessageBase):
-    pass
+    topic_id: UUID
 
 
 class MessageRead(MessageBase):

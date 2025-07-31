@@ -1,6 +1,6 @@
 from fastapi import APIRouter
 
-from .base import v1_router
+from .v1 import v1_router
 
 # 创建一个统一的 API 路由器
 api_router = APIRouter(prefix="/api", tags=["api"])

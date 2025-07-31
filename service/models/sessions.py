@@ -1,11 +1,9 @@
-from typing import TYPE_CHECKING, List
+from typing import List
 from uuid import UUID
 
 from sqlmodel import Field, Relationship, SQLModel
 
-if TYPE_CHECKING:
-    from .topics import Topic
-    from .users import User
+from .topics import Topic, TopicRead
 
 
 class SessionBase(SQLModel):
@@ -16,25 +14,28 @@ class SessionBase(SQLModel):
     name: str
     description: str | None = None
     is_active: bool = True
-    user_id: UUID = Field(foreign_key="user.id")
+    username: str = Field(index=True, description="The username from Casdoor")
 
 
 class Session(SessionBase, table=True):
     id: UUID = Field(default=None, primary_key=True, index=True)
 
-    user: "User" = Relationship(back_populates="sessions")
-    topics: List["Topic"] = Relationship(back_populates="session")
+    topics: List["Topic"] = Relationship(back_populates="session", sa_relationship_kwargs={"lazy": "selectin"})
 
 
 class SessionCreate(SessionBase):
-    pass
+    username: str
 
 
 class SessionRead(SessionBase):
     id: UUID
+    topics: List["TopicRead"] = []
 
 
 class SessionUpdate(SQLModel):
     name: str | None = None
     description: str | None = None
     is_active: bool | None = None
+
+
+TopicRead.model_rebuild()  # Rebuild to resolve forward references

@@ -1,3 +1,4 @@
+import xyzenService from "@/service/xyzenService";
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import { immer } from "zustand/middleware/immer";
@@ -11,7 +12,8 @@ export interface Message {
 }
 
 export interface ChatChannel {
-  id: string;
+  id: string; // This will now be the Topic ID
+  sessionId: string; // The session this topic belongs to
   title: string;
   messages: Message[];
   assistantId?: string;
@@ -64,8 +66,10 @@ interface XyzenState {
 
   fetchChatHistory: () => Promise<void>;
   togglePinChat: (chatId: string) => void;
-  sendMessage: (payload: { channelUUID: string; message: string }) => void;
-  createDefaultChannel: () => void;
+  connectToChannel: (sessionId: string, topicId: string) => void;
+  disconnectFromChannel: () => void;
+  sendMessage: (message: string) => void;
+  createDefaultChannel: () => Promise<void>;
 }
 
 // --- Mock Data ---
@@ -88,8 +92,9 @@ const mockAssistants: Assistant[] = [
 ];
 
 const mockChannels: Record<string, ChatChannel> = {
-  "channel-1": {
-    id: "channel-1",
+  "topic-1": {
+    id: "topic-1",
+    sessionId: "session-1",
     title: "讨论Zustand",
     assistantId: "asst_2",
     connected: true,
@@ -109,10 +114,11 @@ const mockChannels: Record<string, ChatChannel> = {
       },
     ],
   },
-  "channel-2": {
-    id: "channel-2",
+  "topic-2": {
+    id: "topic-2",
+    sessionId: "session-1",
     title: "一个空对话",
-    connected: true,
+    connected: false,
     error: null,
     messages: [],
   },
@@ -120,7 +126,7 @@ const mockChannels: Record<string, ChatChannel> = {
 
 const mockChatHistory: ChatHistoryItem[] = [
   {
-    id: "channel-1",
+    id: "topic-1",
     title: "讨论Zustand",
     updatedAt: new Date().toISOString(),
     assistantTitle: "代码助手",
@@ -128,7 +134,7 @@ const mockChatHistory: ChatHistoryItem[] = [
     isPinned: true,
   },
   {
-    id: "channel-2",
+    id: "topic-2",
     title: "一个空对话",
     updatedAt: new Date(Date.now() - 86400000).toISOString(),
     assistantTitle: "通用助理",
@@ -140,7 +146,7 @@ const mockChatHistory: ChatHistoryItem[] = [
 
 export const useXyzen = create(
   persist(
-    immer<XyzenState>((set) => ({
+    immer<XyzenState>((set, get) => ({
       isXyzenOpen: true,
       panelWidth: 380,
       activeChatChannel: null,
@@ -169,8 +175,13 @@ export const useXyzen = create(
           chatHistory: mockChatHistory,
           chatHistoryLoading: false,
           channels: mockChannels,
-          activeChatChannel: "channel-1", // 默认激活第一个对话
+          activeChatChannel: "topic-1", // 默认激活第一个对话
         });
+        // Auto-connect to the active channel after fetching history
+        const activeChannel = get().channels["topic-1"];
+        if (activeChannel) {
+          get().connectToChannel(activeChannel.sessionId, activeChannel.id);
+        }
       },
 
       togglePinChat: (chatId: string) => {
@@ -184,9 +195,47 @@ export const useXyzen = create(
         });
       },
 
-      sendMessage: async (payload) => {
-        const { channelUUID, message } = payload;
-        const newMessage: Message = {
+      connectToChannel: (sessionId, topicId) => {
+        xyzenService.connect(
+          sessionId,
+          topicId,
+          (incomingMessage) => {
+            // onMessage callback
+            set((state) => {
+              const channel = state.channels[topicId];
+              if (channel) {
+                const newMsg: Message = {
+                  id: `msg-${Date.now()}`, // Or use an ID from the server
+                  sender: incomingMessage.sender,
+                  content: incomingMessage.content,
+                  timestamp: new Date().toISOString(),
+                };
+                channel.messages.push(newMsg);
+              }
+            });
+          },
+          (status) => {
+            // onStatusChange callback
+            set((state) => {
+              const channel = state.channels[topicId];
+              if (channel) {
+                channel.connected = status.connected;
+                channel.error = status.error;
+              }
+            });
+          },
+        );
+      },
+
+      disconnectFromChannel: () => {
+        xyzenService.disconnect();
+      },
+
+      sendMessage: (message) => {
+        const channelId = get().activeChatChannel;
+        if (!channelId) return;
+
+        const userMessage: Message = {
           id: `msg-${Date.now()}`,
           sender: "user",
           content: message,
@@ -194,46 +243,71 @@ export const useXyzen = create(
         };
 
         set((state) => {
-          state.channels[channelUUID]?.messages.push(newMessage);
+          state.channels[channelId]?.messages.push(userMessage);
         });
 
-        // 模拟助手回复
-        await new Promise((resolve) => setTimeout(resolve, 1500));
-        const assistantResponse: Message = {
-          id: `msg-${Date.now()}`,
-          sender: "assistant",
-          content: `这是对以下消息的模拟回复: "${message}"`,
-          timestamp: new Date().toISOString(),
-        };
-        set((state) => {
-          state.channels[channelUUID]?.messages.push(assistantResponse);
-        });
+        xyzenService.sendMessage(message);
       },
 
-      createDefaultChannel: () => {
-        const newId = `channel-${Date.now()}`;
-        const newChannel: ChatChannel = {
-          id: newId,
-          title: "新对话",
-          messages: [],
-          connected: true,
-          error: null,
-        };
-        const newHistoryItem: ChatHistoryItem = {
-          id: newId,
-          title: "新对话",
-          updatedAt: new Date().toISOString(),
-          assistantTitle: "通用助理",
-          lastMessage: "",
-          isPinned: false,
-        };
+      createDefaultChannel: async () => {
+        try {
+          // Step 1: Call the backend to create a new session and a default topic
+          const response = await fetch(
+            "http://localhost:48196/api/v1/sessions/",
+            {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({
+                name: "New Session",
+                username: get().user?.username || "default_user", // Get username from state
+              }),
+            },
+          );
 
-        set((state) => {
-          state.channels[newId] = newChannel;
-          state.chatHistory.unshift(newHistoryItem);
-          state.activeChatChannel = newId;
-          state.activeTabIndex = 0; // 创建后切换到聊天标签页
-        });
+          if (!response.ok) {
+            throw new Error("Failed to create a new session on the backend.");
+          }
+
+          const newSession = await response.json();
+          const newTopic = newSession.topics[0]; // Assuming the first topic is the default one
+
+          if (!newTopic) {
+            throw new Error("Backend did not return a default topic.");
+          }
+
+          const newChannel: ChatChannel = {
+            id: newTopic.id,
+            sessionId: newSession.id,
+            title: newTopic.name,
+            messages: [],
+            connected: false,
+            error: null,
+          };
+
+          const newHistoryItem: ChatHistoryItem = {
+            id: newTopic.id,
+            title: newTopic.name,
+            updatedAt: new Date().toISOString(),
+            assistantTitle: "通用助理", // Or derive from session/topic
+            lastMessage: "",
+            isPinned: false,
+          };
+
+          set((state) => {
+            state.channels[newTopic.id] = newChannel;
+            state.chatHistory.unshift(newHistoryItem);
+            state.activeChatChannel = newTopic.id;
+            state.activeTabIndex = 0; // Switch to the chat tab
+          });
+
+          // Step 2: Connect to the WebSocket with the real IDs
+          get().connectToChannel(newSession.id, newTopic.id);
+        } catch (error) {
+          console.error("Error creating default channel:", error);
+          // Optionally, update the state to show an error to the user
+        }
       },
     })),
     {

@@ -3,11 +3,12 @@ from contextlib import asynccontextmanager
 
 import uvicorn
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 from fastmcp.server.http import create_streamable_http_app
 from starlette.routing import Mount
 from starlette.types import Receive, Scope, Send
 
-from handler.api import api_router
+from handler import root_router
 from handler.mcp import lab_mcp, other_mcp
 from internal import configs
 from middleware.auth.casdoor import casdoor_mcp_auth
@@ -56,9 +57,17 @@ app = FastAPI(
     openapi_url="/api/openapi.json",
 )
 
-app.include_router(
-    api_router,
+# Add CORS middleware
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # Allows all origins
+    allow_credentials=True,
+    allow_methods=["*"],  # Allows all methods
+    allow_headers=["*"],  # Allows all headers
 )
+
+
+app.include_router(root_router)
 
 
 # Router Handlers

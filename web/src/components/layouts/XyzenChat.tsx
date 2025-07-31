@@ -10,7 +10,13 @@ import EmptyChat from "./components/EmptyChat";
 import WelcomeMessage from "./components/WelcomeMessage";
 
 export default function XyzenChat() {
-  const { activeChatChannel, channels, assistants, sendMessage } = useXyzen();
+  const {
+    activeChatChannel,
+    channels,
+    assistants,
+    sendMessage,
+    connectToChannel,
+  } = useXyzen();
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
@@ -53,26 +59,16 @@ export default function XyzenChat() {
 
   const handleSendMessage = (inputMessage: string) => {
     if (!inputMessage.trim() || !activeChatChannel) return;
-    sendMessage({
-      channelUUID: activeChatChannel,
-      message: inputMessage,
-    });
+    sendMessage(inputMessage);
     setAutoScroll(true);
     setTimeout(() => scrollToBottom(true), 100);
   };
 
   const handleRetryConnection = () => {
-    if (!activeChatChannel) return;
+    if (!currentChannel) return;
     setIsRetrying(true);
-    // Mock retry logic, in a real app this would re-initiate a WebSocket connection
-    console.log(`Retrying connection for channel: ${activeChatChannel}`);
+    connectToChannel(currentChannel.sessionId, currentChannel.id);
     setTimeout(() => {
-      useXyzen.setState((state) => {
-        if (state.channels[activeChatChannel]) {
-          state.channels[activeChatChannel]!.connected = true;
-          state.channels[activeChatChannel]!.error = null;
-        }
-      });
       setIsRetrying(false);
     }, 2000);
   };

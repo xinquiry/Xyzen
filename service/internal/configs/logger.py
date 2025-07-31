@@ -1,3 +1,5 @@
+from typing import Literal
+
 from pydantic import BaseModel, Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
@@ -14,7 +16,7 @@ class LoggerConfig(BaseSettings):
         extra="ignore",
     )
 
-    Level: str = Field(default="info", description="日志级别")
+    Level: Literal["debug", "info", "warning", "error", "critical"] = Field(default="info", description="日志级别")
 
     File: LoggerFileConfig = Field(
         default_factory=lambda: LoggerFileConfig(),

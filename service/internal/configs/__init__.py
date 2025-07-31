@@ -1,10 +1,10 @@
 from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
-from internal.configs.database import DatabaseConfig
-from internal.configs.lab import LabConfig
-
 from .auth import AuthConfig
+from .database import DatabaseConfig
+from .lab import LabConfig
+from .llm import LLMConfig
 from .logger import LoggerConfig
 
 
@@ -47,6 +47,11 @@ class AppConfig(BaseSettings):
     Database: DatabaseConfig = Field(
         default_factory=lambda: DatabaseConfig(),
         description="Database configuration",
+    )
+
+    LLM: LLMConfig = Field(
+        default_factory=lambda: LLMConfig(),
+        description="LLM configuration",
     )
 
     Lab: LabConfig = Field(
