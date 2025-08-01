@@ -2,7 +2,7 @@
   "name": "@sciol/xyzen",
   "packageManager": "yarn@1.22.22",
   "private": false,
-  "version": "0.1.4",
+  "version": "0.1.5",
   "description": "A modern, lightweight, and extensible chat component for React.",
   "author": "Haohui <harveyque@outlook.com>",
   "license": "GPL-3.0-only",
@@ -31,8 +31,7 @@
     "access": "public"
   },
   "files": [
-    "dist",
-    "src"
+    "dist"
   ],
   "scripts": {
     "dev": "vite --host --port 32233 --strictPort",
