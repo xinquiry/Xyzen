@@ -1,5 +1,5 @@
-import json
 import logging
+from datetime import datetime, timezone
 from typing import Dict
 from uuid import UUID
 
@@ -93,6 +93,11 @@ async def chat_websocket(
             user_message_create = MessageCreate(role="user", content=message_text, topic_id=topic_id)
             user_message = MessageModel.model_validate(user_message_create)
             db.add(user_message)
+
+            # Update topic's updated_at timestamp
+            topic.updated_at = datetime.now(timezone.utc)
+            db.add(topic)
+
             await db.commit()
             await db.refresh(user_message)
             # Refresh the topic and its messages relationship to include the new message
@@ -105,12 +110,17 @@ async def chat_websocket(
             ai_message_create = MessageCreate(role="assistant", content=ai_response_text, topic_id=topic_id)
             ai_message = MessageModel.model_validate(ai_message_create)
             db.add(ai_message)
+
+            # Update topic's updated_at timestamp again after AI response
+            topic.updated_at = datetime.now(timezone.utc)
+            db.add(topic)
+
             await db.commit()
             await db.refresh(ai_message)
 
             # 4. Send AI response to client
             await manager.send_personal_message(
-                json.dumps({"sender": "AI", "content": ai_response_text}),
+                ai_message.model_dump_json(),
                 connection_id,
             )
 

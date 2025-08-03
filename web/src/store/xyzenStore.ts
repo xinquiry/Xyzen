@@ -8,7 +8,9 @@ export interface Message {
   id: string;
   content: string;
   sender: "user" | "assistant" | "system";
-  timestamp: string;
+  timestamp: string; // This should be created_at from the backend
+  role?: string; // Add role to match backend
+  created_at?: string; // Add created_at to match backend
 }
 
 export interface ChatChannel {
@@ -82,6 +84,7 @@ interface XyzenState {
 
   fetchChatHistory: () => Promise<void>;
   togglePinChat: (chatId: string) => void;
+  activateChannel: (topicId: string) => void;
   connectToChannel: (sessionId: string, topicId: string) => void;
   disconnectFromChannel: () => void;
   sendMessage: (message: string) => void;
@@ -183,6 +186,7 @@ export const useXyzen = create<XyzenState>()(
 
           if (chatHistory.length > 0) {
             const activeChannel = channels[chatHistory[0].id];
+            get().disconnectFromChannel();
             get().connectToChannel(activeChannel.sessionId, activeChannel.id);
           }
         } catch (error) {
@@ -202,6 +206,64 @@ export const useXyzen = create<XyzenState>()(
         });
       },
 
+      activateChannel: async (topicId: string) => {
+        const state = get();
+
+        // If we are already connected to this channel, just switch to the chat tab
+        if (
+          state.activeChatChannel === topicId &&
+          state.channels[topicId]?.connected
+        ) {
+          set({ activeTabIndex: 0 });
+          return;
+        }
+
+        // Disconnect from any existing connection
+        state.disconnectFromChannel();
+
+        const channelToActivate = state.channels[topicId];
+
+        if (channelToActivate) {
+          // Set the new active channel immediately for UI feedback
+          set({ activeChatChannel: topicId, activeTabIndex: 0 });
+
+          // Fetch and load historical messages for this channel
+          try {
+            const response = await fetch(
+              `${get().backendUrl}/api/v1/topics/${topicId}/messages`,
+            );
+            if (!response.ok) {
+              throw new Error("Failed to fetch messages for the topic.");
+            }
+            const messages: Message[] = await response.json();
+            set((state) => {
+              const channel = state.channels[topicId];
+              if (channel) {
+                channel.messages = messages;
+              }
+            });
+          } catch (error) {
+            console.error("Error fetching historical messages:", error);
+            set((state) => {
+              const channel = state.channels[topicId];
+              if (channel) {
+                channel.error = "Failed to load messages.";
+              }
+            });
+          }
+
+          // Connect to the new channel
+          state.connectToChannel(
+            channelToActivate.sessionId,
+            channelToActivate.id,
+          );
+        } else {
+          console.error(
+            `Could not find channel details for topicId: ${topicId}`,
+          );
+        }
+      },
+
       connectToChannel: (sessionId, topicId) => {
         xyzenService.connect(
           sessionId,
@@ -210,14 +272,30 @@ export const useXyzen = create<XyzenState>()(
             // onMessage callback
             set((state) => {
               const channel = state.channels[topicId];
-              if (channel) {
+              if (
+                channel &&
+                incomingMessage.role &&
+                incomingMessage.created_at
+              ) {
+                // The incoming message is now the full Message object from the backend
                 const newMsg: Message = {
-                  id: `msg-${Date.now()}`, // Or use an ID from the server
-                  sender: incomingMessage.sender,
+                  id: incomingMessage.id,
+                  sender: incomingMessage.role as "user" | "assistant", // 'user' or 'assistant'
                   content: incomingMessage.content,
-                  timestamp: new Date().toISOString(),
+                  timestamp: incomingMessage.created_at,
+                  role: incomingMessage.role,
+                  created_at: incomingMessage.created_at,
                 };
                 channel.messages.push(newMsg);
+
+                // Also update the chat history for real-time sorting
+                const historyItem = state.chatHistory.find(
+                  (h) => h.id === topicId,
+                );
+                if (historyItem) {
+                  historyItem.lastMessage = incomingMessage.content;
+                  historyItem.updatedAt = incomingMessage.created_at;
+                }
               }
             });
           },
@@ -250,7 +328,16 @@ export const useXyzen = create<XyzenState>()(
         };
 
         set((state) => {
-          state.channels[channelId]?.messages.push(userMessage);
+          const channel = state.channels[channelId];
+          if (channel) {
+            channel.messages.push(userMessage);
+          }
+          // Also update the chat history for real-time sorting
+          const historyItem = state.chatHistory.find((h) => h.id === channelId);
+          if (historyItem) {
+            historyItem.lastMessage = message;
+            historyItem.updatedAt = new Date().toISOString();
+          }
         });
 
         xyzenService.sendMessage(message);
@@ -293,7 +380,7 @@ export const useXyzen = create<XyzenState>()(
           const newHistoryItem: ChatHistoryItem = {
             id: newTopic.id,
             title: newTopic.name,
-            updatedAt: new Date().toISOString(),
+            updatedAt: newTopic.updated_at,
             assistantTitle: "通用助理", // Or derive from session/topic
             lastMessage: "",
             isPinned: false,
@@ -306,8 +393,8 @@ export const useXyzen = create<XyzenState>()(
             state.activeTabIndex = 0; // Switch to the chat tab
           });
 
-          // Step 2: Connect to the WebSocket with the real IDs
-          get().connectToChannel(newSession.id, newTopic.id);
+          // Step 2: Activate the new channel, which handles disconnection and connection
+          get().activateChannel(newTopic.id);
         } catch (error) {
           console.error("Error creating default channel:", error);
           // Optionally, update the state to show an error to the user

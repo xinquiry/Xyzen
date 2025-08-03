@@ -1,6 +1,9 @@
+from datetime import datetime, timezone
 from typing import TYPE_CHECKING, List
 from uuid import UUID
 
+from sqlalchemy import Column
+from sqlalchemy.dialects.postgresql import TIMESTAMP
 from sqlmodel import Field, Relationship, SQLModel
 
 if TYPE_CHECKING:
@@ -21,6 +24,14 @@ class TopicBase(SQLModel):
 
 class Topic(TopicBase, table=True):
     id: UUID = Field(default=None, primary_key=True, index=True)
+    created_at: datetime = Field(
+        default_factory=lambda: datetime.now(timezone.utc),
+        sa_column=Column(TIMESTAMP(timezone=True), nullable=False),
+    )
+    updated_at: datetime = Field(
+        default_factory=lambda: datetime.now(timezone.utc),
+        sa_column=Column(TIMESTAMP(timezone=True), nullable=False),
+    )
 
     session_id: UUID = Field(foreign_key="session.id")
     session: "Session" = Relationship(back_populates="topics")
@@ -33,6 +44,7 @@ class TopicCreate(TopicBase):
 
 class TopicRead(TopicBase):
     id: UUID
+    updated_at: datetime
 
 
 class TopicUpdate(SQLModel):

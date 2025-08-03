@@ -11,9 +11,8 @@ export default function XyzenHistory() {
     chatHistory,
     chatHistoryLoading,
     fetchChatHistory,
-    setActiveChatChannel,
+    activateChannel,
     togglePinChat,
-    setTabIndex,
   } = useXyzen();
 
   // 组件挂载时加载聊天历史
@@ -31,9 +30,8 @@ export default function XyzenHistory() {
   });
 
   // 激活聊天会话
-  const activateChat = (chatId: string) => {
-    setActiveChatChannel(chatId);
-    setTabIndex(0); // 切换到聊天标签页
+  const handleActivateChat = (chatId: string) => {
+    activateChannel(chatId);
   };
 
   // 切换置顶状态
@@ -66,7 +64,7 @@ export default function XyzenHistory() {
         <div
           key={chat.id}
           className="group relative flex cursor-pointer items-center justify-between rounded-lg border border-neutral-200 p-3 hover:bg-neutral-50 dark:border-neutral-800 dark:hover:bg-neutral-900"
-          onClick={() => activateChat(chat.id)}
+          onClick={() => handleActivateChat(chat.id)}
         >
           <div className="flex-1 overflow-hidden">
             <div className="flex items-center">

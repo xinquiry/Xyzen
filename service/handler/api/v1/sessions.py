@@ -1,3 +1,5 @@
+from datetime import datetime, timezone
+from typing import List
 from uuid import uuid4
 
 from fastapi import APIRouter, Depends
@@ -23,10 +25,11 @@ async def create_session_with_default_topic(
     session = Session.model_validate(session_data)
     session.id = uuid4()
 
-    # Create a default topic for this session
+    # Create a default topic for this session with a unique name
+    timestamp = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M")
     default_topic = Topic.model_validate(
         TopicCreate(
-            name="New Topic",
+            name=f"Chat on {timestamp}",
             session_id=session.id,
         )
     )
@@ -45,3 +48,22 @@ async def create_session_with_default_topic(
     new_session = result.one()
 
     return new_session
+
+
+@router.get("/", response_model=List[SessionRead])
+async def get_sessions(db: AsyncSession = Depends(get_session)) -> List[Session]:
+    """
+    Get all sessions, ordered by the last update time of their topics.
+    """
+    # TODO: Filter sessions by the current user.
+    statement = select(Session)
+    result = await db.exec(statement)
+    sessions = list(result.all())
+
+    # Sort sessions in memory based on the most recent topic's updated_at
+    sessions.sort(
+        key=lambda s: max(t.updated_at for t in s.topics) if s.topics else datetime.min,
+        reverse=True,
+    )
+
+    return sessions

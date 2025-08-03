@@ -4,7 +4,6 @@
   "version": "0.1.6",
   "description": "A modern, lightweight, and extensible chat component for React.",
   "author": "Haohui <harveyque@outlook.com>",
-  "private": false,
   "license": "GPL-3.0-only",
   "repository": {
     "type": "git",

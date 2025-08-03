@@ -9,6 +9,7 @@ from starlette.routing import Mount
 from starlette.types import Receive, Scope, Send
 
 from handler import root_router
+from handler.api.v1 import sessions, topics
 from handler.mcp import lab_mcp, other_mcp
 from internal import configs
 from middleware.auth.casdoor import casdoor_mcp_auth
@@ -68,6 +69,8 @@ app.add_middleware(
 
 
 app.include_router(root_router)
+app.include_router(sessions.router, prefix="/api/v1/sessions", tags=["sessions"])
+app.include_router(topics.router, prefix="/api/v1/topics", tags=["topics"])
 
 
 # Router Handlers
