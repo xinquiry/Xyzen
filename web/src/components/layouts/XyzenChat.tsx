@@ -139,7 +139,7 @@ export default function XyzenChat() {
         </div>
       )}
 
-      <div className="relative flex h-[calc(100vh-12rem)] flex-grow flex-col">
+      <div className="relative flex h-[calc(100vh-11.5rem)] flex-grow flex-col">
         <div
           ref={messagesContainerRef}
           className="absolute inset-0 overflow-y-auto rounded-lg bg-neutral-50 pt-6 dark:bg-black"
@@ -195,10 +195,7 @@ export default function XyzenChat() {
           </button>
         )}
 
-        <div
-          className="absolute bottom-0 left-0 right-0 rounded-b-lg border-t border-neutral-200 bg-white p-2 shadow-[0_-2px_5px_rgba(0,0,0,0.05)] dark:border-neutral-800 dark:bg-black dark:shadow-[0_-2px_5px_rgba(0,0,0,0.2)]"
-          style={{ zIndex: 15 }}
-        >
+        <div className="absolute bottom-0 left-0 z-20 right-0 rounded-b-lg border-t border-neutral-200 bg-white p-2 pb-0 shadow-[0_-2px_5px_rgba(0,0,0,0.05)] dark:border-neutral-800 dark:bg-black dark:shadow-[0_-2px_5px_rgba(0,0,0,0.2)]">
           <ChatInput
             onSendMessage={handleSendMessage}
             disabled={!connected}

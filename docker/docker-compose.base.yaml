@@ -45,6 +45,7 @@ services:
     environment:
       - 'MINIO_API_CORS_ALLOW_ORIGIN=*'
     restart: always
+    attach: false
     entrypoint: >
       /bin/sh -c "
         minio server /etc/minio/data --address ':9000' --console-address ':9001' &
@@ -95,6 +96,7 @@ services:
       driverName: 'postgres'
       dataSourceName: 'user=${DATABASE_USER:-postgres} password=${DATABASE_PASSWORD:-postgres} host=127.0.0.1 port=5432 sslmode=disable dbname=casdoor'
       runmode: 'dev'
+    attach: false
     volumes:
       - ../infra/casdoor/init_data.json:/init_data.json
 

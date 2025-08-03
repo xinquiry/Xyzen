@@ -1,21 +1,11 @@
+import { useXyzen } from "@/index";
 import { motion } from "framer-motion";
 import React, { useState } from "react";
 
 const EmptyChat: React.FC = () => {
   const [isCreating] = useState(false);
 
-  // const handleStartNewChat = async () => {
-  //   setIsCreating(true);
-
-  //   try {
-  //     // 使用service中的创建默认频道方法，它会处理UUID生成、连接创建以及视图切换
-  //     await createDefaultChannel();
-  //   } catch (error) {
-  //     console.error('Failed to create chat:', error);
-  //   } finally {
-  //     setTimeout(() => setIsCreating(false), 1000);
-  //   }
-  // };
+  const { createDefaultChannel } = useXyzen();
 
   return (
     <div className="flex h-full flex-col items-center justify-center space-y-6 p-4 text-center">
@@ -61,7 +51,7 @@ const EmptyChat: React.FC = () => {
         className="flex flex-col space-y-3 sm:flex-row sm:space-x-3 sm:space-y-0"
       >
         <button
-          onClick={() => {}}
+          onClick={createDefaultChannel}
           disabled={isCreating}
           className={`flex items-center justify-center rounded-md ${
             isCreating

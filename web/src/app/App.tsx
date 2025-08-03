@@ -1,5 +1,3 @@
-"use client";
-
 import { useXyzen } from "@/store/xyzenStore";
 import type { DragMoveEvent } from "@dnd-kit/core";
 import {
@@ -23,6 +21,7 @@ import { useEffect, useRef, useState } from "react";
 import XyzenChat from "@/components/layouts/XyzenChat";
 import XyzenHistory from "@/components/layouts/XyzenHistory";
 import XyzenNodes from "@/components/layouts/XyzenNodes";
+import { DEFAULT_BACKEND_URL } from "@/configs";
 import useTheme from "@/hooks/useTheme";
 
 // 定义最小宽度和最大宽度限制
@@ -57,7 +56,11 @@ const DragHandle = ({
   );
 };
 
-export function Xyzen() {
+export interface XyzenProps {
+  backendUrl?: string;
+}
+
+export function Xyzen({ backendUrl = DEFAULT_BACKEND_URL }: XyzenProps) {
   const {
     isXyzenOpen,
     closeXyzen,
@@ -67,6 +70,7 @@ export function Xyzen() {
     activeTabIndex,
     setTabIndex,
     createDefaultChannel,
+    setBackendUrl,
   } = useXyzen();
   const { theme, cycleTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
@@ -83,7 +87,8 @@ export function Xyzen() {
   // 添加useEffect处理客户端挂载
   useEffect(() => {
     setMounted(true);
-  }, []);
+    setBackendUrl(backendUrl);
+  }, [backendUrl, setBackendUrl]);
 
   // 优化 dnd-kit sensor 配置
   const sensors = useSensors(

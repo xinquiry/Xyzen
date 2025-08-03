@@ -49,6 +49,11 @@ export const ChatInput: React.FC<ChatInputProps> = ({
   // 添加一个状态来跟踪输入法的组合状态
   const [isComposing, setIsComposing] = useState(false);
 
+  // Use a ref to hold the latest onHeightChange callback
+  // This avoids making the useEffect dependent on the function's identity
+  const onHeightChangeRef = useRef(onHeightChange);
+  onHeightChangeRef.current = onHeightChange;
+
   // Keep track of initial height when drag starts
   const initialHeightRef = useRef(textareaHeight);
   // Keep track of total delta during drag
@@ -66,10 +71,10 @@ export const ChatInput: React.FC<ChatInputProps> = ({
   // Save height to localStorage when it changes and report height changes to parent
   useEffect(() => {
     localStorage.setItem("chatInputHeight", textareaHeight.toString());
-    if (onHeightChange) {
-      onHeightChange(textareaHeight);
+    if (onHeightChangeRef.current) {
+      onHeightChangeRef.current(textareaHeight);
     }
-  }, [textareaHeight, onHeightChange]);
+  }, [textareaHeight]);
 
   // Handle drag start to set initial height reference
   const handleDragStart = () => {
@@ -163,7 +168,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({
           </button>
         </div>
       </DndContext>
-      <p className="mt-0.5 text-xs text-neutral-500">
+      <p className="mt-0.5 ml-2 text-xs text-neutral-500">
         按 Enter 发送，Shift+Enter 换行
       </p>
     </div>

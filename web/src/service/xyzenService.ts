@@ -12,6 +12,11 @@ class XyzenService {
   private onMessageCallback: ServiceCallback<Message> | null = null;
   private onStatusChangeCallback: ServiceCallback<StatusChangePayload> | null =
     null;
+  private backendUrl = "";
+
+  public setBackendUrl(url: string) {
+    this.backendUrl = url;
+  }
 
   public connect(
     sessionId: string,
@@ -27,7 +32,10 @@ class XyzenService {
     this.onMessageCallback = onMessage;
     this.onStatusChangeCallback = onStatusChange;
 
-    const wsUrl = `ws://localhost:48196/ws/v1/chat/sessions/${sessionId}/topics/${topicId}`;
+    const wsUrl = `${this.backendUrl.replace(
+      /^http(s?):\/\//,
+      "ws$1://",
+    )}/ws/v1/chat/sessions/${sessionId}/topics/${topicId}`;
     this.ws = new WebSocket(wsUrl);
 
     this.ws.onopen = () => {

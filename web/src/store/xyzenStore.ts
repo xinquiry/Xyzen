@@ -43,7 +43,22 @@ export interface User {
 
 export type Theme = "light" | "dark" | "system";
 
+// Add types for API response
+interface TopicResponse {
+  id: string;
+  name: string;
+  updated_at: string;
+}
+
+interface SessionResponse {
+  id: string;
+  name: string;
+  username: string;
+  topics: TopicResponse[];
+}
+
 interface XyzenState {
+  backendUrl: string;
   isXyzenOpen: boolean;
   panelWidth: number;
   activeChatChannel: string | null;
@@ -63,6 +78,7 @@ interface XyzenState {
   setActiveChatChannel: (channelUUID: string | null) => void;
   setTabIndex: (index: number) => void;
   setTheme: (theme: Theme) => void;
+  setBackendUrl: (url: string) => void;
 
   fetchChatHistory: () => Promise<void>;
   togglePinChat: (chatId: string) => void;
@@ -91,63 +107,14 @@ const mockAssistants: Assistant[] = [
   },
 ];
 
-const mockChannels: Record<string, ChatChannel> = {
-  "topic-1": {
-    id: "topic-1",
-    sessionId: "session-1",
-    title: "讨论Zustand",
-    assistantId: "asst_2",
-    connected: true,
-    error: null,
-    messages: [
-      {
-        id: "msg-1",
-        sender: "user",
-        content: "如何使用Zustand？",
-        timestamp: new Date().toISOString(),
-      },
-      {
-        id: "msg-2",
-        sender: "assistant",
-        content: "Zustand 是一个小型、快速、可扩展的轻量级状态管理解决方案。",
-        timestamp: new Date().toISOString(),
-      },
-    ],
-  },
-  "topic-2": {
-    id: "topic-2",
-    sessionId: "session-1",
-    title: "一个空对话",
-    connected: false,
-    error: null,
-    messages: [],
-  },
-};
-
-const mockChatHistory: ChatHistoryItem[] = [
-  {
-    id: "topic-1",
-    title: "讨论Zustand",
-    updatedAt: new Date().toISOString(),
-    assistantTitle: "代码助手",
-    lastMessage: "Zustand 是一个小型、快速...",
-    isPinned: true,
-  },
-  {
-    id: "topic-2",
-    title: "一个空对话",
-    updatedAt: new Date(Date.now() - 86400000).toISOString(),
-    assistantTitle: "通用助理",
-    lastMessage: "...",
-    isPinned: false,
-  },
-];
 // --- End Mock Data ---
 
-export const useXyzen = create(
+export const useXyzen = create<XyzenState>()(
   persist(
-    immer<XyzenState>((set, get) => ({
-      isXyzenOpen: true,
+    immer((set, get) => ({
+      // --- State ---
+      backendUrl: "",
+      isXyzenOpen: false,
       panelWidth: 380,
       activeChatChannel: null,
       user: mockUser,
@@ -158,29 +125,69 @@ export const useXyzen = create(
       channels: {},
       assistants: mockAssistants,
 
+      // --- Actions ---
       toggleXyzen: () => set((state) => ({ isXyzenOpen: !state.isXyzenOpen })),
       openXyzen: () => set({ isXyzenOpen: true }),
       closeXyzen: () => set({ isXyzenOpen: false }),
       setPanelWidth: (width) => set({ panelWidth: width }),
-      setActiveChatChannel: (channelUUID) => {
-        set({ activeChatChannel: channelUUID });
-      },
+      setActiveChatChannel: (channelId) =>
+        set({ activeChatChannel: channelId }),
       setTabIndex: (index) => set({ activeTabIndex: index }),
       setTheme: (theme) => set({ theme }),
+      setBackendUrl: (url) => {
+        set({ backendUrl: url });
+        xyzenService.setBackendUrl(url);
+      },
 
+      // --- Async Actions ---
       fetchChatHistory: async () => {
         set({ chatHistoryLoading: true });
-        await new Promise((resolve) => setTimeout(resolve, 1000)); // 模拟网络延迟
-        set({
-          chatHistory: mockChatHistory,
-          chatHistoryLoading: false,
-          channels: mockChannels,
-          activeChatChannel: "topic-1", // 默认激活第一个对话
-        });
-        // Auto-connect to the active channel after fetching history
-        const activeChannel = get().channels["topic-1"];
-        if (activeChannel) {
-          get().connectToChannel(activeChannel.sessionId, activeChannel.id);
+        try {
+          const response = await fetch(`${get().backendUrl}/api/v1/sessions/`);
+          if (!response.ok) {
+            throw new Error("Failed to fetch chat history");
+          }
+          const history: SessionResponse[] = await response.json();
+
+          // Transform the fetched data into the format expected by the store
+          const channels: Record<string, ChatChannel> = {};
+          const chatHistory: ChatHistoryItem[] = history.flatMap(
+            (session: SessionResponse) =>
+              session.topics.map((topic: TopicResponse) => {
+                channels[topic.id] = {
+                  id: topic.id,
+                  sessionId: session.id,
+                  title: topic.name,
+                  messages: [], // Messages will be fetched on demand or via WebSocket
+                  connected: false,
+                  error: null,
+                };
+                return {
+                  id: topic.id,
+                  title: topic.name,
+                  updatedAt: topic.updated_at,
+                  assistantTitle: "通用助理", // Placeholder
+                  lastMessage: "", // Placeholder
+                  isPinned: false, // Placeholder
+                };
+              }),
+          );
+
+          set({
+            chatHistory,
+            channels,
+            chatHistoryLoading: false,
+            activeChatChannel:
+              chatHistory.length > 0 ? chatHistory[0].id : null,
+          });
+
+          if (chatHistory.length > 0) {
+            const activeChannel = channels[chatHistory[0].id];
+            get().connectToChannel(activeChannel.sessionId, activeChannel.id);
+          }
+        } catch (error) {
+          console.error("Failed to fetch chat history:", error);
+          set({ chatHistoryLoading: false });
         }
       },
 
@@ -252,19 +259,16 @@ export const useXyzen = create(
       createDefaultChannel: async () => {
         try {
           // Step 1: Call the backend to create a new session and a default topic
-          const response = await fetch(
-            "http://localhost:48196/api/v1/sessions/",
-            {
-              method: "POST",
-              headers: {
-                "Content-Type": "application/json",
-              },
-              body: JSON.stringify({
-                name: "New Session",
-                username: get().user?.username || "default_user", // Get username from state
-              }),
+          const response = await fetch(`${get().backendUrl}/api/v1/sessions/`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
             },
-          );
+            body: JSON.stringify({
+              name: "New Session",
+              username: get().user?.username || "default_user", // Get username from state
+            }),
+          });
 
           if (!response.ok) {
             throw new Error("Failed to create a new session on the backend.");

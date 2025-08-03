@@ -1,4 +1,7 @@
 services:
+
+
+
   service:
     image: registry.scienceol.tech/sciol/xyzen:dev
     env_file:
@@ -27,4 +30,5 @@ services:
     volumes:
       - ../web:/app
       - /app/node_modules
-    command: sh -c "yarn install && yarn dev"
+      - /app/.yarn
+    command: sh -c "corepack enable && yarn install && yarn dev"
