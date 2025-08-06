@@ -10,20 +10,16 @@ export type Agent = {
   id: string;
   name: string;
   description: string;
-  avatar: string;
-  tags: string[];
-  model: string;
-  temperature: number;
-  user_id: string;
   prompt: string;
+  mcp_servers: { id: number }[];
   mcp_server_ids?: number[];
+  user_id: string;
 };
 
 interface AgentCardProps {
   agent: Agent;
   onClick?: (agent: Agent) => void;
   onEdit?: (agent: Agent) => void;
-  selected?: boolean;
 }
 
 // 定义动画变体
@@ -41,12 +37,7 @@ const itemVariants: Variants = {
 };
 
 // 详细版本-包括名字，描述，头像，标签以及GPT模型
-const AgentCard: React.FC<AgentCardProps> = ({
-  agent,
-  selected,
-  onClick,
-  onEdit,
-}) => {
+const AgentCard: React.FC<AgentCardProps> = ({ agent, onClick, onEdit }) => {
   return (
     <motion.div
       layout
@@ -56,11 +47,7 @@ const AgentCard: React.FC<AgentCardProps> = ({
       onClick={() => onClick?.(agent)}
       className={`
         group relative flex cursor-pointer items-start gap-4 rounded-lg border p-3
-        ${
-          selected
-            ? "border-indigo-500/50 bg-indigo-50 dark:border-indigo-400/30 dark:bg-neutral-800/50"
-            : "border-neutral-200 bg-white hover:bg-neutral-50 dark:border-neutral-800 dark:bg-neutral-900 dark:hover:bg-neutral-800/60"
-        }
+        border-neutral-200 bg-white hover:bg-neutral-50 dark:border-neutral-800 dark:bg-neutral-900 dark:hover:bg-neutral-800/60
       `}
     >
       {/* 头像 */}
@@ -77,9 +64,11 @@ const AgentCard: React.FC<AgentCardProps> = ({
             {agent.name}
           </h3>
           <div className="flex items-center space-x-2">
-            <span className="text-xs text-indigo-600 dark:text-indigo-400">
-              {agent.model}
-            </span>
+            {agent.mcp_servers && agent.mcp_servers.length > 0 && (
+              <span className="text-xs text-gray-500">
+                {agent.mcp_servers.length} MCPs
+              </span>
+            )}
             <button
               onClick={(e) => {
                 e.stopPropagation();
@@ -95,17 +84,6 @@ const AgentCard: React.FC<AgentCardProps> = ({
         <p className="mt-1 text-xs text-neutral-600 dark:text-neutral-400 line-clamp-2">
           {agent.description}
         </p>
-
-        <div className="mt-2 flex flex-wrap gap-1">
-          {agent.tags.map((tag) => (
-            <span
-              key={tag}
-              className="text-[10px] rounded-full bg-neutral-100 px-2 py-0.5 text-neutral-600 dark:bg-neutral-800 dark:text-neutral-300"
-            >
-              {tag}
-            </span>
-          ))}
-        </div>
       </div>
     </motion.div>
   );
@@ -123,18 +101,17 @@ const containerVariants: Variants = {
 };
 
 export default function XyzenAgent() {
-  const [selectedAgentId, setSelectedAgentId] = useState<string | null>(null);
   const [isAddModalOpen, setAddModalOpen] = useState(false);
   const [isEditModalOpen, setEditModalOpen] = useState(false);
   const [editingAgent, setEditingAgent] = useState<Agent | null>(null);
-  const { agents, fetchAgents } = useXyzen();
+  const { agents, fetchAgents, createDefaultChannel } = useXyzen();
 
   useEffect(() => {
     fetchAgents();
   }, [fetchAgents]);
 
   const handleAgentClick = (agent: Agent) => {
-    setSelectedAgentId(agent.id);
+    createDefaultChannel(agent.id);
   };
 
   const handleEditClick = (agent: Agent) => {
@@ -153,7 +130,6 @@ export default function XyzenAgent() {
         <AgentCard
           key={agent.id}
           agent={agent}
-          selected={agent.id === selectedAgentId}
           onClick={handleAgentClick}
           onEdit={handleEditClick}
         />

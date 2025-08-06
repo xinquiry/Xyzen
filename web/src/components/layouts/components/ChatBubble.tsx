@@ -6,9 +6,9 @@ import React, { useState } from "react";
 
 export interface Message {
   id: string;
-  sender: string;
+  role: "user" | "assistant" | "system" | "tool";
   content: string;
-  timestamp: string;
+  created_at: string;
   avatar?: string;
   isCurrentUser?: boolean;
 }
@@ -18,13 +18,13 @@ interface ChatBubbleProps {
 }
 
 const ChatBubble: React.FC<ChatBubbleProps> = ({ message }) => {
-  const { sender, content, timestamp, avatar } = message;
+  const { role, content, created_at, avatar } = message;
   const [imageError, setImageError] = useState(false);
 
-  const isUserMessage = sender === "user";
+  const isUserMessage = role === "user";
 
   // Updated time format to include seconds
-  const formattedTime = new Date(timestamp).toLocaleTimeString([], {
+  const formattedTime = new Date(created_at).toLocaleTimeString([], {
     hour: "2-digit",
     minute: "2-digit",
     second: "2-digit",
@@ -62,7 +62,7 @@ const ChatBubble: React.FC<ChatBubbleProps> = ({ message }) => {
     // 如果已经知道图像加载失败，或者没有提供头像
     if (imageError || !avatar) {
       // 显示AI的首字母作为头像
-      const initial = sender?.charAt(0)?.toUpperCase() || "A";
+      const initial = role?.charAt(0)?.toUpperCase() || "A";
 
       return (
         <div

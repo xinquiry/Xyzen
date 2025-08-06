@@ -16,9 +16,13 @@ const EditAgentModal: React.FC<EditAgentModalProps> = ({
 }) => {
   const { updateAgent, mcpServers, fetchMcpServers } = useXyzen();
   const [agent, setAgent] = useState<Agent | null>(agentToEdit);
+  const [mcpServerIds, setMcpServerIds] = useState<number[]>([]);
 
   useEffect(() => {
     setAgent(agentToEdit);
+    if (agentToEdit) {
+      setMcpServerIds(agentToEdit.mcp_servers.map((s) => s.id));
+    }
     if (isOpen) {
       fetchMcpServers();
     }
@@ -34,26 +38,18 @@ const EditAgentModal: React.FC<EditAgentModalProps> = ({
     setAgent({ ...agent, [name]: value });
   };
 
-  const handleTagChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (!agent) return;
-    const { value } = e.target;
-    setAgent({ ...agent, tags: value.split(",") });
-  };
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!agent) return;
-    await updateAgent(agent);
+    await updateAgent({ ...agent, mcp_server_ids: mcpServerIds });
     onClose();
   };
 
   const handleMcpServerChange = (serverId: number) => {
-    if (!agent) return;
-    const currentIds = agent.mcp_server_ids || [];
-    const newIds = currentIds.includes(serverId)
-      ? currentIds.filter((id) => id !== serverId)
-      : [...currentIds, serverId];
-    setAgent({ ...agent, mcp_server_ids: newIds });
+    const newIds = mcpServerIds.includes(serverId)
+      ? mcpServerIds.filter((id) => id !== serverId)
+      : [...mcpServerIds, serverId];
+    setMcpServerIds(newIds);
   };
 
   if (!isOpen || !agent) return null;
@@ -88,38 +84,6 @@ const EditAgentModal: React.FC<EditAgentModalProps> = ({
             onChange={handleChange}
             className="w-full rounded-md border p-2 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-200"
           />
-          <input
-            type="text"
-            name="avatar"
-            placeholder="头像 URL"
-            value={agent.avatar}
-            onChange={handleChange}
-            className="w-full rounded-md border p-2 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-200"
-          />
-          <input
-            type="text"
-            name="tags"
-            placeholder="标签 (逗号分隔)"
-            value={agent.tags.join(",")}
-            onChange={handleTagChange}
-            className="w-full rounded-md border p-2 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-200"
-          />
-          <input
-            type="text"
-            name="model"
-            placeholder="模型"
-            value={agent.model}
-            onChange={handleChange}
-            className="w-full rounded-md border p-2 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-200"
-          />
-          <input
-            type="number"
-            name="temperature"
-            placeholder="Temperature"
-            value={agent.temperature}
-            onChange={handleChange}
-            className="w-full rounded-md border p-2 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-200"
-          />
           <div>
             <h3 className="mb-2 text-sm font-medium text-neutral-800 dark:text-neutral-100">
               绑定 MCP Servers
@@ -130,7 +94,7 @@ const EditAgentModal: React.FC<EditAgentModalProps> = ({
                   <input
                     type="checkbox"
                     id={`mcp-${server.id}`}
-                    checked={agent.mcp_server_ids?.includes(server.id) || false}
+                    checked={mcpServerIds.includes(server.id)}
                     onChange={() => handleMcpServerChange(server.id)}
                     className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
                   />

@@ -262,7 +262,7 @@ export function Xyzen({ backendUrl = DEFAULT_BACKEND_URL }: XyzenProps) {
               <button
                 className="rounded-md p-1.5 text-neutral-500 hover:bg-neutral-100 dark:text-neutral-400 dark:hover:bg-neutral-800"
                 title="新对话"
-                onClick={createDefaultChannel}
+                onClick={() => createDefaultChannel()}
               >
                 <PlusIcon className="h-5 w-5" />
               </button>

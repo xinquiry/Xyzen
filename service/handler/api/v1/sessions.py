@@ -19,6 +19,7 @@ async def create_session_with_default_topic(
 ) -> Session:
     """
     Create a new session and a default topic within it.
+    If agent_id is provided, the session will be associated with that agent.
     Returns the newly created session with its topics.
     """
     # Create the session instance

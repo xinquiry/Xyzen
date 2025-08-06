@@ -4,11 +4,13 @@ from typing import Dict
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, WebSocket, WebSocketDisconnect
+from sqlalchemy.orm import selectinload
 from sqlmodel import select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 from core.chat import get_ai_response
 from middleware.database import get_session
+from models.agent import Agent as AgentModel
 from models.messages import Message as MessageModel
 from models.messages import MessageCreate
 from models.sessions import Session as SessionModel
@@ -66,8 +68,17 @@ async def chat_websocket(
     await manager.connect(websocket, connection_id)
 
     # Verify topic and session exist and are linked.
-    # Messages are now eagerly loaded due to the model's relationship configuration.
-    statement = select(TopicModel).where(TopicModel.id == topic_id)
+    # Eagerly load all relationships needed for the chat.
+    statement = (
+        select(TopicModel)
+        .where(TopicModel.id == topic_id)
+        .options(
+            selectinload(getattr(TopicModel, "messages")),
+            selectinload(getattr(TopicModel, "session")).options(
+                selectinload(getattr(SessionModel, "agent")).options(selectinload(getattr(AgentModel, "mcp_servers")))
+            ),
+        )
+    )
     result = await db.exec(statement)
     topic = result.one_or_none()
 
@@ -100,11 +111,32 @@ async def chat_websocket(
 
             await db.commit()
             await db.refresh(user_message)
-            # Refresh the topic and its messages relationship to include the new message
-            await db.refresh(topic, attribute_names=["messages"])
+
+            # Send user message to client first
+            await manager.send_personal_message(
+                user_message.model_dump_json(),
+                connection_id,
+            )
+
+            # Re-query the topic to get the updated messages list
+            # This ensures we have a fresh, complete view of all messages
+            statement_refresh = (
+                select(TopicModel)
+                .where(TopicModel.id == topic_id)
+                .options(
+                    selectinload(getattr(TopicModel, "messages")),
+                    selectinload(getattr(TopicModel, "session")).options(
+                        selectinload(getattr(SessionModel, "agent")).options(
+                            selectinload(getattr(AgentModel, "mcp_servers"))
+                        )
+                    ),
+                )
+            )
+            result_refresh = await db.exec(statement_refresh)
+            topic_refreshed = result_refresh.one()
 
             # 2. Get AI response
-            ai_response_text = await get_ai_response(message_text, topic)
+            ai_response_text = await get_ai_response(message_text, topic_refreshed)
 
             # 3. Save AI message to the topic
             ai_message_create = MessageCreate(role="assistant", content=ai_response_text, topic_id=topic_id)
@@ -112,8 +144,8 @@ async def chat_websocket(
             db.add(ai_message)
 
             # Update topic's updated_at timestamp again after AI response
-            topic.updated_at = datetime.now(timezone.utc)
-            db.add(topic)
+            topic_refreshed.updated_at = datetime.now(timezone.utc)
+            db.add(topic_refreshed)
 
             await db.commit()
             await db.refresh(ai_message)

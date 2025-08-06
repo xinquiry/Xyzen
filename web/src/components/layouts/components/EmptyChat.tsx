@@ -51,7 +51,7 @@ const EmptyChat: React.FC = () => {
         className="flex flex-col space-y-3 sm:flex-row sm:space-x-3 sm:space-y-0"
       >
         <button
-          onClick={createDefaultChannel}
+          onClick={() => createDefaultChannel()}
           disabled={isCreating}
           className={`flex items-center justify-center rounded-md ${
             isCreating

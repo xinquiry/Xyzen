@@ -10,17 +10,14 @@ interface AddAgentModalProps {
 
 const AddAgentModal: React.FC<AddAgentModalProps> = ({ isOpen, onClose }) => {
   const { createAgent, mcpServers, fetchMcpServers } = useXyzen();
-  const [agent, setAgent] = useState<Omit<Agent, "id">>({
+  const [agent, setAgent] = useState<
+    Omit<Agent, "id" | "user_id" | "mcp_servers" | "mcp_server_ids">
+  >({
     name: "",
     description: "",
-    avatar: "",
-    tags: [],
-    model: "GPT-4",
-    temperature: 0.7,
     prompt: "",
-    user_id: "user123", // Replace with actual user ID
-    mcp_server_ids: [],
   });
+  const [mcpServerIds, setMcpServerIds] = useState<number[]>([]);
 
   useEffect(() => {
     if (isOpen) {
@@ -37,17 +34,11 @@ const AddAgentModal: React.FC<AddAgentModalProps> = ({ isOpen, onClose }) => {
     setAgent((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleTagChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { value } = e.target;
-    setAgent((prev) => ({ ...prev, tags: value.split(",") }));
-  };
-
   const handleMcpServerChange = (serverId: number) => {
-    const currentIds = agent.mcp_server_ids || [];
-    const newIds = currentIds.includes(serverId)
-      ? currentIds.filter((id) => id !== serverId)
-      : [...currentIds, serverId];
-    setAgent({ ...agent, mcp_server_ids: newIds });
+    const newIds = mcpServerIds.includes(serverId)
+      ? mcpServerIds.filter((id) => id !== serverId)
+      : [...mcpServerIds, serverId];
+    setMcpServerIds(newIds);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -57,7 +48,12 @@ const AddAgentModal: React.FC<AddAgentModalProps> = ({ isOpen, onClose }) => {
       return;
     }
     try {
-      await createAgent(agent);
+      await createAgent({
+        ...agent,
+        mcp_server_ids: mcpServerIds,
+        user_id: "user123",
+        mcp_servers: [],
+      });
       onClose();
     } catch (error) {
       console.error("Failed to create agent:", error);
@@ -94,36 +90,6 @@ const AddAgentModal: React.FC<AddAgentModalProps> = ({ isOpen, onClose }) => {
             onChange={handleChange}
             className="w-full rounded-md border p-2 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-200"
           />
-          <input
-            type="text"
-            name="avatar"
-            placeholder="头像 URL"
-            onChange={handleChange}
-            className="w-full rounded-md border p-2 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-200"
-          />
-          <input
-            type="text"
-            name="tags"
-            placeholder="标签 (逗号分隔)"
-            onChange={handleTagChange}
-            className="w-full rounded-md border p-2 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-200"
-          />
-          <input
-            type="text"
-            name="model"
-            placeholder="模型"
-            value={agent.model}
-            onChange={handleChange}
-            className="w-full rounded-md border p-2 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-200"
-          />
-          <input
-            type="number"
-            name="temperature"
-            placeholder="Temperature"
-            value={agent.temperature}
-            onChange={handleChange}
-            className="w-full rounded-md border p-2 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-200"
-          />
           <div>
             <h3 className="mb-2 text-sm font-medium text-neutral-800 dark:text-neutral-100">
               绑定 MCP Servers
@@ -134,7 +100,7 @@ const AddAgentModal: React.FC<AddAgentModalProps> = ({ isOpen, onClose }) => {
                   <input
                     type="checkbox"
                     id={`add-mcp-${server.id}`}
-                    checked={agent.mcp_server_ids?.includes(server.id) || false}
+                    checked={mcpServerIds.includes(server.id)}
                     onChange={() => handleMcpServerChange(server.id)}
                     className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
                   />

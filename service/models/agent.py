@@ -1,10 +1,13 @@
-from typing import List, Optional
+from typing import TYPE_CHECKING, List, Optional
 from uuid import UUID, uuid4
 
 from sqlmodel import JSON, Column, Field, Relationship, SQLModel
 
 from .links import AgentMcpServerLink
 from .mcps import McpServer
+
+if TYPE_CHECKING:
+    from .sessions import Session
 
 
 class AgentBase(SQLModel):
@@ -25,6 +28,7 @@ class Agent(AgentBase, table=True):
         link_model=AgentMcpServerLink,
         sa_relationship_kwargs={"lazy": "selectin"},
     )
+    session: Optional["Session"] = Relationship(back_populates="agent")
 
 
 class AgentCreate(AgentBase):

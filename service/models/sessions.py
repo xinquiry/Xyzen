@@ -1,8 +1,9 @@
-from typing import List
+from typing import List, Optional
 from uuid import UUID
 
 from sqlmodel import Field, Relationship, SQLModel
 
+from .agent import Agent
 from .topics import Topic, TopicRead
 
 
@@ -15,16 +16,19 @@ class SessionBase(SQLModel):
     description: str | None = None
     is_active: bool = True
     username: str = Field(index=True, description="The username from Casdoor")
+    agent_id: UUID | None = Field(default=None, foreign_key="agent.id")
 
 
 class Session(SessionBase, table=True):
     id: UUID = Field(default=None, primary_key=True, index=True)
 
+    agent: Optional["Agent"] = Relationship(back_populates="session")
     topics: List["Topic"] = Relationship(back_populates="session", sa_relationship_kwargs={"lazy": "selectin"})
 
 
 class SessionCreate(SessionBase):
     username: str
+    agent_id: UUID | None = None
 
 
 class SessionRead(SessionBase):
@@ -39,3 +43,4 @@ class SessionUpdate(SQLModel):
 
 
 TopicRead.model_rebuild()  # Rebuild to resolve forward references
+Agent.model_rebuild()

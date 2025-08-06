@@ -11,10 +11,11 @@ import type { Agent } from "@/components/layouts/XyzenAgent";
 export interface Message {
   id: string;
   content: string;
-  sender: "user" | "assistant" | "system";
-  timestamp: string; // This should be created_at from the backend
-  role?: string; // Add role to match backend
-  created_at?: string; // Add created_at to match backend
+  role: "user" | "assistant" | "system" | "tool";
+  created_at: string;
+  // Legacy fields for backward compatibility
+  sender?: "user" | "assistant" | "system";
+  timestamp?: string;
 }
 
 export interface ChatChannel {
@@ -89,7 +90,7 @@ interface XyzenState {
   connectToChannel: (sessionId: string, topicId: string) => void;
   disconnectFromChannel: () => void;
   sendMessage: (message: string) => void;
-  createDefaultChannel: () => Promise<void>;
+  createDefaultChannel: (agentId?: string) => Promise<void>;
 
   fetchAgents: () => Promise<void>;
   createAgent: (agent: Omit<Agent, "id">) => Promise<void>;
@@ -258,7 +259,7 @@ export const useXyzen = create<XyzenState>()(
         }
       },
 
-      createDefaultChannel: async () => {
+      createDefaultChannel: async (agentId) => {
         try {
           const response = await fetch(`${get().backendUrl}/api/v1/sessions/`, {
             method: "POST",
@@ -266,6 +267,7 @@ export const useXyzen = create<XyzenState>()(
             body: JSON.stringify({
               name: "New Session",
               username: get().user?.username || "default-user",
+              agent_id: agentId,
             }),
           });
 
