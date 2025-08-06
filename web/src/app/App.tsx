@@ -1,5 +1,5 @@
 import { useXyzen } from "@/store/xyzenStore";
-import type { DragMoveEvent } from "@dnd-kit/core";
+import type { DragEndEvent, DragMoveEvent } from "@dnd-kit/core";
 import {
   DndContext,
   PointerSensor,
@@ -7,13 +7,17 @@ import {
   useSensor,
   useSensors,
 } from "@dnd-kit/core";
-import { restrictToHorizontalAxis } from "@dnd-kit/modifiers";
+import {
+  restrictToHorizontalAxis,
+  restrictToVerticalAxis,
+} from "@dnd-kit/modifiers";
 import { Dialog, DialogPanel, Tab } from "@headlessui/react";
 import {
   Cog6ToothIcon,
   ComputerDesktopIcon,
   MoonIcon,
   PlusIcon,
+  SparklesIcon,
   SunIcon,
   XMarkIcon,
 } from "@heroicons/react/24/outline";
@@ -58,6 +62,33 @@ const DragHandle = ({
   );
 };
 
+// Draggable floating button for when the panel is closed
+const FloatingButton = ({ onOpenClick }: { onOpenClick: () => void }) => {
+  const { attributes, listeners, setNodeRef, transform } = useDraggable({
+    id: "xyzen-floater",
+  });
+
+  const style = transform
+    ? {
+        transform: `translate3d(0, ${transform.y}px, 0)`,
+      }
+    : undefined;
+
+  return (
+    <button
+      ref={setNodeRef}
+      style={style}
+      {...listeners}
+      {...attributes}
+      onClick={onOpenClick}
+      className="flex h-12 w-12 items-center justify-center rounded-full bg-indigo-600 text-white shadow-lg transition-transform duration-200 ease-in-out hover:scale-110 hover:bg-indigo-700"
+      title="Open Xyzen"
+    >
+      <SparklesIcon className="h-6 w-6" />
+    </button>
+  );
+};
+
 export interface XyzenProps {
   backendUrl?: string;
 }
@@ -78,6 +109,9 @@ export function Xyzen({ backendUrl = DEFAULT_BACKEND_URL }: XyzenProps) {
   const [mounted, setMounted] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
   const [isMcpOpen, setIsMcpOpen] = useState(false);
+  const [floaterPosition, setFloaterPosition] = useState({
+    y: typeof window !== "undefined" ? window.innerHeight / 2 : 300,
+  });
   const lastWidthRef = useRef(panelWidth);
 
   // Tab选项
@@ -99,6 +133,12 @@ export function Xyzen({ backendUrl = DEFAULT_BACKEND_URL }: XyzenProps) {
     }),
   );
 
+  const floaterSensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: { distance: 8 },
+    }),
+  );
+
   const handleDragStart = () => {
     setIsDragging(true);
     lastWidthRef.current = panelWidth;
@@ -114,6 +154,11 @@ export function Xyzen({ backendUrl = DEFAULT_BACKEND_URL }: XyzenProps) {
 
   const handleDragEnd = () => {
     setIsDragging(false);
+  };
+
+  const handleFloaterDragEnd = (event: DragEndEvent) => {
+    const { delta } = event;
+    setFloaterPosition((pos) => ({ y: pos.y + delta.y }));
   };
 
   const handleResizeDoubleClick = () => {
@@ -133,7 +178,24 @@ export function Xyzen({ backendUrl = DEFAULT_BACKEND_URL }: XyzenProps) {
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [toggleXyzen]);
 
-  if (!mounted || !isXyzenOpen) return null;
+  if (!mounted) return null;
+
+  if (!isXyzenOpen) {
+    return (
+      <DndContext
+        sensors={floaterSensors}
+        onDragEnd={handleFloaterDragEnd}
+        modifiers={[restrictToVerticalAxis]}
+      >
+        <div
+          className="fixed right-4 z-50"
+          style={{ top: floaterPosition.y, transform: "translateY(-50%)" }}
+        >
+          <FloatingButton onOpenClick={toggleXyzen} />
+        </div>
+      </DndContext>
+    );
+  }
 
   return (
     <DndContext

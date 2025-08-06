@@ -1,54 +1,10 @@
 "use client";
 import { motion, type Variants } from "framer-motion";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 
-const agents = [
-  {
-    id: "agent-1",
-    name: "编程助手",
-    description: "精通 JavaScript、Python 和算法题的编程专家。",
-    avatar: "https://example.com/avatar/coding.png",
-    tags: ["编程", "技术", "算法"],
-    model: "GPT-4",
-    temperature: 0.2,
-  },
-  {
-    id: "agent-2",
-    name: "文案创作助手",
-    description: "擅长写作、广告文案和内容创意，适合市场营销场景。",
-    avatar: "https://example.com/avatar/copywriter.png",
-    tags: ["写作", "创意", "营销"],
-    model: "GPT-4o",
-    temperature: 0.7,
-  },
-  {
-    id: "agent-3",
-    name: "英语翻译官",
-    description: "中英互译精准流畅，适合日常、专业、法律类文本翻译。",
-    avatar: "https://example.com/avatar/translator.png",
-    tags: ["翻译", "语言", "英文"],
-    model: "GPT-3.5",
-    temperature: 0.3,
-  },
-  {
-    id: "agent-4",
-    name: "心理陪伴者",
-    description: "温柔体贴，擅长倾听与情绪疏导，不提供医疗建议。",
-    avatar: "https://example.com/avatar/therapy.png",
-    tags: ["情绪", "陪伴", "温暖"],
-    model: "GPT-4",
-    temperature: 0.9,
-  },
-  {
-    id: "agent-5",
-    name: "产品经理助手",
-    description: "擅长撰写PRD、制作需求文档、头脑风暴产品创意。",
-    avatar: "https://example.com/avatar/pm.png",
-    tags: ["产品", "分析", "文档"],
-    model: "GPT-4",
-    temperature: 0.5,
-  },
-];
+import AddAgentModal from "@/components/modals/AddAgentModal";
+import EditAgentModal from "@/components/modals/EditAgentModal";
+import { useXyzen } from "@/store/xyzenStore";
 
 export type Agent = {
   id: string;
@@ -58,11 +14,15 @@ export type Agent = {
   tags: string[];
   model: string;
   temperature: number;
+  user_id: string;
+  prompt: string;
+  mcp_server_ids?: number[];
 };
 
 interface AgentCardProps {
   agent: Agent;
   onClick?: (agent: Agent) => void;
+  onEdit?: (agent: Agent) => void;
   selected?: boolean;
 }
 
@@ -81,7 +41,12 @@ const itemVariants: Variants = {
 };
 
 // 详细版本-包括名字，描述，头像，标签以及GPT模型
-const AgentCard: React.FC<AgentCardProps> = ({ agent, selected, onClick }) => {
+const AgentCard: React.FC<AgentCardProps> = ({
+  agent,
+  selected,
+  onClick,
+  onEdit,
+}) => {
   return (
     <motion.div
       layout
@@ -111,9 +76,20 @@ const AgentCard: React.FC<AgentCardProps> = ({ agent, selected, onClick }) => {
           <h3 className="text-sm font-semibold text-neutral-800 dark:text-white">
             {agent.name}
           </h3>
-          <span className="text-xs text-indigo-600 dark:text-indigo-400">
-            {agent.model}
-          </span>
+          <div className="flex items-center space-x-2">
+            <span className="text-xs text-indigo-600 dark:text-indigo-400">
+              {agent.model}
+            </span>
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onEdit?.(agent);
+              }}
+              className="text-xs text-neutral-500 hover:text-indigo-600 dark:text-neutral-400 dark:hover:text-indigo-400"
+            >
+              编辑
+            </button>
+          </div>
         </div>
 
         <p className="mt-1 text-xs text-neutral-600 dark:text-neutral-400 line-clamp-2">
@@ -148,11 +124,22 @@ const containerVariants: Variants = {
 
 export default function XyzenAgent() {
   const [selectedAgentId, setSelectedAgentId] = useState<string | null>(null);
-  // const agents = useXyzen((state) => state.agents);
-  // const { createDefaultChannel } = useXyzen();
+  const [isAddModalOpen, setAddModalOpen] = useState(false);
+  const [isEditModalOpen, setEditModalOpen] = useState(false);
+  const [editingAgent, setEditingAgent] = useState<Agent | null>(null);
+  const { agents, fetchAgents } = useXyzen();
+
+  useEffect(() => {
+    fetchAgents();
+  }, [fetchAgents]);
+
   const handleAgentClick = (agent: Agent) => {
-    // createDefaultChannel(agent); // 👈 传入 agent
     setSelectedAgentId(agent.id);
+  };
+
+  const handleEditClick = (agent: Agent) => {
+    setEditingAgent(agent);
+    setEditModalOpen(true);
   };
 
   return (
@@ -168,8 +155,24 @@ export default function XyzenAgent() {
           agent={agent}
           selected={agent.id === selectedAgentId}
           onClick={handleAgentClick}
+          onEdit={handleEditClick}
         />
       ))}
+      <button
+        className="w-full rounded-lg border-2 border-dashed border-neutral-300 bg-transparent py-3 text-sm font-semibold text-neutral-600 transition-colors hover:border-neutral-400 hover:bg-neutral-50 dark:border-neutral-700 dark:text-neutral-400 dark:hover:border-neutral-600 dark:hover:bg-neutral-800/50"
+        onClick={() => setAddModalOpen(true)}
+      >
+        + 添加助手
+      </button>
+      <AddAgentModal
+        isOpen={isAddModalOpen}
+        onClose={() => setAddModalOpen(false)}
+      />
+      <EditAgentModal
+        isOpen={isEditModalOpen}
+        onClose={() => setEditModalOpen(false)}
+        agent={editingAgent}
+      />
     </motion.div>
   );
 }

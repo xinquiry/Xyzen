@@ -10,13 +10,8 @@ import EmptyChat from "./components/EmptyChat";
 import WelcomeMessage from "./components/WelcomeMessage";
 
 export default function XyzenChat() {
-  const {
-    activeChatChannel,
-    channels,
-    assistants,
-    sendMessage,
-    connectToChannel,
-  } = useXyzen();
+  const { activeChatChannel, channels, agents, sendMessage, connectToChannel } =
+    useXyzen();
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
@@ -24,8 +19,8 @@ export default function XyzenChat() {
   const [isRetrying, setIsRetrying] = useState(false);
 
   const currentChannel = activeChatChannel ? channels[activeChatChannel] : null;
-  const currentAssistant = currentChannel?.assistantId
-    ? assistants.find((a) => a.id === currentChannel.assistantId)
+  const currentAgent = currentChannel?.assistantId
+    ? agents.find((a) => a.id === currentChannel.assistantId)
     : null;
   const messages: Message[] = currentChannel?.messages || [];
   const connected = currentChannel?.connected || false;
@@ -98,13 +93,13 @@ export default function XyzenChat() {
 
   return (
     <div className="flex h-full flex-col">
-      {currentAssistant ? (
+      {currentAgent ? (
         <div className="flex-shrink-0 px-4 pb-2">
           <h2 className="text-lg font-medium text-neutral-800 dark:text-white">
-            {currentAssistant.title}
+            {currentAgent.name}
           </h2>
           <p className="text-sm text-neutral-500 dark:text-neutral-400">
-            {currentAssistant.description}
+            {currentAgent.description}
           </p>
         </div>
       ) : (

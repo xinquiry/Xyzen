@@ -4,7 +4,9 @@ export interface McpServer {
   description?: string;
   url: string;
   token: string;
+  status: "online" | "offline" | string;
+  tools?: { name: string; description?: string }[];
   user_id?: string;
 }
 
-export type McpServerCreate = Omit<McpServer, "id">;
+export type McpServerCreate = Omit<McpServer, "id" | "status" | "tools">;

@@ -1,6 +1,7 @@
 import { Input } from "@/components/base";
+import { websocketService } from "@/service/websocketService";
 import { useXyzen } from "@/store/xyzenStore";
-import type { McpServerCreate } from "@/types/mcp";
+import type { McpServer, McpServerCreate } from "@/types/mcp";
 import {
   Button,
   Dialog,
@@ -12,6 +13,73 @@ import {
 import { PlusIcon, TrashIcon } from "@heroicons/react/24/outline";
 import { useEffect, useState, type ChangeEvent } from "react";
 
+interface ServerStatusIndicatorProps {
+  status: "online" | "offline" | string;
+}
+
+const ServerStatusIndicator: React.FC<ServerStatusIndicatorProps> = ({
+  status,
+}) => {
+  const isOnline = status === "online";
+  return (
+    <div className="flex items-center">
+      <span
+        className={`h-2.5 w-2.5 rounded-full ${
+          isOnline ? "bg-green-500" : "bg-red-500"
+        }`}
+      />
+      <span
+        className={`ml-2 text-xs font-medium ${
+          isOnline
+            ? "text-green-700 dark:text-green-300"
+            : "text-red-700 dark:text-red-300"
+        }`}
+      >
+        {isOnline ? "Online" : "Offline"}
+      </span>
+    </div>
+  );
+};
+
+interface McpServerCardProps {
+  server: McpServer;
+  onRemove: (id: number) => void;
+}
+
+const McpServerCard: React.FC<McpServerCardProps> = ({ server, onRemove }) => {
+  const toolCount = server.tools?.length || 0;
+
+  return (
+    <div className="group relative flex items-center justify-between rounded-lg border border-neutral-200 p-3 hover:bg-neutral-50 dark:border-neutral-800 dark:hover:bg-neutral-900">
+      <div className="flex-1 overflow-hidden">
+        <div className="flex items-center">
+          <ServerStatusIndicator status={server.status} />
+          <h3 className="ml-3 truncate text-sm font-medium text-neutral-800 dark:text-white">
+            {server.name}
+          </h3>
+        </div>
+        <p className="mt-1 truncate text-xs text-neutral-500">
+          {server.description}
+        </p>
+        <div className="mt-2 flex items-center text-xs text-neutral-500">
+          <span className="truncate">{server.url}</span>
+          <span className="mx-1.5">·</span>
+          <span className="whitespace-nowrap">{toolCount} Tools</span>
+        </div>
+      </div>
+      <div className="ml-4 flex items-center">
+        <button
+          onClick={() => onRemove(server.id)}
+          className="invisible rounded p-1 text-neutral-400 hover:bg-red-100 hover:text-red-600 group-hover:visible dark:hover:bg-neutral-800 dark:hover:text-red-500"
+          title="Remove Server"
+        >
+          <TrashIcon className="h-4 w-4" />
+        </button>
+      </div>
+    </div>
+  );
+};
+
 export function Mcp() {
   const {
     mcpServers,
@@ -19,6 +87,8 @@ export function Mcp() {
     fetchMcpServers,
     addMcpServer,
     removeMcpServer,
+    updateMcpServerInList,
+    backendUrl,
   } = useXyzen();
   const [isAddDialogOpen, setAddDialogOpen] = useState(false);
   const [newServer, setNewServer] = useState<McpServerCreate>({
@@ -29,8 +99,20 @@ export function Mcp() {
   });
 
   useEffect(() => {
-    fetchMcpServers();
-  }, [fetchMcpServers]);
+    if (backendUrl) {
+      fetchMcpServers();
+
+      // Connect to WebSocket for real-time updates
+      websocketService.connect("/ws/v1/mcp", (serverUpdate) => {
+        updateMcpServerInList(serverUpdate);
+      });
+
+      // Disconnect on component unmount
+      return () => {
+        websocketService.disconnect();
+      };
+    }
+  }, [backendUrl, fetchMcpServers, updateMcpServerInList]);
 
   const handleAddServer = async () => {
     await addMcpServer(newServer);
@@ -54,108 +136,94 @@ export function Mcp() {
           <PlusIcon className="h-4 w-4" />
           Add Server
         </Button>
-        <Dialog
-          open={isAddDialogOpen}
-          onClose={() => setAddDialogOpen(false)}
-          className="relative z-50"
-        >
-          <div className="fixed inset-0 bg-black/30" aria-hidden="true" />
-          <div className="fixed inset-0 flex w-screen items-center justify-center p-4">
-            <DialogPanel className="max-w-lg space-y-4 rounded-lg border border-neutral-200/50 bg-white p-8 dark:border-neutral-800 dark:bg-neutral-900">
-              <DialogTitle className="text-lg font-bold text-neutral-900 dark:text-neutral-100">
-                Add New MCP Server
-              </DialogTitle>
-              <p className="text-neutral-600 dark:text-neutral-400">
-                Enter the details for the new MCP server.
-              </p>
-              <Field>
-                <Label className="text-sm font-medium text-neutral-700 dark:text-neutral-300">
-                  Name
-                </Label>
-                <Input
-                  name="name"
-                  value={newServer.name}
-                  onChange={handleInputChange}
-                />
-              </Field>
-              <Field>
-                <Label className="text-sm font-medium text-neutral-700 dark:text-neutral-300">
-                  Description
-                </Label>
-                <Input
-                  name="description"
-                  value={newServer.description}
-                  onChange={handleInputChange}
-                />
-              </Field>
-              <Field>
-                <Label className="text-sm font-medium text-neutral-700 dark:text-neutral-300">
-                  URL
-                </Label>
-                <Input
-                  name="url"
-                  value={newServer.url}
-                  onChange={handleInputChange}
-                />
-              </Field>
-              <Field>
-                <Label className="text-sm font-medium text-neutral-700 dark:text-neutral-300">
-                  Token
-                </Label>
-                <Input
-                  name="token"
-                  value={newServer.token}
-                  onChange={handleInputChange}
-                />
-              </Field>
-              <div className="flex gap-4 pt-4">
-                <Button
-                  onClick={handleAddServer}
-                  className="inline-flex items-center gap-2 rounded-md bg-indigo-600 py-1.5 px-3 text-sm/6 font-semibold text-white shadow-inner shadow-white/10 focus:outline-none data-[hover]:bg-indigo-500 data-[open]:bg-indigo-700 data-[focus]:outline-1 data-[focus]:outline-white dark:bg-indigo-500 dark:data-[hover]:bg-indigo-400"
-                >
-                  Save
-                </Button>
-                <Button
-                  onClick={() => setAddDialogOpen(false)}
-                  className="inline-flex items-center gap-2 rounded-md bg-neutral-100 py-1.5 px-3 text-sm/6 font-semibold text-neutral-700 shadow-sm focus:outline-none data-[hover]:bg-neutral-200 dark:bg-neutral-800 dark:text-neutral-200 dark:data-[hover]:bg-neutral-700"
-                >
-                  Cancel
-                </Button>
-              </div>
-            </DialogPanel>
-          </div>
-        </Dialog>
       </div>
 
-      {mcpServersLoading ? (
-        <p>Loading...</p>
-      ) : (
-        <ul className="space-y-2">
-          {mcpServers.map((server) => (
-            <li
-              key={server.id}
-              className="flex items-center justify-between rounded-lg border bg-neutral-50 p-3 dark:border-neutral-700 dark:bg-neutral-800/50"
-            >
-              <div>
-                <p className="font-semibold text-neutral-800 dark:text-neutral-100">
-                  {server.name}
-                </p>
-                <p className="text-sm text-gray-500 dark:text-neutral-400">
-                  {server.description}
-                </p>
-                <p className="text-sm text-gray-400 dark:text-neutral-500">
-                  {server.url}
-                </p>
-              </div>
+      <Dialog
+        open={isAddDialogOpen}
+        onClose={() => setAddDialogOpen(false)}
+        className="relative z-50"
+      >
+        <div className="fixed inset-0 bg-black/30" aria-hidden="true" />
+        <div className="fixed inset-0 flex w-screen items-center justify-center p-4">
+          <DialogPanel className="max-w-lg space-y-4 rounded-lg border border-neutral-200/50 bg-white p-8 dark:border-neutral-800 dark:bg-neutral-900">
+            <DialogTitle className="text-lg font-bold text-neutral-900 dark:text-neutral-100">
+              Add New MCP Server
+            </DialogTitle>
+            <p className="text-neutral-600 dark:text-neutral-400">
+              Enter the details for the new MCP server.
+            </p>
+            <Field>
+              <Label className="text-sm font-medium text-neutral-700 dark:text-neutral-300">
+                Name
+              </Label>
+              <Input
+                name="name"
+                value={newServer.name}
+                onChange={handleInputChange}
+              />
+            </Field>
+            <Field>
+              <Label className="text-sm font-medium text-neutral-700 dark:text-neutral-300">
+                Description
+              </Label>
+              <Input
+                name="description"
+                value={newServer.description}
+                onChange={handleInputChange}
+              />
+            </Field>
+            <Field>
+              <Label className="text-sm font-medium text-neutral-700 dark:text-neutral-300">
+                URL
+              </Label>
+              <Input
+                name="url"
+                value={newServer.url}
+                onChange={handleInputChange}
+              />
+            </Field>
+            <Field>
+              <Label className="text-sm font-medium text-neutral-700 dark:text-neutral-300">
+                Token (Optional)
+              </Label>
+              <Input
+                name="token"
+                value={newServer.token}
+                onChange={handleInputChange}
+              />
+            </Field>
+            <div className="flex gap-4 pt-4">
               <Button
-                onClick={() => removeMcpServer(server.id)}
-                className="p-1.5 rounded-md text-neutral-500 hover:bg-neutral-200/60 dark:text-neutral-400 dark:hover:bg-neutral-700/60"
+                onClick={handleAddServer}
+                className="inline-flex items-center gap-2 rounded-md bg-indigo-600 py-1.5 px-3 text-sm/6 font-semibold text-white shadow-inner shadow-white/10 focus:outline-none data-[hover]:bg-indigo-500 data-[open]:bg-indigo-700 data-[focus]:outline-1 data-[focus]:outline-white dark:bg-indigo-500 dark:data-[hover]:bg-indigo-400"
               >
-                <TrashIcon className="h-4 w-4 text-red-500" />
+                Save
               </Button>
-            </li>
+              <Button
+                onClick={() => setAddDialogOpen(false)}
+                className="inline-flex items-center gap-2 rounded-md bg-neutral-100 py-1.5 px-3 text-sm/6 font-semibold text-neutral-700 shadow-sm focus:outline-none data-[hover]:bg-neutral-200 dark:bg-neutral-800 dark:text-neutral-200 dark:data-[hover]:bg-neutral-700"
+              >
+                Cancel
+              </Button>
+            </div>
+          </DialogPanel>
+        </div>
+      </Dialog>
+
+      {mcpServersLoading ? (
+        <div className="flex h-full items-center justify-center">
+          <div className="h-8 w-8 animate-spin rounded-full border-4 border-neutral-300 border-t-indigo-600"></div>
+        </div>
+      ) : (
+        <div className="space-y-2">
+          {mcpServers.map((server) => (
+            <McpServerCard
+              key={server.id}
+              server={server}
+              onRemove={removeMcpServer}
+            />
           ))}
-        </ul>
+        </div>
       )}
     </div>
   );

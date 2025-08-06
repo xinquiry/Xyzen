@@ -2,8 +2,10 @@ import { mcpService } from "@/service/mcpService";
 import xyzenService from "@/service/xyzenService";
 import type { McpServer, McpServerCreate } from "@/types/mcp";
 import { create } from "zustand";
-import { persist } from "zustand/middleware";
+import { createJSONStorage, persist } from "zustand/middleware";
 import { immer } from "zustand/middleware/immer";
+
+import type { Agent } from "@/components/layouts/XyzenAgent";
 
 // 定义应用中的核心类型
 export interface Message {
@@ -32,12 +34,6 @@ export interface ChatHistoryItem {
   assistantTitle: string;
   lastMessage?: string;
   isPinned: boolean;
-}
-
-export interface Assistant {
-  id: string;
-  title: string;
-  description: string;
 }
 
 export interface User {
@@ -73,7 +69,8 @@ interface XyzenState {
   chatHistory: ChatHistoryItem[];
   chatHistoryLoading: boolean;
   channels: Record<string, ChatChannel>;
-  assistants: Assistant[];
+  agents: Agent[];
+  agentsLoading: boolean;
   mcpServers: McpServer[];
   mcpServersLoading: boolean;
 
@@ -94,6 +91,11 @@ interface XyzenState {
   sendMessage: (message: string) => void;
   createDefaultChannel: () => Promise<void>;
 
+  fetchAgents: () => Promise<void>;
+  createAgent: (agent: Omit<Agent, "id">) => Promise<void>;
+  updateAgent: (agent: Agent) => Promise<void>;
+  deleteAgent: (id: string) => Promise<void>;
+
   fetchMcpServers: () => Promise<void>;
   addMcpServer: (server: McpServerCreate) => Promise<void>;
   editMcpServer: (
@@ -101,6 +103,7 @@ interface XyzenState {
     server: Partial<McpServerCreate>,
   ) => Promise<void>;
   removeMcpServer: (id: number) => Promise<void>;
+  updateMcpServerInList: (server: McpServer) => void;
 }
 
 // --- Mock Data ---
@@ -108,19 +111,6 @@ const mockUser: User = {
   username: "Harvey",
   avatar: `https://i.pravatar.cc/40?u=harvey`,
 };
-
-const mockAssistants: Assistant[] = [
-  {
-    id: "asst_1",
-    title: "通用助理",
-    description: "我可以回答各种问题。",
-  },
-  {
-    id: "asst_2",
-    title: "代码助手",
-    description: "我可以帮助你处理代码相关的任务。",
-  },
-];
 
 // --- End Mock Data ---
 
@@ -138,7 +128,8 @@ export const useXyzen = create<XyzenState>()(
       chatHistory: [],
       chatHistoryLoading: true,
       channels: {},
-      assistants: mockAssistants,
+      agents: [],
+      agentsLoading: false,
       mcpServers: [],
       mcpServersLoading: false,
 
@@ -211,110 +202,40 @@ export const useXyzen = create<XyzenState>()(
 
       togglePinChat: (chatId: string) => {
         set((state) => {
-          const chat = state.chatHistory.find(
-            (c: ChatHistoryItem) => c.id === chatId,
-          );
+          const chat = state.chatHistory.find((c) => c.id === chatId);
           if (chat) {
             chat.isPinned = !chat.isPinned;
           }
         });
       },
 
-      activateChannel: async (topicId: string) => {
-        const state = get();
-
-        // If we are already connected to this channel, just switch to the chat tab
-        if (
-          state.activeChatChannel === topicId &&
-          state.channels[topicId]?.connected
-        ) {
-          set({ activeTabIndex: 0 });
-          return;
-        }
-
-        // Disconnect from any existing connection
-        state.disconnectFromChannel();
-
-        const channelToActivate = state.channels[topicId];
-
-        if (channelToActivate) {
-          // Set the new active channel immediately for UI feedback
-          set({ activeChatChannel: topicId, activeTabIndex: 0 });
-
-          // Fetch and load historical messages for this channel
-          try {
-            const response = await fetch(
-              `${get().backendUrl}/api/v1/topics/${topicId}/messages`,
-            );
-            if (!response.ok) {
-              throw new Error("Failed to fetch messages for the topic.");
-            }
-            const messages: Message[] = await response.json();
-            set((state) => {
-              const channel = state.channels[topicId];
-              if (channel) {
-                channel.messages = messages;
-              }
-            });
-          } catch (error) {
-            console.error("Error fetching historical messages:", error);
-            set((state) => {
-              const channel = state.channels[topicId];
-              if (channel) {
-                channel.error = "Failed to load messages.";
-              }
-            });
+      activateChannel: (topicId: string) => {
+        const { channels, activeChatChannel, connectToChannel } = get();
+        if (topicId !== activeChatChannel) {
+          set({ activeChatChannel: topicId });
+          const channel = channels[topicId];
+          if (channel && !channel.connected) {
+            connectToChannel(channel.sessionId, channel.id);
           }
-
-          // Connect to the new channel
-          state.connectToChannel(
-            channelToActivate.sessionId,
-            channelToActivate.id,
-          );
-        } else {
-          console.error(
-            `Could not find channel details for topicId: ${topicId}`,
-          );
         }
       },
 
-      connectToChannel: (sessionId, topicId) => {
+      connectToChannel: (sessionId: string, topicId: string) => {
         xyzenService.connect(
           sessionId,
           topicId,
-          (incomingMessage) => {
-            // onMessage callback
+          (message) => {
             set((state) => {
               const channel = state.channels[topicId];
-              if (
-                channel &&
-                incomingMessage.role &&
-                incomingMessage.created_at
-              ) {
-                // The incoming message is now the full Message object from the backend
-                const newMsg: Message = {
-                  id: incomingMessage.id,
-                  sender: incomingMessage.role as "user" | "assistant", // 'user' or 'assistant'
-                  content: incomingMessage.content,
-                  timestamp: incomingMessage.created_at,
-                  role: incomingMessage.role,
-                  created_at: incomingMessage.created_at,
-                };
-                channel.messages.push(newMsg);
-
-                // Also update the chat history for real-time sorting
-                const historyItem = state.chatHistory.find(
-                  (h) => h.id === topicId,
-                );
-                if (historyItem) {
-                  historyItem.lastMessage = incomingMessage.content;
-                  historyItem.updatedAt = incomingMessage.created_at;
+              if (channel) {
+                // Check for duplicate messages
+                if (!channel.messages.some((m) => m.id === message.id)) {
+                  channel.messages.push(message);
                 }
               }
             });
           },
           (status) => {
-            // onStatusChange callback
             set((state) => {
               const channel = state.channels[topicId];
               if (channel) {
@@ -330,92 +251,118 @@ export const useXyzen = create<XyzenState>()(
         xyzenService.disconnect();
       },
 
-      sendMessage: (message) => {
-        const channelId = get().activeChatChannel;
-        if (!channelId) return;
-
-        const userMessage: Message = {
-          id: `msg-${Date.now()}`,
-          sender: "user",
-          content: message,
-          timestamp: new Date().toISOString(),
-        };
-
-        set((state) => {
-          const channel = state.channels[channelId];
-          if (channel) {
-            channel.messages.push(userMessage);
-          }
-          // Also update the chat history for real-time sorting
-          const historyItem = state.chatHistory.find((h) => h.id === channelId);
-          if (historyItem) {
-            historyItem.lastMessage = message;
-            historyItem.updatedAt = new Date().toISOString();
-          }
-        });
-
-        xyzenService.sendMessage(message);
+      sendMessage: (message: string) => {
+        const { activeChatChannel } = get();
+        if (activeChatChannel) {
+          xyzenService.sendMessage(message);
+        }
       },
 
       createDefaultChannel: async () => {
         try {
-          // Step 1: Call the backend to create a new session and a default topic
           const response = await fetch(`${get().backendUrl}/api/v1/sessions/`, {
             method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
+            headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
               name: "New Session",
-              username: get().user?.username || "default_user", // Get username from state
+              username: get().user?.username || "default-user",
             }),
           });
 
           if (!response.ok) {
-            throw new Error("Failed to create a new session on the backend.");
+            throw new Error("Failed to create new session with default topic");
           }
 
           const newSession = await response.json();
-          const newTopic = newSession.topics[0]; // Assuming the first topic is the default one
 
-          if (!newTopic) {
-            throw new Error("Backend did not return a default topic.");
+          // After creating a session, refetch the history to get all new data
+          await get().fetchChatHistory();
+
+          // Activate the newly created topic
+          if (newSession.topics && newSession.topics.length > 0) {
+            const newTopicId = newSession.topics[0].id;
+            set({ activeChatChannel: newTopicId, activeTabIndex: 1 });
+            get().connectToChannel(newSession.id, newTopicId);
           }
-
-          const newChannel: ChatChannel = {
-            id: newTopic.id,
-            sessionId: newSession.id,
-            title: newTopic.name,
-            messages: [],
-            connected: false,
-            error: null,
-          };
-
-          const newHistoryItem: ChatHistoryItem = {
-            id: newTopic.id,
-            title: newTopic.name,
-            updatedAt: newTopic.updated_at,
-            assistantTitle: "通用助理", // Or derive from session/topic
-            lastMessage: "",
-            isPinned: false,
-          };
-
-          set((state) => {
-            state.channels[newTopic.id] = newChannel;
-            state.chatHistory.unshift(newHistoryItem);
-            state.activeChatChannel = newTopic.id;
-            state.activeTabIndex = 0; // Switch to the chat tab
-          });
-
-          // Step 2: Activate the new channel, which handles disconnection and connection
-          get().activateChannel(newTopic.id);
         } catch (error) {
-          console.error("Error creating default channel:", error);
-          // Optionally, update the state to show an error to the user
+          console.error("Failed to create new channel:", error);
         }
       },
 
-      // --- MCP Actions ---
+      fetchAgents: async () => {
+        set({ agentsLoading: true });
+        try {
+          const response = await fetch(`${get().backendUrl}/api/v1/agents/`);
+          if (!response.ok) {
+            throw new Error("Failed to fetch agents");
+          }
+          const agents: Agent[] = await response.json();
+          set({ agents, agentsLoading: false });
+        } catch (error) {
+          console.error("Failed to fetch agents:", error);
+          set({ agentsLoading: false });
+          throw error;
+        }
+      },
+
+      createAgent: async (agent) => {
+        try {
+          const response = await fetch(`${get().backendUrl}/api/v1/agents/`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(agent),
+          });
+          if (!response.ok) {
+            const errorText = await response.text();
+            throw new Error(`Failed to create agent: ${errorText}`);
+          }
+          await get().fetchAgents();
+        } catch (error) {
+          console.error(error);
+          throw error;
+        }
+      },
+
+      updateAgent: async (agent) => {
+        try {
+          const response = await fetch(
+            `${get().backendUrl}/api/v1/agents/${agent.id}`,
+            {
+              method: "PATCH",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify(agent),
+            },
+          );
+          if (!response.ok) {
+            const errorText = await response.text();
+            throw new Error(`Failed to update agent: ${errorText}`);
+          }
+          await get().fetchAgents();
+        } catch (error) {
+          console.error(error);
+          throw error;
+        }
+      },
+
+      deleteAgent: async (id) => {
+        try {
+          const response = await fetch(
+            `${get().backendUrl}/api/v1/agents/${id}`,
+            {
+              method: "DELETE",
+            },
+          );
+          if (!response.ok) {
+            const errorText = await response.text();
+            throw new Error(`Failed to delete agent: ${errorText}`);
+          }
+          await get().fetchAgents();
+        } catch (error) {
+          console.error(error);
+          throw error;
+        }
+      },
+
       fetchMcpServers: async () => {
         set({ mcpServersLoading: true });
         try {
@@ -430,7 +377,9 @@ export const useXyzen = create<XyzenState>()(
       addMcpServer: async (server) => {
         try {
           const newServer = await mcpService.createMcpServer(server);
-          set((state) => ({ mcpServers: [...state.mcpServers, newServer] }));
+          set((state) => {
+            state.mcpServers.push(newServer);
+          });
         } catch (error) {
           console.error("Failed to add MCP server:", error);
         }
@@ -439,11 +388,12 @@ export const useXyzen = create<XyzenState>()(
       editMcpServer: async (id, server) => {
         try {
           const updatedServer = await mcpService.updateMcpServer(id, server);
-          set((state) => ({
-            mcpServers: state.mcpServers.map((s) =>
-              s.id === id ? updatedServer : s,
-            ),
-          }));
+          set((state) => {
+            const index = state.mcpServers.findIndex((s) => s.id === id);
+            if (index !== -1) {
+              state.mcpServers[index] = updatedServer;
+            }
+          });
         } catch (error) {
           console.error("Failed to edit MCP server:", error);
         }
@@ -452,21 +402,33 @@ export const useXyzen = create<XyzenState>()(
       removeMcpServer: async (id) => {
         try {
           await mcpService.deleteMcpServer(id);
-          set((state) => ({
-            mcpServers: state.mcpServers.filter((s) => s.id !== id),
-          }));
+          set((state) => {
+            state.mcpServers = state.mcpServers.filter((s) => s.id !== id);
+          });
         } catch (error) {
-          console.error("Failed to delete MCP server:", error);
+          console.error("Failed to remove MCP server:", error);
         }
+      },
+
+      updateMcpServerInList: (server) => {
+        set((state) => {
+          const index = state.mcpServers.findIndex((s) => s.id === server.id);
+          if (index !== -1) {
+            state.mcpServers[index] = server;
+          } else {
+            // If server not in list, add it
+            state.mcpServers.push(server);
+          }
+        });
       },
     })),
     {
-      name: "xyzen-storage", // local storage key
+      name: "xyzen-storage",
+      storage: createJSONStorage(() => localStorage),
       partialize: (state) => ({
         panelWidth: state.panelWidth,
-        isXyzenOpen: state.isXyzenOpen,
         theme: state.theme,
-      }), // only persist panelWidth and isXyzenOpen
+      }),
     },
   ),
 );
