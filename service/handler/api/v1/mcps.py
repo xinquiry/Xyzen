@@ -1,9 +1,10 @@
 from typing import Any
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException
 from sqlmodel import select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
+from core.mcp import check_mcp_server_status
 from middleware.database.connection import get_session
 from models import McpServer
 
@@ -14,12 +15,15 @@ router = APIRouter()
 async def create_mcp_server(
     *,
     session: AsyncSession = Depends(get_session),
+    background_tasks: BackgroundTasks,
     mcp_server: McpServer,
 ) -> McpServer:
     db_mcp_server = McpServer.model_validate(mcp_server)
     session.add(db_mcp_server)
     await session.commit()
     await session.refresh(db_mcp_server)
+    if db_mcp_server.id:
+        background_tasks.add_task(check_mcp_server_status, db_mcp_server.id)
     return db_mcp_server
 
 
