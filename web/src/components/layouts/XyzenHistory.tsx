@@ -31,8 +31,8 @@ export default function XyzenHistory() {
   });
 
   // 激活聊天会话
-  const handleActivateChat = (chatId: string) => {
-    activateChannel(chatId);
+  const handleActivateChat = async (chatId: string) => {
+    await activateChannel(chatId);
     setTabIndex(1); // 切换到聊天标签页
   };
 
