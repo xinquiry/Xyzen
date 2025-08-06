@@ -13,7 +13,7 @@ SYNC_DATABASE_URL = ""
 ASYNC_DATABASE_URL = ""
 if configs.Database.Engine == "postgres":
     SYNC_DATABASE_URL = (
-        f"postgresql://{configs.Database.Postgres.User}:{configs.Database.Postgres.Password}@"
+        f"postgresql+psycopg://{configs.Database.Postgres.User}:{configs.Database.Postgres.Password}@"
         f"{configs.Database.Postgres.Host}:{configs.Database.Postgres.Port}/{configs.Database.Postgres.DBName}"
     )
     ASYNC_DATABASE_URL = (

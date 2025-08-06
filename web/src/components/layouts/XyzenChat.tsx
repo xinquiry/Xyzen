@@ -22,10 +22,6 @@ export default function XyzenChat() {
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const [autoScroll, setAutoScroll] = useState(true);
   const [isRetrying, setIsRetrying] = useState(false);
-  const [inputHeight, setInputHeight] = useState(80);
-
-  const messagePaddingBottom = inputHeight + 36;
-  const scrollButtonBottom = inputHeight + 48;
 
   const currentChannel = activeChatChannel ? channels[activeChatChannel] : null;
   const currentAssistant = currentChannel?.assistantId
@@ -48,14 +44,14 @@ export default function XyzenChat() {
     [autoScroll],
   );
 
-  const handleScroll = () => {
+  const handleScroll = useCallback(() => {
     if (messagesContainerRef.current) {
       const { scrollTop, scrollHeight, clientHeight } =
         messagesContainerRef.current;
       const isNearBottom = scrollHeight - scrollTop - clientHeight < 80;
       setAutoScroll(isNearBottom);
     }
-  };
+  }, []);
 
   const handleSendMessage = (inputMessage: string) => {
     if (!inputMessage.trim() || !activeChatChannel) return;
@@ -82,25 +78,26 @@ export default function XyzenChat() {
   useEffect(() => {
     const container = messagesContainerRef.current;
     if (container) {
-      scrollToBottom(true);
+      setAutoScroll(true);
+      // Force scroll to bottom on channel change
+      setTimeout(() => {
+        if (messagesContainerRef.current) {
+          messagesContainerRef.current.scrollTop =
+            messagesContainerRef.current.scrollHeight;
+        }
+      }, 50);
+
       container.addEventListener("scroll", handleScroll, { passive: true });
       return () => container.removeEventListener("scroll", handleScroll);
     }
-  }, [activeChatChannel, scrollToBottom]);
-
-  const handleInputHeightChange = (newHeight: number) => {
-    setInputHeight(newHeight);
-    if (autoScroll) {
-      setTimeout(() => scrollToBottom(true), 100);
-    }
-  };
+  }, [activeChatChannel, handleScroll]);
 
   if (!activeChatChannel) {
     return <EmptyChat />;
   }
 
   return (
-    <div className="flex h-full flex-col" style={{height: `calc(100vh - 136px)`}}>
+    <div className="flex h-full flex-col">
       {currentAssistant ? (
         <div className="flex-shrink-0 px-4 pb-2">
           <h2 className="text-lg font-medium text-neutral-800 dark:text-white">
@@ -139,14 +136,13 @@ export default function XyzenChat() {
         </div>
       )}
 
-      <div className="relative flex h-[calc(100vh-11.5rem)] flex-grow flex-col">
+      <div className="relative flex-grow overflow-y-auto">
         <div
           ref={messagesContainerRef}
-          className="absolute inset-0 overflow-y-auto rounded-lg bg-neutral-50 pt-6 dark:bg-black"
+          className="h-full overflow-y-auto rounded-lg bg-neutral-50 pt-6 dark:bg-black"
           style={{
             scrollbarWidth: "thin",
             scrollbarColor: "rgba(156,163,175,0.5) transparent",
-            paddingBottom: `${messagePaddingBottom}px`,
           }}
           onScroll={handleScroll}
         >
@@ -172,10 +168,7 @@ export default function XyzenChat() {
               setAutoScroll(true);
               scrollToBottom(true);
             }}
-            className="absolute right-4 z-20 rounded-full bg-indigo-600 p-2 text-white shadow-md transition-colors hover:bg-indigo-700"
-            style={{
-              bottom: `${scrollButtonBottom}px`,
-            }}
+            className="absolute bottom-4 right-4 z-20 rounded-full bg-indigo-600 p-2 text-white shadow-md transition-colors hover:bg-indigo-700"
             aria-label="Scroll to bottom"
           >
             <svg
@@ -194,15 +187,13 @@ export default function XyzenChat() {
             </svg>
           </button>
         )}
-
-        <div className="absolute bottom-0 left-0 z-20 right-0 rounded-b-lg border-t border-neutral-200 bg-white p-2 pb-0 shadow-[0_-2px_5px_rgba(0,0,0,0.05)] dark:border-neutral-800 dark:bg-black dark:shadow-[0_-2px_5px_rgba(0,0,0,0.2)]">
-          <ChatInput
-            onSendMessage={handleSendMessage}
-            disabled={!connected}
-            placeholder="输入消息..."
-            onHeightChange={handleInputHeightChange}
-          />
-        </div>
+      </div>
+      <div className="flex-shrink-0 rounded-b-lg border-t border-neutral-200 bg-white p-2 pb-0 shadow-[0_-2px_5px_rgba(0,0,0,0.05)] dark:border-neutral-800 dark:bg-black dark:shadow-[0_-2px_5px_rgba(0,0,0,0.2)]">
+        <ChatInput
+          onSendMessage={handleSendMessage}
+          disabled={!connected}
+          placeholder="输入消息..."
+        />
       </div>
     </div>
   );

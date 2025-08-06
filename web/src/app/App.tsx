@@ -10,22 +10,21 @@ import {
 import { restrictToHorizontalAxis } from "@dnd-kit/modifiers";
 import { Dialog, DialogPanel, Tab } from "@headlessui/react";
 import {
-  ChevronLeftIcon,
   Cog6ToothIcon,
   ComputerDesktopIcon,
   MoonIcon,
   PlusIcon,
   SunIcon,
+  XMarkIcon,
 } from "@heroicons/react/24/outline";
 import { useEffect, useRef, useState } from "react";
 
 import { Mcp } from "@/app/Mcp";
+import XyzenAgent from "@/components/layouts/XyzenAgent";
 import XyzenChat from "@/components/layouts/XyzenChat";
 import XyzenHistory from "@/components/layouts/XyzenHistory";
-import XyzenNodes from "@/components/layouts/XyzenNodes";
 import { DEFAULT_BACKEND_URL } from "@/configs";
 import useTheme from "@/hooks/useTheme";
-import XyzenAgent from "@/components/layouts/XyzenAgent";
 
 // 定义最小宽度和最大宽度限制
 const MIN_WIDTH = 280;
@@ -83,13 +82,11 @@ export function Xyzen({ backendUrl = DEFAULT_BACKEND_URL }: XyzenProps) {
 
   // Tab选项
   const tabs = [
+    { id: "agent", title: "助手", component: <XyzenAgent /> },
     { id: "chat", title: "聊天", component: <XyzenChat /> },
-    {id: "agent", title: "助手", component: <XyzenAgent /> },
     { id: "history", title: "历史", component: <XyzenHistory /> },
-    { id: "nodes", title: "节点", component: <XyzenNodes /> },
   ];
 
-  // 添加useEffect处理客户端挂载
   useEffect(() => {
     setMounted(true);
     setBackendUrl(backendUrl);
@@ -138,21 +135,6 @@ export function Xyzen({ backendUrl = DEFAULT_BACKEND_URL }: XyzenProps) {
 
   if (!mounted || !isXyzenOpen) return null;
 
-  // const handleCreateCustomAgent = () => {
-  //   const newAgent = {
-  //     id: `agent-${Date.now()}`,
-  //     name: "自定义助手",
-  //     description: "这是一个自定义创建的助手",
-  //     model: "GPT-4",
-  //     temperature: 0.7,
-  //     tags: [],
-  //     avatar: "https://cdn1.deepmd.net/static/img/affb038eChatGPT Image 2025年8月6日 10_33_07.png",
-  //   };
-
-  //   createDefaultChannel(newAgent);         // 创建频道
-  //   setTabIndex(1);
-  // };
-
   return (
     <DndContext
       sensors={sensors}
@@ -173,75 +155,71 @@ export function Xyzen({ backendUrl = DEFAULT_BACKEND_URL }: XyzenProps) {
           onDoubleClick={handleResizeDoubleClick}
         />
 
-        <div className="flex h-16 items-center justify-between border-b border-neutral-200 px-4 dark:border-neutral-800">
-          <h2 className="bg-gradient-to-r from-violet-500 to-fuchsia-500 bg-clip-text text-lg font-semibold text-transparent">
-            Xyzen
-          </h2>
-          <button
-            onClick={closeXyzen}
-            className="rounded-md p-2 text-neutral-500 hover:bg-neutral-100 dark:text-neutral-400 dark:hover:bg-neutral-800"
-          >
-            <ChevronLeftIcon className="h-5 w-5" />
-          </button>
-        </div>
-
         <Tab.Group
+          as="div"
           selectedIndex={activeTabIndex}
           onChange={setTabIndex}
-          style={{ height: "100vh" }}
+          className="flex h-full flex-col"
         >
-          <div className="border-b border-neutral-200 px-4 dark:border-neutral-800">
-            <div className="flex items-center justify-between">
-              <Tab.List className="flex space-x-1">
-                {tabs.map((tab) => (
-                  <Tab
-                    key={tab.id}
-                    className={({ selected }) =>
-                      `whitespace-nowrap rounded-t-md px-3 py-2 text-sm font-medium outline-none transition-colors duration-200 ${
-                        selected
-                          ? "bg-neutral-100 text-indigo-600 dark:bg-neutral-900 dark:text-indigo-400"
-                          : "text-neutral-500 hover:bg-neutral-100/50 dark:text-neutral-400 dark:hover:bg-neutral-800/50"
-                      }`
-                    }
-                  >
-                    {tab.title}
-                  </Tab>
-                ))}
-              </Tab.List>
-              <div className="flex items-center space-x-1">
-                <button
-                  className="rounded-md p-1.5 text-neutral-500 hover:bg-neutral-100 dark:text-neutral-400 dark:hover:bg-neutral-800"
-                  title="切换主题"
-                  onClick={cycleTheme}
+          <div className="flex h-16 flex-shrink-0 items-center justify-between border-b border-neutral-200 px-4 dark:border-neutral-800">
+            <Tab.List className="flex items-center space-x-1">
+              {tabs.map((tab) => (
+                <Tab
+                  key={tab.id}
+                  className={({ selected }) =>
+                    `whitespace-nowrap rounded-md px-3 py-2 text-sm font-medium outline-none transition-colors duration-200 ${
+                      selected
+                        ? "bg-neutral-100 text-indigo-600 dark:bg-neutral-900 dark:text-indigo-400"
+                        : "text-neutral-500 hover:bg-neutral-100/50 dark:text-neutral-400 dark:hover:bg-neutral-800/50"
+                    }`
+                  }
                 >
-                  {theme === "light" && <SunIcon className="h-5 w-5" />}
-                  {theme === "dark" && <MoonIcon className="h-5 w-5" />}
-                  {theme === "system" && (
-                    <ComputerDesktopIcon className="h-5 w-5" />
-                  )}
-                </button>
-                <button
-                  className="rounded-md p-1.5 text-neutral-500 hover:bg-neutral-100 dark:text-neutral-400 dark:hover:bg-neutral-800"
-                  title="MCP 管理"
-                  onClick={() => setIsMcpOpen(true)}
-                >
-                  <Cog6ToothIcon className="h-5 w-5" />
-                </button>
-                <button
-                  className="rounded-md p-1.5 text-neutral-500 hover:bg-neutral-100 dark:text-neutral-400 dark:hover:bg-neutral-800"
-                  title="新对话"
-                  onClick={createDefaultChannel}
-                >
-                  <PlusIcon className="h-5 w-5" />
-                </button>
-              </div>
+                  {tab.title}
+                </Tab>
+              ))}
+            </Tab.List>
+            <div className="flex items-center space-x-1">
+              <button
+                className="rounded-md p-1.5 text-neutral-500 hover:bg-neutral-100 dark:text-neutral-400 dark:hover:bg-neutral-800"
+                title="切换主题"
+                onClick={cycleTheme}
+              >
+                {theme === "light" && <SunIcon className="h-5 w-5" />}
+                {theme === "dark" && <MoonIcon className="h-5 w-5" />}
+                {theme === "system" && (
+                  <ComputerDesktopIcon className="h-5 w-5" />
+                )}
+              </button>
+              <button
+                className="rounded-md p-1.5 text-neutral-500 hover:bg-neutral-100 dark:text-neutral-400 dark:hover:bg-neutral-800"
+                title="MCP 管理"
+                onClick={() => setIsMcpOpen(true)}
+              >
+                <Cog6ToothIcon className="h-5 w-5" />
+              </button>
+              <button
+                className="rounded-md p-1.5 text-neutral-500 hover:bg-neutral-100 dark:text-neutral-400 dark:hover:bg-neutral-800"
+                title="新对话"
+                onClick={createDefaultChannel}
+              >
+                <PlusIcon className="h-5 w-5" />
+              </button>
+              <button
+                onClick={closeXyzen}
+                className="rounded-md p-1.5 text-neutral-500 hover:bg-neutral-100 dark:text-neutral-400 dark:hover:bg-neutral-800"
+                title="关闭"
+              >
+                <XMarkIcon className="h-5 w-5" />
+              </button>
             </div>
           </div>
 
-          <div className="h-[calc(100%-104px)] overflow-y-auto py-4">
-            <Tab.Panels>
+          <div className="flex-grow overflow-y-auto py-4">
+            <Tab.Panels className="h-full">
               {tabs.map((tab) => (
-                <Tab.Panel key={tab.id}>{tab.component}</Tab.Panel>
+                <Tab.Panel key={tab.id} className="h-full" unmount={false}>
+                  {tab.component}
+                </Tab.Panel>
               ))}
             </Tab.Panels>
           </div>

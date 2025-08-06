@@ -13,6 +13,7 @@ export default function XyzenHistory() {
     fetchChatHistory,
     activateChannel,
     togglePinChat,
+    setTabIndex,
   } = useXyzen();
 
   // 组件挂载时加载聊天历史
@@ -32,6 +33,7 @@ export default function XyzenHistory() {
   // 激活聊天会话
   const handleActivateChat = (chatId: string) => {
     activateChannel(chatId);
+    setTabIndex(1); // 切换到聊天标签页
   };
 
   // 切换置顶状态

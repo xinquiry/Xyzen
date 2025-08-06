@@ -1,7 +1,8 @@
+import ProfileIcon from "@/assets/ProfileIcon";
 import Markdown from "@/lib/Markdown";
 
 import { motion } from "framer-motion";
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 
 export interface Message {
   id: string;
@@ -17,26 +18,10 @@ interface ChatBubbleProps {
 }
 
 const ChatBubble: React.FC<ChatBubbleProps> = ({ message }) => {
-  const { isCurrentUser, content, timestamp, avatar } = message;
+  const { sender, content, timestamp, avatar } = message;
   const [imageError, setImageError] = useState(false);
-  const [userAvatar, setUserAvatar] = useState<string | undefined>(avatar);
 
-  // 如果是当前用户，从localStorage获取最新的用户头像
-  useEffect(() => {
-    if (isCurrentUser) {
-      try {
-        const userInfoStr = localStorage.getItem("userInfo");
-        if (userInfoStr) {
-          const userInfo = JSON.parse(userInfoStr);
-          if (userInfo.avatar) {
-            setUserAvatar(userInfo.avatar);
-          }
-        }
-      } catch (e) {
-        console.error("Failed to get avatar from localStorage", e);
-      }
-    }
-  }, [isCurrentUser]);
+  const isUserMessage = sender === "user";
 
   // Updated time format to include seconds
   const formattedTime = new Date(timestamp).toLocaleTimeString([], {
@@ -46,7 +31,7 @@ const ChatBubble: React.FC<ChatBubbleProps> = ({ message }) => {
   });
 
   // Different styles for user vs AI messages
-  const messageStyles = isCurrentUser
+  const messageStyles = isUserMessage
     ? "border-l-4 border-blue-400 bg-blue-50/50 dark:border-blue-600 dark:bg-blue-900/20"
     : "border-l-4 border-neutral-300 bg-white dark:border-neutral-600 dark:bg-neutral-800/50";
 
@@ -68,20 +53,20 @@ const ChatBubble: React.FC<ChatBubbleProps> = ({ message }) => {
 
   // 渲染头像，使用初始字母作为最后的备用选项
   const renderAvatar = () => {
+    if (isUserMessage) {
+      return (
+        <ProfileIcon className="h-6 w-6 rounded-full text-neutral-700 dark:text-neutral-300" />
+      );
+    }
+
     // 如果已经知道图像加载失败，或者没有提供头像
-    if (imageError || !userAvatar) {
-      // 显示用户或AI的首字母作为头像
-      const initial = isCurrentUser
-        ? message.sender?.charAt(0)?.toUpperCase() || "U"
-        : "A";
+    if (imageError || !avatar) {
+      // 显示AI的首字母作为头像
+      const initial = sender?.charAt(0)?.toUpperCase() || "A";
 
       return (
         <div
-          className={`flex h-6 w-6 items-center justify-center rounded-full ${
-            isCurrentUser
-              ? "bg-blue-500 text-white"
-              : "bg-purple-500 text-white"
-          }`}
+          className={`flex h-6 w-6 items-center justify-center rounded-full bg-purple-500 text-white`}
         >
           <span className="text-xs font-medium">{initial}</span>
         </div>
@@ -89,11 +74,11 @@ const ChatBubble: React.FC<ChatBubbleProps> = ({ message }) => {
     }
 
     // 尝试加载实际头像
-    const avatarUrl = getAvatarUrl(userAvatar);
+    const avatarUrl = getAvatarUrl(avatar);
     return (
       <img
         src={avatarUrl || ""}
-        alt={isCurrentUser ? "You" : "Assistant"}
+        alt="Assistant"
         className="h-6 w-6 rounded-full shadow-sm transition-transform duration-200 group-hover:scale-110"
         onError={() => setImageError(true)} // 加载失败时设置状态，不再尝试加载图片
       />
@@ -124,12 +109,12 @@ const ChatBubble: React.FC<ChatBubbleProps> = ({ message }) => {
         <div className="p-3">
           <div
             className={`prose prose-neutral dark:prose-invert prose-sm max-w-none ${
-              isCurrentUser
+              isUserMessage
                 ? "text-sm text-neutral-800 dark:text-neutral-200"
                 : "text-sm text-neutral-700 dark:text-neutral-300"
             }`}
           >
-            {isCurrentUser ? <p>{content}</p> : <Markdown content={content} />}
+            {isUserMessage ? <p>{content}</p> : <Markdown content={content} />}
           </div>
         </div>
       </div>
