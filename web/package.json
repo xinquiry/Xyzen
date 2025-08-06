@@ -1,7 +1,7 @@
 {
   "name": "@sciol/xyzen",
   "packageManager": "yarn@4.9.2",
-  "version": "0.1.6",
+  "version": "0.1.8",
   "description": "A modern, lightweight, and extensible chat component for React.",
   "author": "Haohui <harveyque@outlook.com>",
   "license": "GPL-3.0-only",
@@ -49,6 +49,7 @@
     "@tailwindcss/vite": "^4.1.11",
     "@tanstack/react-query": "^5.83.0",
     "@types/react-syntax-highlighter": "^15.5.13",
+    "clsx": "^2.1.1",
     "date-fns": "^4.1.0",
     "framer-motion": "^12.23.9",
     "immer": "^10.1.1",

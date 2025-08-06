@@ -8,9 +8,10 @@ import {
   useSensors,
 } from "@dnd-kit/core";
 import { restrictToHorizontalAxis } from "@dnd-kit/modifiers";
-import { Tab } from "@headlessui/react";
+import { Dialog, DialogPanel, Tab } from "@headlessui/react";
 import {
   ChevronLeftIcon,
+  Cog6ToothIcon,
   ComputerDesktopIcon,
   MoonIcon,
   PlusIcon,
@@ -18,6 +19,7 @@ import {
 } from "@heroicons/react/24/outline";
 import { useEffect, useRef, useState } from "react";
 
+import { Mcp } from "@/app/Mcp";
 import XyzenChat from "@/components/layouts/XyzenChat";
 import XyzenHistory from "@/components/layouts/XyzenHistory";
 import XyzenNodes from "@/components/layouts/XyzenNodes";
@@ -75,6 +77,7 @@ export function Xyzen({ backendUrl = DEFAULT_BACKEND_URL }: XyzenProps) {
   const { theme, cycleTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
+  const [isMcpOpen, setIsMcpOpen] = useState(false);
   const lastWidthRef = useRef(panelWidth);
 
   // Tab选项
@@ -165,7 +168,11 @@ export function Xyzen({ backendUrl = DEFAULT_BACKEND_URL }: XyzenProps) {
           </button>
         </div>
 
-        <Tab.Group selectedIndex={activeTabIndex} onChange={setTabIndex} style={{ height: '100vh' }}>
+        <Tab.Group
+          selectedIndex={activeTabIndex}
+          onChange={setTabIndex}
+          style={{ height: "100vh" }}
+        >
           <div className="border-b border-neutral-200 px-4 dark:border-neutral-800">
             <div className="flex items-center justify-between">
               <Tab.List className="flex space-x-1">
@@ -198,6 +205,13 @@ export function Xyzen({ backendUrl = DEFAULT_BACKEND_URL }: XyzenProps) {
                 </button>
                 <button
                   className="rounded-md p-1.5 text-neutral-500 hover:bg-neutral-100 dark:text-neutral-400 dark:hover:bg-neutral-800"
+                  title="MCP 管理"
+                  onClick={() => setIsMcpOpen(true)}
+                >
+                  <Cog6ToothIcon className="h-5 w-5" />
+                </button>
+                <button
+                  className="rounded-md p-1.5 text-neutral-500 hover:bg-neutral-100 dark:text-neutral-400 dark:hover:bg-neutral-800"
                   title="新对话"
                   onClick={createDefaultChannel}
                 >
@@ -215,6 +229,19 @@ export function Xyzen({ backendUrl = DEFAULT_BACKEND_URL }: XyzenProps) {
             </Tab.Panels>
           </div>
         </Tab.Group>
+
+        <Dialog
+          open={isMcpOpen}
+          onClose={() => setIsMcpOpen(false)}
+          className="relative z-50"
+        >
+          <div className="fixed inset-0 bg-black/30" aria-hidden="true" />
+          <div className="fixed inset-0 flex w-screen items-center justify-center p-4">
+            <DialogPanel className="w-full max-w-2xl rounded-lg bg-white p-6 dark:bg-neutral-900">
+              <Mcp />
+            </DialogPanel>
+          </div>
+        </Dialog>
       </div>
     </DndContext>
   );

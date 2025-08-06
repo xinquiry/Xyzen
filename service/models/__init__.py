@@ -1,3 +1,4 @@
+from .mcps import McpServer
 from .messages import (
     Message,
     MessageCreate,
@@ -18,6 +19,7 @@ from .topics import (
 )
 
 __all__ = [
+    "McpServer",
     "Message",
     "MessageCreate",
     "MessageRead",

@@ -1,4 +1,6 @@
+import { mcpService } from "@/service/mcpService";
 import xyzenService from "@/service/xyzenService";
+import type { McpServer, McpServerCreate } from "@/types/mcp";
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import { immer } from "zustand/middleware/immer";
@@ -72,6 +74,8 @@ interface XyzenState {
   chatHistoryLoading: boolean;
   channels: Record<string, ChatChannel>;
   assistants: Assistant[];
+  mcpServers: McpServer[];
+  mcpServersLoading: boolean;
 
   toggleXyzen: () => void;
   openXyzen: () => void;
@@ -89,6 +93,14 @@ interface XyzenState {
   disconnectFromChannel: () => void;
   sendMessage: (message: string) => void;
   createDefaultChannel: () => Promise<void>;
+
+  fetchMcpServers: () => Promise<void>;
+  addMcpServer: (server: McpServerCreate) => Promise<void>;
+  editMcpServer: (
+    id: number,
+    server: Partial<McpServerCreate>,
+  ) => Promise<void>;
+  removeMcpServer: (id: number) => Promise<void>;
 }
 
 // --- Mock Data ---
@@ -127,6 +139,8 @@ export const useXyzen = create<XyzenState>()(
       chatHistoryLoading: true,
       channels: {},
       assistants: mockAssistants,
+      mcpServers: [],
+      mcpServersLoading: false,
 
       // --- Actions ---
       toggleXyzen: () => set((state) => ({ isXyzenOpen: !state.isXyzenOpen })),
@@ -398,6 +412,51 @@ export const useXyzen = create<XyzenState>()(
         } catch (error) {
           console.error("Error creating default channel:", error);
           // Optionally, update the state to show an error to the user
+        }
+      },
+
+      // --- MCP Actions ---
+      fetchMcpServers: async () => {
+        set({ mcpServersLoading: true });
+        try {
+          const servers = await mcpService.getMcpServers();
+          set({ mcpServers: servers, mcpServersLoading: false });
+        } catch (error) {
+          console.error("Failed to fetch MCP servers:", error);
+          set({ mcpServersLoading: false });
+        }
+      },
+
+      addMcpServer: async (server) => {
+        try {
+          const newServer = await mcpService.createMcpServer(server);
+          set((state) => ({ mcpServers: [...state.mcpServers, newServer] }));
+        } catch (error) {
+          console.error("Failed to add MCP server:", error);
+        }
+      },
+
+      editMcpServer: async (id, server) => {
+        try {
+          const updatedServer = await mcpService.updateMcpServer(id, server);
+          set((state) => ({
+            mcpServers: state.mcpServers.map((s) =>
+              s.id === id ? updatedServer : s,
+            ),
+          }));
+        } catch (error) {
+          console.error("Failed to edit MCP server:", error);
+        }
+      },
+
+      removeMcpServer: async (id) => {
+        try {
+          await mcpService.deleteMcpServer(id);
+          set((state) => ({
+            mcpServers: state.mcpServers.filter((s) => s.id !== id),
+          }));
+        } catch (error) {
+          console.error("Failed to delete MCP server:", error);
         }
       },
     })),
