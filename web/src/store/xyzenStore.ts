@@ -212,88 +212,91 @@ export const useXyzen = create<XyzenState>()(
       activateChannel: async (topicId: string) => {
         const { channels, activeChatChannel, connectToChannel, backendUrl } =
           get();
-        if (topicId !== activeChatChannel) {
-          set({ activeChatChannel: topicId });
-          let channel = channels[topicId];
 
-          // If channel doesn't exist in memory, we need to fetch session data to find it
-          if (!channel) {
-            try {
-              const response = await fetch(`${backendUrl}/api/v1/sessions/`);
-              if (response.ok) {
-                const sessions: SessionResponse[] = await response.json();
-                let sessionId = null;
-                let topicName = null;
+        // Prevent re-activating the same channel if it's already active and connected
+        if (topicId === activeChatChannel && channels[topicId]?.connected) {
+          return;
+        }
 
-                // Find the session and topic
-                for (const session of sessions) {
-                  const topic = session.topics.find(
-                    (t: TopicResponse) => t.id === topicId,
-                  );
-                  if (topic) {
-                    sessionId = session.id;
-                    topicName = topic.name;
-                    break;
-                  }
-                }
+        set({ activeChatChannel: topicId });
+        let channel = channels[topicId];
 
-                if (sessionId && topicName) {
-                  // Create the channel object
-                  channel = {
-                    id: topicId,
-                    sessionId: sessionId,
-                    title: topicName,
-                    messages: [],
-                    connected: false,
-                    error: null,
-                  };
+        // If channel doesn't exist in memory, we need to create it.
+        if (!channel) {
+          try {
+            const response = await fetch(`${backendUrl}/api/v1/sessions/`);
+            if (!response.ok) throw new Error("Failed to fetch sessions");
 
-                  // Add it to the channels
-                  set((state) => {
-                    state.channels[topicId] = channel!;
-                  });
-                } else {
-                  console.error(`Topic ${topicId} not found in any session`);
-                  return;
-                }
+            const sessions: SessionResponse[] = await response.json();
+            let sessionId = null;
+            let topicName = null;
+
+            for (const session of sessions) {
+              const topic = session.topics.find((t) => t.id === topicId);
+              if (topic) {
+                sessionId = session.id;
+                topicName = topic.name;
+                break;
+              }
+            }
+
+            if (sessionId && topicName) {
+              channel = {
+                id: topicId,
+                sessionId: sessionId,
+                title: topicName,
+                messages: [],
+                connected: false,
+                error: null,
+              };
+              set((state) => {
+                state.channels[topicId] = channel!;
+              });
+            } else {
+              console.error(
+                `Topic ${topicId} not found in any session, refetching history...`,
+              );
+              // Refetch history and try to activate again, this might happen due to race conditions
+              await get().fetchChatHistory();
+              const newChannels = get().channels;
+              if (newChannels[topicId]) {
+                channel = newChannels[topicId];
               } else {
-                console.error("Failed to fetch sessions");
+                console.error(
+                  `Topic ${topicId} still not found after refetch.`,
+                );
                 return;
               }
-            } catch (error) {
-              console.error("Failed to find session for topic:", error);
-              return;
             }
+          } catch (error) {
+            console.error("Failed to find session for topic:", error);
+            return;
           }
+        }
 
-          if (channel) {
-            // Load historical messages for this topic first if not already loaded
-            if (channel.messages.length === 0) {
-              try {
-                const response = await fetch(
-                  `${backendUrl}/api/v1/topics/${topicId}/messages`,
-                );
-                if (response.ok) {
-                  const messages = await response.json();
-                  set((state) => {
-                    if (
-                      state.channels[topicId] &&
-                      state.activeChatChannel === topicId
-                    ) {
-                      state.channels[topicId].messages = messages;
-                    }
-                  });
-                }
-              } catch (error) {
-                console.error("Failed to load topic messages:", error);
+        // Now that we have the channel, load messages and connect
+        if (channel) {
+          // Load historical messages if they haven't been loaded yet
+          if (channel.messages.length === 0) {
+            try {
+              const response = await fetch(
+                `${backendUrl}/api/v1/topics/${topicId}/messages`,
+              );
+              if (response.ok) {
+                const messages = await response.json();
+                set((state) => {
+                  if (state.channels[topicId]) {
+                    state.channels[topicId].messages = messages;
+                  }
+                });
               }
-            }
-
-            // Then connect to the WebSocket if not already connected
-            if (!channel.connected) {
-              connectToChannel(channel.sessionId, channel.id);
+            } catch (error) {
+              console.error("Failed to load topic messages:", error);
             }
           }
+
+          // Connect to the WebSocket
+          connectToChannel(channel.sessionId, channel.id);
         }
       },
 
@@ -354,15 +357,13 @@ export const useXyzen = create<XyzenState>()(
             throw new Error("Failed to create new session with default topic");
           }
 
-          const newSession = await response.json();
+          const newSession: SessionResponse = await response.json();
 
-          // Switch to chat tab immediately
-          set({ activeTabIndex: 1 });
-
-          // Create and activate the channel directly from the session response
           if (newSession.topics && newSession.topics.length > 0) {
             const newTopic = newSession.topics[0];
-            const newChannel = {
+
+            // Create the new channel object directly from the response
+            const newChannel: ChatChannel = {
               id: newTopic.id,
               sessionId: newSession.id,
               title: newTopic.name,
@@ -371,17 +372,26 @@ export const useXyzen = create<XyzenState>()(
               error: null,
             };
 
-            // Add the channel to the store
+            // Create the new history item
+            const newHistoryItem: ChatHistoryItem = {
+              id: newTopic.id,
+              title: newTopic.name,
+              updatedAt: newTopic.updated_at,
+              assistantTitle: "通用助理", // Placeholder, consider getting from agent
+              lastMessage: "",
+              isPinned: false,
+            };
+
+            // Update state in one go
             set((state) => {
               state.channels[newTopic.id] = newChannel;
+              state.chatHistory.unshift(newHistoryItem); // Add to the top of the list
               state.activeChatChannel = newTopic.id;
+              state.activeTabIndex = 1; // Switch to chat tab
             });
 
-            // Connect to the WebSocket
+            // Now, just connect to the newly created and activated channel
             get().connectToChannel(newSession.id, newTopic.id);
-
-            // Then refetch history in the background to update the history list
-            get().fetchChatHistory().catch(console.error);
           }
         } catch (error) {
           console.error("Failed to create new channel:", error);
