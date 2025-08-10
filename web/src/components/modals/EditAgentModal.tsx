@@ -1,7 +1,9 @@
-import React, { useEffect, useState } from "react";
-
+import { Input } from "@/components/base/Input";
+import { Modal } from "@/components/base/Modal";
 import type { Agent } from "@/components/layouts/XyzenAgent";
 import { useXyzen } from "@/store/xyzenStore";
+import { Button, Field, Label } from "@headlessui/react";
+import React, { useEffect, useState } from "react";
 
 interface EditAgentModalProps {
   isOpen: boolean;
@@ -29,13 +31,19 @@ const EditAgentModal: React.FC<EditAgentModalProps> = ({
   }, [agentToEdit, isOpen, fetchMcpServers]);
 
   const handleChange = (
-    e: React.ChangeEvent<
-      HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
-    >,
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
   ) => {
     if (!agent) return;
     const { name, value } = e.target;
     setAgent({ ...agent, [name]: value });
+  };
+
+  const handleMcpServerChange = (serverId: number) => {
+    setMcpServerIds((prevIds) =>
+      prevIds.includes(serverId)
+        ? prevIds.filter((id) => id !== serverId)
+        : [...prevIds, serverId],
+    );
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -45,87 +53,92 @@ const EditAgentModal: React.FC<EditAgentModalProps> = ({
     onClose();
   };
 
-  const handleMcpServerChange = (serverId: number) => {
-    const newIds = mcpServerIds.includes(serverId)
-      ? mcpServerIds.filter((id) => id !== serverId)
-      : [...mcpServerIds, serverId];
-    setMcpServerIds(newIds);
-  };
-
-  if (!isOpen || !agent) return null;
+  if (!agent) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-      <div className="w-full max-w-md rounded-lg bg-white p-6 dark:bg-neutral-900/90 dark:border dark:border-neutral-700/50 dark:backdrop-blur">
-        <h2 className="text-lg font-semibold text-neutral-800 dark:text-neutral-100">
-          编辑助手
-        </h2>
-        <form onSubmit={handleSubmit} className="mt-4 space-y-4">
-          <input
-            type="text"
+    <Modal isOpen={isOpen} onClose={onClose} title={`Edit ${agent.name}`}>
+      <p className="text-sm text-neutral-600 dark:text-neutral-400">
+        Update the details for your agent.
+      </p>
+      <form onSubmit={handleSubmit} className="mt-4 space-y-4">
+        <Field>
+          <Label className="text-sm font-medium text-neutral-700 dark:text-neutral-300">
+            Name
+          </Label>
+          <Input
             name="name"
-            placeholder="助手名称"
             value={agent.name}
             onChange={handleChange}
+            placeholder="e.g., Research Assistant"
             required
-            className="w-full rounded-md border p-2 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-200"
           />
+        </Field>
+        <Field>
+          <Label className="text-sm font-medium text-neutral-700 dark:text-neutral-300">
+            Description
+          </Label>
           <textarea
             name="description"
-            placeholder="描述"
             value={agent.description}
             onChange={handleChange}
-            className="w-full rounded-md border p-2 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-200"
+            placeholder="A brief description of the agent's purpose"
+            className="w-full rounded-md border-neutral-300 bg-neutral-100 px-3 py-2 text-sm text-neutral-900 placeholder-neutral-400 focus:border-indigo-500 focus:ring-indigo-500 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100 dark:placeholder-neutral-500"
           />
+        </Field>
+        <Field>
+          <Label className="text-sm font-medium text-neutral-700 dark:text-neutral-300">
+            System Prompt
+          </Label>
           <textarea
             name="prompt"
-            placeholder="Prompt"
             value={agent.prompt}
             onChange={handleChange}
-            className="w-full rounded-md border p-2 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-200"
+            placeholder="Define the agent's behavior and personality"
+            rows={4}
+            className="w-full rounded-md border-neutral-300 bg-neutral-100 px-3 py-2 text-sm text-neutral-900 placeholder-neutral-400 focus:border-indigo-500 focus:ring-indigo-500 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100 dark:placeholder-neutral-500"
           />
-          <div>
-            <h3 className="mb-2 text-sm font-medium text-neutral-800 dark:text-neutral-100">
-              绑定 MCP Servers
-            </h3>
-            <div className="max-h-32 overflow-y-auto rounded-md border p-2 dark:border-neutral-700">
-              {mcpServers.map((server) => (
-                <div key={server.id} className="flex items-center">
-                  <input
-                    type="checkbox"
-                    id={`mcp-${server.id}`}
-                    checked={mcpServerIds.includes(server.id)}
-                    onChange={() => handleMcpServerChange(server.id)}
-                    className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
-                  />
-                  <label
-                    htmlFor={`mcp-${server.id}`}
-                    className="ml-2 text-sm text-neutral-700 dark:text-neutral-300"
-                  >
-                    {server.name}
-                  </label>
-                </div>
-              ))}
-            </div>
+        </Field>
+        <Field>
+          <Label className="text-sm font-medium text-neutral-700 dark:text-neutral-300">
+            Connected MCP Servers
+          </Label>
+          <div className="mt-2 max-h-32 overflow-y-auto rounded-md border border-neutral-300 p-2 dark:border-neutral-700">
+            {mcpServers.map((server) => (
+              <div key={server.id} className="flex items-center py-1">
+                <input
+                  type="checkbox"
+                  id={`edit-mcp-${server.id}`}
+                  checked={mcpServerIds.includes(server.id)}
+                  onChange={() => handleMcpServerChange(server.id)}
+                  className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                />
+                <label
+                  htmlFor={`edit-mcp-${server.id}`}
+                  className="ml-3 block text-sm text-neutral-700 dark:text-neutral-300"
+                >
+                  {server.name}
+                </label>
+              </div>
+            ))}
           </div>
-          <div className="flex justify-end gap-2">
-            <button
-              type="button"
-              onClick={onClose}
-              className="rounded-md px-4 py-2 text-sm text-neutral-600 hover:bg-neutral-100 dark:text-neutral-300 dark:hover:bg-neutral-800"
-            >
-              取消
-            </button>
-            <button
-              type="submit"
-              className="rounded-md bg-indigo-500 px-4 py-2 text-sm text-white hover:bg-indigo-600"
-            >
-              保存
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
+        </Field>
+        <div className="mt-6 flex justify-end gap-4">
+          <Button
+            type="button"
+            onClick={onClose}
+            className="inline-flex items-center gap-2 rounded-md bg-neutral-100 py-1.5 px-3 text-sm/6 font-semibold text-neutral-700 shadow-sm focus:outline-none data-[hover]:bg-neutral-200 dark:bg-neutral-800 dark:text-neutral-200 dark:data-[hover]:bg-neutral-700"
+          >
+            Cancel
+          </Button>
+          <Button
+            type="submit"
+            className="inline-flex items-center gap-2 rounded-md bg-indigo-600 py-1.5 px-3 text-sm/6 font-semibold text-white shadow-inner shadow-white/10 focus:outline-none data-[hover]:bg-indigo-500 data-[open]:bg-indigo-700 data-[focus]:outline-1 data-[focus]:outline-white dark:bg-indigo-500 dark:data-[hover]:bg-indigo-400"
+          >
+            Save Changes
+          </Button>
+        </div>
+      </form>
+    </Modal>
   );
 };
 

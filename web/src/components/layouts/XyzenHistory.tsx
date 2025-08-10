@@ -1,5 +1,6 @@
 "use client";
 
+import { LoadingSpinner } from "@/components/base/LoadingSpinner";
 import { formatTime } from "@/lib/formatDate";
 import { type ChatHistoryItem, useXyzen } from "@/store/xyzenStore";
 import { MapPinIcon } from "@heroicons/react/20/solid";
@@ -43,11 +44,7 @@ export default function XyzenHistory() {
   };
 
   if (chatHistoryLoading) {
-    return (
-      <div className="flex h-full items-center justify-center">
-        <div className="h-8 w-8 animate-spin rounded-full border-4 border-neutral-300 border-t-indigo-600"></div>
-      </div>
-    );
+    return <LoadingSpinner />;
   }
 
   if (sortedHistory.length === 0) {
