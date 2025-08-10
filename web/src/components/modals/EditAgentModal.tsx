@@ -1,9 +1,10 @@
 import { Input } from "@/components/base/Input";
 import { Modal } from "@/components/base/Modal";
-import type { Agent } from "@/components/layouts/XyzenAgent";
 import { useXyzen } from "@/store/xyzenStore";
 import { Button, Field, Label } from "@headlessui/react";
 import React, { useEffect, useState } from "react";
+import type { Agent } from "../layouts/XyzenAgent";
+import { McpServerItem } from "./McpServerItem";
 
 interface EditAgentModalProps {
   isOpen: boolean;
@@ -102,23 +103,14 @@ const EditAgentModal: React.FC<EditAgentModalProps> = ({
           <Label className="text-sm font-medium text-neutral-700 dark:text-neutral-300">
             Connected MCP Servers
           </Label>
-          <div className="mt-2 max-h-32 overflow-y-auto rounded-md border border-neutral-300 p-2 dark:border-neutral-700">
+          <div className="mt-2 max-h-40 space-y-1 overflow-y-auto rounded-md border border-neutral-200 bg-neutral-50 p-2 dark:border-neutral-700 dark:bg-neutral-800/50">
             {mcpServers.map((server) => (
-              <div key={server.id} className="flex items-center py-1">
-                <input
-                  type="checkbox"
-                  id={`edit-mcp-${server.id}`}
-                  checked={mcpServerIds.includes(server.id)}
-                  onChange={() => handleMcpServerChange(server.id)}
-                  className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
-                />
-                <label
-                  htmlFor={`edit-mcp-${server.id}`}
-                  className="ml-3 block text-sm text-neutral-700 dark:text-neutral-300"
-                >
-                  {server.name}
-                </label>
-              </div>
+              <McpServerItem
+                key={server.id}
+                mcp={server}
+                isSelected={mcpServerIds.includes(server.id)}
+                onSelectionChange={() => handleMcpServerChange(server.id)}
+              />
             ))}
           </div>
         </Field>

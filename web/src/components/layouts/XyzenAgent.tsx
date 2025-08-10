@@ -74,7 +74,7 @@ const AgentCard: React.FC<AgentCardProps> = ({ agent, onClick, onEdit }) => {
                 e.stopPropagation();
                 onEdit?.(agent);
               }}
-              className="text-xs text-neutral-500 hover:text-indigo-600 dark:text-neutral-400 dark:hover:text-indigo-400"
+              className="z-10 text-xs text-neutral-500 hover:text-indigo-600 dark:text-neutral-400 dark:hover:text-indigo-400"
             >
               编辑
             </button>
