@@ -2,7 +2,7 @@ name: sciol-xyzen
 services:
   network-service:
     image: registry.scienceol.tech/library/alpine
-    container_name: sciol-network
+    container_name: sciol-xyzen-network
     ports:
       - '${WEB_PORT:-32233}:32233'
       - '${SERVICE_PORT:-48196}:48196'
