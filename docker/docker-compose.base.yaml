@@ -2,7 +2,6 @@ name: sciol-xyzen
 services:
   network-service:
     image: registry.scienceol.tech/library/alpine
-    container_name: sciol-xyzen-network
     ports:
       - '${WEB_PORT:-32233}:32233'
       - '${SERVICE_PORT:-48196}:48196'
@@ -18,7 +17,7 @@ services:
       # - '${MQTT_WEBSOCKET_PORT:-9002}:9002'
     command: tail -f /dev/null
     networks:
-      - sciol-network
+      - bridge-network
 
   postgresql:
     image: registry.scienceol.tech/library/postgres:16.8-alpine
@@ -145,5 +144,5 @@ volumes:
     driver: local
 
 networks:
-  sciol-network:
+  bridge-network:
     driver: bridge

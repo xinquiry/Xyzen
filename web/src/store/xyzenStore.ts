@@ -535,6 +535,7 @@ export const useXyzen = create<XyzenState>()(
       name: "xyzen-storage",
       storage: createJSONStorage(() => localStorage),
       partialize: (state) => ({
+        isXyzenOpen: state.isXyzenOpen,
         panelWidth: state.panelWidth,
         theme: state.theme,
       }),
