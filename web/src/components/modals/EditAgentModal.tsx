@@ -2,6 +2,7 @@ import { Input } from "@/components/base/Input";
 import { Modal } from "@/components/base/Modal";
 import { useXyzen } from "@/store/xyzenStore";
 import { Button, Field, Label } from "@headlessui/react";
+import { PlusIcon } from "@heroicons/react/24/outline";
 import React, { useEffect, useState } from "react";
 import type { Agent } from "../layouts/XyzenAgent";
 import { McpServerItem } from "./McpServerItem";
@@ -17,7 +18,8 @@ const EditAgentModal: React.FC<EditAgentModalProps> = ({
   onClose,
   agent: agentToEdit,
 }) => {
-  const { updateAgent, mcpServers, fetchMcpServers } = useXyzen();
+  const { updateAgent, mcpServers, fetchMcpServers, openAddMcpServerModal } =
+    useXyzen();
   const [agent, setAgent] = useState<Agent | null>(agentToEdit);
   const [mcpServerIds, setMcpServerIds] = useState<number[]>([]);
 
@@ -104,14 +106,33 @@ const EditAgentModal: React.FC<EditAgentModalProps> = ({
             Connected MCP Servers
           </Label>
           <div className="mt-2 max-h-40 space-y-1 overflow-y-auto rounded-md border border-neutral-200 bg-neutral-50 p-2 dark:border-neutral-700 dark:bg-neutral-800/50">
-            {mcpServers.map((server) => (
-              <McpServerItem
-                key={server.id}
-                mcp={server}
-                isSelected={mcpServerIds.includes(server.id)}
-                onSelectionChange={() => handleMcpServerChange(server.id)}
-              />
-            ))}
+            {mcpServers.length > 0 ? (
+              mcpServers.map((server) => (
+                <McpServerItem
+                  key={server.id}
+                  mcp={server}
+                  isSelected={mcpServerIds.includes(server.id)}
+                  onSelectionChange={() => handleMcpServerChange(server.id)}
+                />
+              ))
+            ) : (
+              <div className="flex flex-col items-center justify-center p-4 text-center">
+                <p className="text-sm text-neutral-500 dark:text-neutral-400">
+                  No MCP servers available.
+                </p>
+                <Button
+                  type="button"
+                  onClick={() => {
+                    onClose(); // Close current modal
+                    openAddMcpServerModal(); // Open add server modal
+                  }}
+                  className="mt-2 inline-flex items-center gap-2 rounded-md bg-indigo-100 py-1.5 px-3 text-sm/6 font-semibold text-indigo-600 focus:outline-none data-[hover]:bg-indigo-200 dark:bg-indigo-900/50 dark:text-indigo-300 dark:data-[hover]:bg-indigo-900"
+                >
+                  <PlusIcon className="h-4 w-4" />
+                  Create MCP Server
+                </Button>
+              </div>
+            )}
           </div>
         </Field>
         <div className="mt-6 flex justify-end gap-4">

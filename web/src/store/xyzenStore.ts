@@ -74,6 +74,7 @@ interface XyzenState {
   agentsLoading: boolean;
   mcpServers: McpServer[];
   mcpServersLoading: boolean;
+  isAddMcpServerModalOpen: boolean;
 
   toggleXyzen: () => void;
   openXyzen: () => void;
@@ -83,6 +84,8 @@ interface XyzenState {
   setTabIndex: (index: number) => void;
   setTheme: (theme: Theme) => void;
   setBackendUrl: (url: string) => void;
+  openAddMcpServerModal: () => void;
+  closeAddMcpServerModal: () => void;
 
   fetchChatHistory: () => Promise<void>;
   togglePinChat: (chatId: string) => void;
@@ -133,6 +136,7 @@ export const useXyzen = create<XyzenState>()(
       agentsLoading: false,
       mcpServers: [],
       mcpServersLoading: false,
+      isAddMcpServerModalOpen: false,
 
       // --- Actions ---
       toggleXyzen: () => set((state) => ({ isXyzenOpen: !state.isXyzenOpen })),
@@ -147,6 +151,8 @@ export const useXyzen = create<XyzenState>()(
         set({ backendUrl: url });
         xyzenService.setBackendUrl(url);
       },
+      openAddMcpServerModal: () => set({ isAddMcpServerModalOpen: true }),
+      closeAddMcpServerModal: () => set({ isAddMcpServerModalOpen: false }),
 
       // --- Async Actions ---
       fetchChatHistory: async () => {
@@ -489,8 +495,10 @@ export const useXyzen = create<XyzenState>()(
           set((state) => {
             state.mcpServers.push(newServer);
           });
+          get().closeAddMcpServerModal(); // Close modal on success
         } catch (error) {
           console.error("Failed to add MCP server:", error);
+          throw error; // Re-throw to handle in component
         }
       },
 

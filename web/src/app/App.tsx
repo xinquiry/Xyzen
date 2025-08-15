@@ -11,9 +11,14 @@ import {
   restrictToHorizontalAxis,
   restrictToVerticalAxis,
 } from "@dnd-kit/modifiers";
-import { Dialog, DialogPanel, Tab } from "@headlessui/react";
 import {
-  Cog6ToothIcon,
+  Dialog,
+  DialogPanel,
+  Tab,
+  Transition,
+  TransitionChild,
+} from "@headlessui/react";
+import {
   ComputerDesktopIcon,
   MoonIcon,
   PlusIcon,
@@ -21,12 +26,14 @@ import {
   SunIcon,
   XMarkIcon,
 } from "@heroicons/react/24/outline";
-import { useEffect, useRef, useState } from "react";
+import { Fragment, useEffect, useRef, useState } from "react";
 
 import { Mcp } from "@/app/Mcp";
+import McpIcon from "@/assets/McpIcon";
 import XyzenAgent from "@/components/layouts/XyzenAgent";
 import XyzenChat from "@/components/layouts/XyzenChat";
 import XyzenHistory from "@/components/layouts/XyzenHistory";
+import { AddMcpServerModal } from "@/components/modals/AddMcpServerModal";
 import { DEFAULT_BACKEND_URL } from "@/configs";
 import useTheme from "@/hooks/useTheme";
 
@@ -257,7 +264,7 @@ export function Xyzen({ backendUrl = DEFAULT_BACKEND_URL }: XyzenProps) {
                 title="MCP 管理"
                 onClick={() => setIsMcpOpen(true)}
               >
-                <Cog6ToothIcon className="h-5 w-5" />
+                <McpIcon className="h-5 w-5" />
               </button>
               <button
                 className="rounded-md p-1.5 text-neutral-500 hover:bg-neutral-100 dark:text-neutral-400 dark:hover:bg-neutral-800"
@@ -287,19 +294,42 @@ export function Xyzen({ backendUrl = DEFAULT_BACKEND_URL }: XyzenProps) {
           </div>
         </Tab.Group>
 
-        <Dialog
-          open={isMcpOpen}
-          onClose={() => setIsMcpOpen(false)}
-          className="relative z-50"
-        >
-          <div className="fixed inset-0 bg-black/30" aria-hidden="true" />
-          <div className="fixed inset-0 flex w-screen items-center justify-center p-4">
-            <DialogPanel className="w-full max-w-2xl rounded-lg bg-white p-6 dark:bg-neutral-900">
-              <Mcp />
-            </DialogPanel>
-          </div>
-        </Dialog>
+        <Transition appear show={isMcpOpen} as={Fragment}>
+          <Dialog
+            open={isMcpOpen}
+            onClose={() => setIsMcpOpen(false)}
+            className="relative z-50"
+          >
+            <TransitionChild
+              as={Fragment}
+              enter="ease-out duration-300"
+              enterFrom="opacity-0"
+              enterTo="opacity-100"
+              leave="ease-in duration-200"
+              leaveFrom="opacity-100"
+              leaveTo="opacity-0"
+            >
+              <div className="fixed inset-0 bg-black/30" aria-hidden="true" />
+            </TransitionChild>
+            <div className="fixed inset-0 flex w-screen items-center justify-center p-4">
+              <TransitionChild
+                as={Fragment}
+                enter="ease-out duration-300"
+                enterFrom="opacity-0 scale-95"
+                enterTo="opacity-100 scale-100"
+                leave="ease-in duration-200"
+                leaveFrom="opacity-100 scale-100"
+                leaveTo="opacity-0 scale-95"
+              >
+                <DialogPanel className="w-full max-w-2xl rounded-lg bg-white p-6 dark:bg-neutral-900">
+                  <Mcp />
+                </DialogPanel>
+              </TransitionChild>
+            </div>
+          </Dialog>
+        </Transition>
       </div>
+      <AddMcpServerModal />
     </DndContext>
   );
 }
