@@ -1,7 +1,7 @@
 name: sciol-xyzen
 services:
   network-service:
-    image: registry.scienceol.tech/library/alpine
+    image: registry.sciol.ac.cn/library/alpine
     ports:
       - '${WEB_PORT:-32233}:32233'
       - '${SERVICE_PORT:-48196}:48196'
@@ -20,7 +20,7 @@ services:
       - bridge-network
 
   postgresql:
-    image: registry.scienceol.tech/library/postgres:16.8-alpine
+    image: registry.sciol.ac.cn/library/postgres:16.8-alpine
     pull_policy: if_not_present
     network_mode: 'service:network-service'
     restart: unless-stopped
@@ -38,7 +38,7 @@ services:
       - db-data:/var/lib/postgresql/data
 
   minio:
-    image: registry.scienceol.tech/library/minio
+    image: registry.sciol.ac.cn/library/minio
     network_mode: 'service:network-service'
     attach: false
     volumes:
@@ -62,7 +62,7 @@ services:
       "
 
   redis:
-    image: registry.scienceol.tech/library/redis:7.4.2-alpine
+    image: registry.sciol.ac.cn/library/redis:7.4.2-alpine
     network_mode: 'service:network-service'
     restart: unless-stopped
     attach: false
@@ -76,7 +76,7 @@ services:
       retries: 5
 
   casdoor:
-    image: registry.scienceol.tech/library/casdoor:v1.924.0
+    image: registry.sciol.ac.cn/library/casdoor:v1.924.0
     entrypoint: /bin/sh -c './server --createDatabase=true'
     network_mode: 'service:network-service'
     depends_on:
@@ -102,7 +102,7 @@ services:
       - ../infra/casdoor/init_data.json:/init_data.json
 
   service:
-    image: registry.scienceol.tech/sciol/xyzen:latest
+    image: registry.sciol.ac.cn/sciol/xyzen:latest
     pull_policy: if_not_present
     network_mode: 'service:network-service'
     restart: unless-stopped
@@ -127,7 +127,7 @@ services:
       start_period: 10s
 
   web:
-    image: registry.scienceol.tech/sciol/xyzen-web:latest
+    image: registry.sciol.ac.cn/sciol/xyzen-web:latest
     pull_policy: if_not_present
     network_mode: 'service:network-service'
     restart: unless-stopped

@@ -1,5 +1,5 @@
 # Use the official Python image as a base
-FROM registry.scienceol.tech/library/python:3.13.5-alpine
+FROM registry.sciol.ac.cn/library/python:3.13.5-alpine
 
 RUN apk add --no-cache ca-certificates
 

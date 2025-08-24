@@ -4,20 +4,24 @@ FROM base AS deps
 WORKDIR /app
 
 # Copy package manager files
-COPY package.json yarn.lock* ./
+COPY package.json yarn.lock* .yarnrc.yml* ./
 COPY vite.config.mts ./
 COPY tsconfig.json tsconfig.app.json tsconfig.node.json ./
 
 # Install dependencies
-RUN yarn install --frozen-lockfile --ignore-scripts
+RUN corepack enable
+
+RUN yarn install --frozen-lockfile
 
 # Stage 1: Build the application
 FROM base AS builder
 WORKDIR /app
 
 COPY --from=deps /app/node_modules ./node_modules
-
 COPY . .
+
+# Enable corepack to use the correct yarn version
+RUN corepack enable
 
 # Build the application
 # The build script in package.json is "rimraf site && tsc -b && vite build"
@@ -40,4 +44,3 @@ EXPOSE 32233
 # npx will download and run 'serve' without needing it in package.json
 # The '-s' flag handles SPA routing by redirecting all requests to index.html
 CMD ["npx", "-y", "serve", "-s", ".", "-l", "32233"]
-
