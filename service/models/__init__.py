@@ -5,6 +5,7 @@ from .messages import (
     MessageRead,
     MessageUpdate,
 )
+from .providers import Provider, ProviderBase
 from .sessions import (
     Session,
     SessionCreate,
@@ -32,4 +33,6 @@ __all__ = [
     "TopicCreate",
     "TopicRead",
     "TopicUpdate",
+    "Provider",
+    "ProviderBase",
 ]

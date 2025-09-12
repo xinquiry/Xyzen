@@ -23,19 +23,13 @@ class Provider(ProviderBase, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
 
 
-class ProviderCreate(ProviderBase):
+class ProviderCreate(Provider):
     """Model for creating a provider."""
 
     pass
 
 
-class ProviderUpdate(SQLModel):
+class ProviderUpdate(Provider):
     """Model for updating a provider. All fields are optional."""
 
-    Name: Optional[str] = None
-    Api: Optional[str] = None
-    Key: Optional[str] = None
-    Timeout: Optional[int] = None
-    Model: Optional[str] = None
-    MaxTokens: Optional[int] = None
-    Temperature: Optional[float] = None
+    pass

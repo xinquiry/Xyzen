@@ -1,4 +1,4 @@
-FROM node:23-alpine AS base
+FROM node:24-alpine AS base
 
 FROM base AS deps
 WORKDIR /app
@@ -18,11 +18,10 @@ FROM base AS builder
 WORKDIR /app
 
 COPY --from=deps /app/node_modules ./node_modules
-COPY . .
-
 # Enable corepack to use the correct yarn version
 RUN corepack enable
 
+COPY . .
 # Build the application
 # The build script in package.json is "rimraf site && tsc -b && vite build"
 RUN \
