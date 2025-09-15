@@ -1,9 +1,11 @@
+import os
 from collections.abc import AsyncGenerator
 
 from sqlalchemy import create_engine
 from sqlalchemy.ext.asyncio import create_async_engine
 from sqlmodel.ext.asyncio.session import AsyncSession
 
+from common import BASE_DIR
 from internal import configs
 
 SYNC_DATABASE_URL = ""
@@ -55,8 +57,7 @@ async def create_db_and_tables() -> None:
 
     try:
         # Get the service directory (where alembic.ini is located)
-        service_dir = Path(__file__).parent.parent.parent
-        alembic_ini = service_dir / "alembic.ini"
+        alembic_ini = Path(os.path.join(BASE_DIR, "alembic.ini"))
 
         if not alembic_ini.exists():
             raise RuntimeError(
@@ -66,49 +67,52 @@ async def create_db_and_tables() -> None:
 
         logger.info("Checking database migration status...")
 
-        # Check current migration status
-        result = await asyncio.to_thread(
+        # Use 'alembic check' to efficiently determine if migrations are needed
+        # This command returns exit code 0 if no pending migrations, 1 if migrations are needed
+        check_result = await asyncio.to_thread(
             subprocess.run,
-            [sys.executable, "-m", "alembic", "current"],
-            cwd=service_dir,
+            [sys.executable, "-m", "alembic", "check"],
+            cwd=BASE_DIR,
             capture_output=True,
             text=True,
             timeout=30,
         )
 
-        if result.returncode != 0:
-            logger.warning(f"Could not check migration status: {result.stderr}")
-            logger.info("This might be the first run, proceeding with migration...")
-        else:
-            current_revision = result.stdout.strip()
-            logger.info(f"Current database revision: {current_revision or 'None (empty database)'}")
-
-        # Check for pending migrations
-        logger.info("Checking for pending migrations...")
-        heads_result = await asyncio.to_thread(
-            subprocess.run,
-            [sys.executable, "-m", "alembic", "heads"],
-            cwd=service_dir,
-            capture_output=True,
-            text=True,
-            timeout=30,
-        )
-
-        if heads_result.returncode != 0:
-            raise RuntimeError(f"Failed to check migration heads: {heads_result.stderr}")
-
-        target_revision = heads_result.stdout.strip()
-        if not target_revision:
-            logger.info("No migrations found. Database is up to date.")
+        if check_result.returncode == 0:
+            logger.info("✅ Database is already up to date (no pending migrations)")
             return
-        logger.info(f"Target revision: {target_revision}")
+        elif check_result.returncode == 1:
+            logger.info("Pending migrations detected, proceeding with upgrade...")
+        else:
+            # Fall back to the old method if 'alembic check' fails
+            logger.warning(f"'alembic check' failed: {check_result.stderr}")
+            logger.info("Falling back to manual migration status check...")
+
+            # Check current migration status as fallback
+            current_result = await asyncio.to_thread(
+                subprocess.run,
+                [sys.executable, "-m", "alembic", "current"],
+                cwd=BASE_DIR,
+                capture_output=True,
+                text=True,
+                timeout=30,
+            )
+
+            if current_result.returncode == 0:
+                current_revision = current_result.stdout.strip()
+                logger.info(f"Current database revision: {current_revision or 'None (empty database)'}")
+
+                # If current revision shows "(head)", database is already up to date
+                if current_revision and "(head)" in current_revision:
+                    logger.info("✅ Database is already up to date (at head revision)")
+                    return
 
         # Apply migrations
         logger.info("Applying database migrations...")
         upgrade_result = await asyncio.to_thread(
             subprocess.run,
             [sys.executable, "-m", "alembic", "upgrade", "head"],
-            cwd=service_dir,
+            cwd=BASE_DIR,
             capture_output=True,
             text=True,
             timeout=120,  # Allow more time for migrations
@@ -127,20 +131,6 @@ async def create_db_and_tables() -> None:
                 logger.info(f"  {line}")
 
         logger.info("✅ Database migrations applied successfully!")
-
-        # Final verification
-        verify_result = await asyncio.to_thread(
-            subprocess.run,
-            [sys.executable, "-m", "alembic", "current"],
-            cwd=service_dir,
-            capture_output=True,
-            text=True,
-            timeout=30,
-        )
-
-        if verify_result.returncode == 0:
-            final_revision = verify_result.stdout.strip()
-            logger.info(f"✅ Database is now at revision: {final_revision}")
 
     except subprocess.TimeoutExpired:
         error_msg = "Database migration timed out. Check your database connection and migration complexity."

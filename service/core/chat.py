@@ -33,7 +33,7 @@ async def initialize_providers() -> None:
         p_type = "azure_openai"
         try:
             provider_manager.add_provider(
-                name="default_azure_openai",
+                name="default",
                 provider_type=p_type,
                 api_key=llm_config.key,
                 base_url=llm_config.endpoint,
