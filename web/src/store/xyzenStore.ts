@@ -1,5 +1,10 @@
+import { llmProviderService } from "@/service/llmProviderService";
 import { mcpService } from "@/service/mcpService";
 import xyzenService from "@/service/xyzenService";
+import type {
+  LlmProviderCreate,
+  LlmProviderResponse,
+} from "@/types/llmProvider";
 import type { McpServer, McpServerCreate } from "@/types/mcp";
 import { create } from "zustand";
 import { createJSONStorage, persist } from "zustand/middleware";
@@ -75,6 +80,9 @@ interface XyzenState {
   mcpServers: McpServer[];
   mcpServersLoading: boolean;
   isAddMcpServerModalOpen: boolean;
+  llmProviders: LlmProviderResponse[];
+  llmProvidersLoading: boolean;
+  isAddLlmProviderModalOpen: boolean;
 
   toggleXyzen: () => void;
   openXyzen: () => void;
@@ -86,6 +94,8 @@ interface XyzenState {
   setBackendUrl: (url: string) => void;
   openAddMcpServerModal: () => void;
   closeAddMcpServerModal: () => void;
+  openAddLlmProviderModal: () => void;
+  closeAddLlmProviderModal: () => void;
 
   fetchChatHistory: () => Promise<void>;
   togglePinChat: (chatId: string) => void;
@@ -108,6 +118,15 @@ interface XyzenState {
   ) => Promise<void>;
   removeMcpServer: (id: number) => Promise<void>;
   updateMcpServerInList: (server: McpServer) => void;
+
+  fetchLlmProviders: () => Promise<void>;
+  addLlmProvider: (provider: LlmProviderCreate) => Promise<void>;
+  editLlmProvider: (
+    id: number,
+    provider: Partial<LlmProviderCreate>,
+  ) => Promise<void>;
+  removeLlmProvider: (id: number) => Promise<void>;
+  switchActiveProvider: (id: number) => Promise<void>;
 }
 
 // --- Mock Data ---
@@ -137,6 +156,9 @@ export const useXyzen = create<XyzenState>()(
       mcpServers: [],
       mcpServersLoading: false,
       isAddMcpServerModalOpen: false,
+      llmProviders: [],
+      llmProvidersLoading: false,
+      isAddLlmProviderModalOpen: false,
 
       // --- Actions ---
       toggleXyzen: () => set((state) => ({ isXyzenOpen: !state.isXyzenOpen })),
@@ -153,6 +175,8 @@ export const useXyzen = create<XyzenState>()(
       },
       openAddMcpServerModal: () => set({ isAddMcpServerModalOpen: true }),
       closeAddMcpServerModal: () => set({ isAddMcpServerModalOpen: false }),
+      openAddLlmProviderModal: () => set({ isAddLlmProviderModalOpen: true }),
+      closeAddLlmProviderModal: () => set({ isAddLlmProviderModalOpen: false }),
 
       // --- Async Actions ---
       fetchChatHistory: async () => {
@@ -537,6 +561,72 @@ export const useXyzen = create<XyzenState>()(
             state.mcpServers.push(server);
           }
         });
+      },
+
+      fetchLlmProviders: async () => {
+        set({ llmProvidersLoading: true });
+        try {
+          const providers = await llmProviderService.getLlmProviders();
+          set({ llmProviders: providers, llmProvidersLoading: false });
+        } catch (error) {
+          console.error("Failed to fetch LLM providers:", error);
+          set({ llmProvidersLoading: false });
+        }
+      },
+
+      addLlmProvider: async (provider) => {
+        try {
+          const newProvider =
+            await llmProviderService.createLlmProvider(provider);
+          set((state) => {
+            state.llmProviders.push(newProvider);
+          });
+          get().closeAddLlmProviderModal();
+        } catch (error) {
+          console.error("Failed to add LLM provider:", error);
+          throw error;
+        }
+      },
+
+      editLlmProvider: async (id, provider) => {
+        try {
+          const updatedProvider = await llmProviderService.updateLlmProvider(
+            id,
+            provider,
+          );
+          set((state) => {
+            const index = state.llmProviders.findIndex((p) => p.id === id);
+            if (index !== -1) {
+              state.llmProviders[index] = updatedProvider;
+            }
+          });
+        } catch (error) {
+          console.error("Failed to edit LLM provider:", error);
+          throw error;
+        }
+      },
+
+      removeLlmProvider: async (id) => {
+        try {
+          await llmProviderService.deleteLlmProvider(id);
+          set((state) => {
+            state.llmProviders = state.llmProviders.filter((p) => p.id !== id);
+          });
+        } catch (error) {
+          console.error("Failed to remove LLM provider:", error);
+          throw error;
+        }
+      },
+
+      switchActiveProvider: async (id) => {
+        try {
+          await llmProviderService.switchActiveProvider({ provider_id: id });
+          // Refresh the providers list to update active status
+          await get().fetchLlmProviders();
+        } catch (error) {
+          console.error("Failed to switch active provider:", error);
+          throw error;
+        }
       },
     })),
     {

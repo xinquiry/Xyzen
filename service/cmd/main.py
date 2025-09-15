@@ -23,6 +23,11 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     # Create database tables
     await create_db_and_tables()
 
+    # Initialize LLM providers
+    from core.chat import initialize_providers
+
+    await initialize_providers()
+
     # Laboratory MCP Application
     lab_app = create_streamable_http_app(
         server=lab_mcp,  # FastMCP Instance, don't need to pass auth

@@ -28,11 +28,14 @@ import {
 } from "@heroicons/react/24/outline";
 import { Fragment, useEffect, useRef, useState } from "react";
 
+import { LlmProviders } from "@/app/LlmProviders";
 import { Mcp } from "@/app/Mcp";
+import LlmIcon from "@/assets/LlmIcon";
 import McpIcon from "@/assets/McpIcon";
 import XyzenAgent from "@/components/layouts/XyzenAgent";
 import XyzenChat from "@/components/layouts/XyzenChat";
 import XyzenHistory from "@/components/layouts/XyzenHistory";
+import { AddLlmProviderModal } from "@/components/modals/AddLlmProviderModal";
 import { AddMcpServerModal } from "@/components/modals/AddMcpServerModal";
 import { DEFAULT_BACKEND_URL } from "@/configs";
 import useTheme from "@/hooks/useTheme";
@@ -116,6 +119,7 @@ export function Xyzen({ backendUrl = DEFAULT_BACKEND_URL }: XyzenProps) {
   const [mounted, setMounted] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
   const [isMcpOpen, setIsMcpOpen] = useState(false);
+  const [isLlmProvidersOpen, setIsLlmProvidersOpen] = useState(false);
   const [floaterPosition, setFloaterPosition] = useState({
     y: typeof window !== "undefined" ? window.innerHeight / 2 : 300,
   });
@@ -268,6 +272,13 @@ export function Xyzen({ backendUrl = DEFAULT_BACKEND_URL }: XyzenProps) {
               </button>
               <button
                 className="rounded-md p-1.5 text-neutral-500 hover:bg-neutral-100 dark:text-neutral-400 dark:hover:bg-neutral-800"
+                title="LLM 提供商"
+                onClick={() => setIsLlmProvidersOpen(true)}
+              >
+                <LlmIcon className="h-5 w-5" />
+              </button>
+              <button
+                className="rounded-md p-1.5 text-neutral-500 hover:bg-neutral-100 dark:text-neutral-400 dark:hover:bg-neutral-800"
                 title="新对话"
                 onClick={() => createDefaultChannel()}
               >
@@ -328,8 +339,44 @@ export function Xyzen({ backendUrl = DEFAULT_BACKEND_URL }: XyzenProps) {
             </div>
           </Dialog>
         </Transition>
+
+        <Transition appear show={isLlmProvidersOpen} as={Fragment}>
+          <Dialog
+            open={isLlmProvidersOpen}
+            onClose={() => setIsLlmProvidersOpen(false)}
+            className="relative z-50"
+          >
+            <TransitionChild
+              as={Fragment}
+              enter="ease-out duration-300"
+              enterFrom="opacity-0"
+              enterTo="opacity-100"
+              leave="ease-in duration-200"
+              leaveFrom="opacity-100"
+              leaveTo="opacity-0"
+            >
+              <div className="fixed inset-0 bg-black/30" aria-hidden="true" />
+            </TransitionChild>
+            <div className="fixed inset-0 flex w-screen items-center justify-center p-4">
+              <TransitionChild
+                as={Fragment}
+                enter="ease-out duration-300"
+                enterFrom="opacity-0 scale-95"
+                enterTo="opacity-100 scale-100"
+                leave="ease-in duration-200"
+                leaveFrom="opacity-100 scale-100"
+                leaveTo="opacity-0 scale-95"
+              >
+                <DialogPanel className="w-full max-w-2xl rounded-lg bg-white p-6 dark:bg-neutral-900">
+                  <LlmProviders />
+                </DialogPanel>
+              </TransitionChild>
+            </div>
+          </Dialog>
+        </Transition>
       </div>
       <AddMcpServerModal />
+      <AddLlmProviderModal />
     </DndContext>
   );
 }

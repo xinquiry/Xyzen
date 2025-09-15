@@ -1,5 +1,6 @@
 import asyncio
 import datetime
+from typing import Optional
 
 from fastmcp import Client
 from fastmcp.client.auth import BearerAuth
@@ -10,10 +11,13 @@ from middleware.database.connection import engine
 from models import McpServer
 
 
-async def _async_check_mcp_server_status(server_id: int) -> None:
+async def _async_check_mcp_server_status(server_id: Optional[int]) -> None:
     """
     Asynchronously checks the status of an MCP server using fastmcp.Client.
     """
+    if server_id is None:
+        return
+
     with Session(engine) as session:
         server = session.get(McpServer, server_id)
         if not server:
@@ -35,7 +39,7 @@ async def _async_check_mcp_server_status(server_id: int) -> None:
             server.status = "offline"
             server.tools = []
         finally:
-            server.last_checked_at = datetime.datetime.utcnow()
+            server.last_checked_at = datetime.datetime.now(datetime.timezone.utc)
             session.add(server)
             session.commit()
             session.refresh(server)
