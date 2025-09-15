@@ -82,8 +82,23 @@ class OpenAIProvider(BaseLLMProvider):
 
             # Convert standard messages to OpenAI format
             messages = []
-            for msg in request.messages:
-                message_dict = {"role": msg.role, "content": msg.content}
+            for i, msg in enumerate(request.messages):
+                if msg.role == "tool":
+                    # OpenAI requires tool messages to have tool_call_id and follow a message with tool_calls
+                    # Skip tool messages that don't have a proper context or convert them to user messages
+                    prev_msg = request.messages[i - 1] if i > 0 else None
+                    has_tool_calls = (
+                        prev_msg and hasattr(prev_msg, "tool_calls") and getattr(prev_msg, "tool_calls", None)
+                    )
+                    if has_tool_calls:
+                        # This is a proper tool response, but we need tool_call_id
+                        # For now, convert to user message with clear indication it's a tool result
+                        message_dict = {"role": "user", "content": f"Tool execution result: {msg.content}"}
+                    else:
+                        # Convert tool messages to user messages to avoid OpenAI validation errors
+                        message_dict = {"role": "user", "content": f"Tool result: {msg.content}"}
+                else:
+                    message_dict = {"role": msg.role, "content": msg.content}
                 messages.append(message_dict)
 
             # Prepare API call parameters
