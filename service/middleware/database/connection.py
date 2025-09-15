@@ -5,7 +5,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.ext.asyncio import create_async_engine
 from sqlmodel.ext.asyncio.session import AsyncSession
 
-from common import BASE_DIR
+from common import ALEMBIC_INI_PATH, BASE_DIR
 from internal import configs
 
 SYNC_DATABASE_URL = ""
@@ -49,107 +49,67 @@ async def create_db_and_tables() -> None:
     """
     import asyncio
     import logging
-    import subprocess
-    import sys
     from pathlib import Path
+
+    # Import Alembic Python API
+    from alembic import command
+    from alembic.config import Config
+    from alembic.script import ScriptDirectory
+    from sqlalchemy import create_engine
 
     logger = logging.getLogger(__name__)
 
     try:
-        # Get the service directory (where alembic.ini is located)
-        alembic_ini = Path(os.path.join(BASE_DIR, "alembic.ini"))
-
-        if not alembic_ini.exists():
-            raise RuntimeError(
-                f"Alembic configuration not found at {alembic_ini}. "
-                "Please initialize Alembic first: alembic init migrations"
-            )
 
         logger.info("Checking database migration status...")
 
-        # Use 'alembic check' to efficiently determine if migrations are needed
-        # This command returns exit code 0 if no pending migrations, 1 if migrations are needed
-        check_result = await asyncio.to_thread(
-            subprocess.run,
-            [sys.executable, "-m", "alembic", "check"],
-            cwd=BASE_DIR,
-            capture_output=True,
-            text=True,
-            timeout=30,
-        )
+        # Create Alembic configuration
+        alembic_cfg = Config(str(ALEMBIC_INI_PATH))
 
-        if check_result.returncode == 0:
+        # Get script directory
+        script = ScriptDirectory.from_config(alembic_cfg)
+
+        def check_migration_needed() -> tuple[bool, str | None, str | None]:
+            """Check if migrations are needed using Alembic Python API"""
+            # Create a sync engine for migration checks
+            sync_engine = create_engine(SYNC_DATABASE_URL)
+
+            with sync_engine.connect() as connection:
+                # Get current revision from database
+                from alembic.migration import MigrationContext
+
+                migration_context = MigrationContext.configure(connection)
+                current_rev = migration_context.get_current_revision()
+
+                # Get head revision from migration files
+                head_rev = script.get_current_head()
+
+                return current_rev != head_rev, current_rev, head_rev
+
+        # Run migration check in thread to avoid blocking async event loop
+        migration_needed, current_rev, head_rev = await asyncio.to_thread(check_migration_needed)
+
+        logger.info(f"Current database revision: {current_rev or 'None (empty database)'}")
+        logger.info(f"Target head revision: {head_rev}")
+
+        if not migration_needed:
             logger.info("✅ Database is already up to date (no pending migrations)")
             return
-        elif check_result.returncode == 1:
-            logger.info("Pending migrations detected, proceeding with upgrade...")
-        else:
-            # Fall back to the old method if 'alembic check' fails
-            logger.warning(f"'alembic check' failed: {check_result.stderr}")
-            logger.info("Falling back to manual migration status check...")
 
-            # Check current migration status as fallback
-            current_result = await asyncio.to_thread(
-                subprocess.run,
-                [sys.executable, "-m", "alembic", "current"],
-                cwd=BASE_DIR,
-                capture_output=True,
-                text=True,
-                timeout=30,
-            )
+        logger.info("Pending migrations detected, proceeding with upgrade...")
 
-            if current_result.returncode == 0:
-                current_revision = current_result.stdout.strip()
-                logger.info(f"Current database revision: {current_revision or 'None (empty database)'}")
+        # Apply migrations using Alembic Python API
+        def apply_migrations() -> None:
+            """Apply migrations using Alembic Python API"""
+            command.upgrade(alembic_cfg, "head")
 
-                # If current revision shows "(head)", database is already up to date
-                if current_revision and "(head)" in current_revision:
-                    logger.info("✅ Database is already up to date (at head revision)")
-                    return
-
-        # Apply migrations
         logger.info("Applying database migrations...")
-        upgrade_result = await asyncio.to_thread(
-            subprocess.run,
-            [sys.executable, "-m", "alembic", "upgrade", "head"],
-            cwd=BASE_DIR,
-            capture_output=True,
-            text=True,
-            timeout=120,  # Allow more time for migrations
-        )
-
-        if upgrade_result.returncode != 0:
-            error_msg = f"Database migration failed: {upgrade_result.stderr}"
-            logger.error(error_msg)
-            logger.error(f"Migration stdout: {upgrade_result.stdout}")
-            raise RuntimeError(error_msg)
-
-        # Log successful migration
-        if upgrade_result.stdout.strip():
-            logger.info("Migration output:")
-            for line in upgrade_result.stdout.strip().split("\n"):
-                logger.info(f"  {line}")
+        await asyncio.to_thread(apply_migrations)
 
         logger.info("✅ Database migrations applied successfully!")
 
-    except subprocess.TimeoutExpired:
-        error_msg = "Database migration timed out. Check your database connection and migration complexity."
-        logger.error(error_msg)
-        raise RuntimeError(error_msg)
-
-    except FileNotFoundError as e:
-        if "alembic" in str(e):
-            error_msg = (
-                "Alembic is not installed or not accessible. "
-                "Please ensure alembic is installed: pip install alembic"
-            )
-        else:
-            error_msg = f"Required file not found: {e}"
-        logger.error(error_msg)
-        raise RuntimeError(error_msg)
-
     except Exception as e:
-        error_msg = f"Unexpected error during database migration: {e}"
+        error_msg = f"Database migration failed: {e}"
         logger.error(error_msg)
         raise RuntimeError(error_msg)
 
