@@ -1,5 +1,7 @@
 from pydantic import BaseModel, Field
 
+from schemas.providers import ProviderType
+
 
 class LLMConfig(BaseModel):
     """
@@ -7,10 +9,11 @@ class LLMConfig(BaseModel):
     Other LLM providers are managed through the database.
     """
 
-    key: str = Field(default="", description="Azure OpenAI API Key")
-    endpoint: str = Field(default="", description="Azure OpenAI API Endpoint")
-    version: str = Field(default="2024-10-21", description="Azure OpenAI API Version")
-    deployment: str = Field(default="gpt-4o", description="Default Azure OpenAI Deployment Name")
+    provider: ProviderType = Field(default=ProviderType.AZURE_OPENAI, description="Default LLM Provider")
+    key: str = Field(default="", description="LLM API Key")
+    endpoint: str = Field(default="", description="LLM API Endpoint or base_url")
+    version: str = Field(default="2024-10-21", description="LLM API Version")
+    deployment: str = Field(default="gpt-4o", description="Default LLM Deployment Name")
 
     @property
     def is_enabled(self) -> bool:

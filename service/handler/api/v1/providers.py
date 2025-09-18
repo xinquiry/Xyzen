@@ -5,7 +5,7 @@ from sqlmodel import select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 from middleware.database.connection import get_session
-from models.providers import Provider, ProviderCreate, ProviderUpdate
+from models.provider import Provider, ProviderCreate, ProviderUpdate
 
 router = APIRouter()
 

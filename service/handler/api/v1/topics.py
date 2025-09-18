@@ -6,8 +6,8 @@ from sqlmodel import select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 from middleware.database import get_session
-from models.messages import Message, MessageRead
-from models.topics import Topic
+from models.message import Message, MessageRead
+from models.topic import Topic
 
 router = APIRouter()
 

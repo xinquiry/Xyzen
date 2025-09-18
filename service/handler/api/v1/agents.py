@@ -8,7 +8,7 @@ from sqlmodel.ext.asyncio.session import AsyncSession
 
 from middleware.database import get_session
 from models.agent import Agent, AgentCreate, AgentRead, AgentUpdate
-from models.mcps import McpServer
+from models.mcp import McpServer
 
 router = APIRouter()
 

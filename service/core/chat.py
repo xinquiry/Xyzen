@@ -16,42 +16,10 @@ from core.providers import (
 )
 from internal import configs
 from models import McpServer
-from models.topics import Topic as TopicModel
+from models.topic import Topic as TopicModel
 
 # --- Logger Setup ---
 logger = logging.getLogger(__name__)
-
-
-async def initialize_providers() -> None:
-    """
-    Initialize LLM providers from database and default configuration.
-    This should be called once during application startup.
-    """
-    # First, initialize default Azure OpenAI provider from config
-    llm_config = configs.LLM
-    if llm_config.is_enabled:
-        p_type = "azure_openai"
-        try:
-            provider_manager.add_provider(
-                name="default",
-                provider_type=p_type,
-                api_key=llm_config.key,
-                base_url=llm_config.endpoint,
-                azure_endpoint=llm_config.endpoint,
-                api_version=llm_config.version,
-                default_model=llm_config.deployment,
-            )
-            logger.info(f"Initialized default {p_type} provider from config")
-        except Exception as e:
-            logger.error(f"Failed to initialize default {p_type} provider: {e}")
-
-    # Load additional providers from database
-    await _load_providers_from_database()
-
-    # Set a default active provider if none exists
-    if not provider_manager.get_active_provider() and provider_manager.list_providers():
-        first_provider = provider_manager.list_providers()[0]["name"]
-        provider_manager.set_active_provider(first_provider)
 
 
 async def _load_providers_from_database() -> None:
@@ -62,7 +30,7 @@ async def _load_providers_from_database() -> None:
         from sqlmodel import Session, select
 
         from middleware.database.connection import engine
-        from models.providers import Provider
+        from models.provider import Provider
 
         with Session(engine) as session:
             providers = session.exec(select(Provider)).all()
@@ -70,22 +38,22 @@ async def _load_providers_from_database() -> None:
             for db_provider in providers:
                 try:
                     # Map database provider to our provider system
-                    provider_type = _map_provider_type(db_provider.Name)
+                    provider_type = _map_provider_type(db_provider.name)
 
                     provider_manager.add_provider(
-                        name=f"db_{db_provider.Name.lower()}_{db_provider.id}",
+                        name=f"db_{db_provider.name.lower()}_{db_provider.id}",
                         provider_type=provider_type,
-                        api_key=db_provider.Key,
-                        base_url=db_provider.Api,
-                        default_model=db_provider.Model or "gpt-4o",
-                        max_tokens=db_provider.MaxTokens,
-                        temperature=db_provider.Temperature,
-                        timeout=db_provider.Timeout,
+                        api_key=db_provider.key,
+                        base_url=db_provider.api,
+                        default_model=db_provider.model or "gpt-4o",
+                        max_tokens=db_provider.max_tokens,
+                        temperature=db_provider.temperature,
+                        timeout=db_provider.timeout,
                     )
-                    logger.info(f"Loaded provider from database: {db_provider.Name}")
+                    logger.info(f"Loaded provider from database: {db_provider.name}")
 
                 except Exception as e:
-                    logger.error(f"Failed to load provider {db_provider.Name} from database: {e}")
+                    logger.error(f"Failed to load provider {db_provider.name} from database: {e}")
 
     except Exception as e:
         logger.error(f"Failed to load providers from database: {e}")

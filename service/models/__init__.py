@@ -1,18 +1,18 @@
-from .mcps import McpServer
-from .messages import (
+from .mcp import McpServer
+from .message import (
     Message,
     MessageCreate,
     MessageRead,
     MessageUpdate,
 )
-from .providers import Provider, ProviderBase
+from .provider import Provider, ProviderBase
 from .sessions import (
     Session,
     SessionCreate,
     SessionRead,
     SessionUpdate,
 )
-from .topics import (
+from .topic import (
     Topic,
     TopicCreate,
     TopicRead,

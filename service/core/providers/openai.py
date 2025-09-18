@@ -26,8 +26,8 @@ class OpenAIProvider(BaseLLMProvider):
         self,
         api_key: str,
         base_url: Optional[str] = None,
-        api_version: Optional[str] = None,
         azure_endpoint: Optional[str] = None,
+        api_version: Optional[str] = None,
         is_azure: bool = False,
         **kwargs: Any,
     ) -> None:

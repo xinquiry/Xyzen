@@ -4,8 +4,10 @@ Provides abstract base classes and concrete implementations for different LLM pr
 """
 
 import logging
-from enum import Enum
 from typing import Any, Dict, List, Optional, Type, Union
+
+from internal import configs
+from schemas.providers import ProviderType
 
 from .anthropic import AnthropicProvider
 from .base import BaseLLMProvider, ChatCompletionRequest, ChatCompletionResponse, ChatMessage
@@ -14,12 +16,32 @@ from .openai import OpenAIProvider
 logger = logging.getLogger(__name__)
 
 
-class ProviderType(Enum):
-    """Enumeration of available LLM provider types."""
+async def initialize_providers() -> None:
+    """
+    Initialize LLM providers from database and default configuration.
+    This should be called once during application startup.
+    """
+    # First, initialize default Azure OpenAI provider from config
+    llm_config = configs.LLM
+    if llm_config.is_enabled:
+        try:
+            provider_manager.add_provider(
+                name="default",
+                provider_type=llm_config.provider,
+                api_key=llm_config.key,
+                base_url=llm_config.endpoint,
+                azure_endpoint=llm_config.endpoint,
+                api_version=llm_config.version,
+                default_model=llm_config.deployment,
+            )
+            logger.info(f"Initialized default {llm_config.provider} provider from config")
+        except Exception as e:
+            logger.error(f"Failed to initialize default {llm_config.provider} provider: {e}")
 
-    OPENAI = "openai"
-    AZURE_OPENAI = "azure_openai"
-    ANTHROPIC = "anthropic"
+    # Set a default active provider if none exists
+    if not provider_manager.get_active_provider() and provider_manager.list_providers():
+        first_provider = provider_manager.list_providers()[0]["name"]
+        provider_manager.set_active_provider(first_provider)
 
 
 class LLMProviderFactory:

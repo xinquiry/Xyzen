@@ -1,6 +1,7 @@
 import asyncio
 import datetime
 from typing import Optional
+from uuid import UUID
 
 from fastmcp import Client
 from fastmcp.client.auth import BearerAuth
@@ -11,7 +12,7 @@ from middleware.database.connection import engine
 from models import McpServer
 
 
-async def _async_check_mcp_server_status(server_id: Optional[int]) -> None:
+async def _async_check_mcp_server_status(server_id: Optional[UUID]) -> None:
     """
     Asynchronously checks the status of an MCP server using fastmcp.Client.
     """
@@ -47,7 +48,7 @@ async def _async_check_mcp_server_status(server_id: Optional[int]) -> None:
             await ws_manager.broadcast(server.model_dump())
 
 
-def check_mcp_server_status(server_id: int) -> None:
+def check_mcp_server_status(server_id: UUID) -> None:
     """
     Checks the status of an MCP server, updates its tools list, and records the check time.
     This is a sync wrapper for the async check function.

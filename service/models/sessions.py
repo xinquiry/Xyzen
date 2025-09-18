@@ -4,7 +4,7 @@ from uuid import UUID
 from sqlmodel import Field, Relationship, SQLModel
 
 from .agent import Agent
-from .topics import Topic, TopicRead
+from .topic import Topic, TopicRead
 
 
 class SessionBase(SQLModel):

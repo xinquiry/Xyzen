@@ -1,11 +1,10 @@
-import os
 from collections.abc import AsyncGenerator
 
 from sqlalchemy import create_engine
 from sqlalchemy.ext.asyncio import create_async_engine
 from sqlmodel.ext.asyncio.session import AsyncSession
 
-from common import ALEMBIC_INI_PATH, BASE_DIR
+from common import ALEMBIC_INI_PATH
 from internal import configs
 
 SYNC_DATABASE_URL = ""
@@ -36,81 +35,62 @@ engine = create_engine(SYNC_DATABASE_URL, echo=False, future=True)
 async def create_db_and_tables() -> None:
     """
     Initialize database by automatically applying Alembic migrations.
-
-    Similar to Django's approach:
-    1. Checks for pending migrations
-    2. Automatically applies them during app startup
-    3. Fails fast if migrations fail
-
-    Note: Migration files must be created manually:
-    - Generate migration: alembic revision --autogenerate -m "description"
-
-    This function only APPLIES existing migrations, it does NOT create them.
+    This function creates a temporary synchronous engine to run migrations
+    in a separate thread, ensuring no conflict with the main async event loop.
     """
     import asyncio
     import logging
-    from pathlib import Path
 
-    # Import Alembic Python API
     from alembic import command
     from alembic.config import Config
+    from alembic.migration import MigrationContext
     from alembic.script import ScriptDirectory
-    from sqlalchemy import create_engine
 
     logger = logging.getLogger(__name__)
 
-    try:
+    def run_migrations_sync() -> None:
+        """Run alembic migrations in a synchronous manner."""
+        logger.info("Starting synchronous migration process...")
+        migration_engine = create_engine(SYNC_DATABASE_URL)
 
-        logger.info("Checking database migration status...")
+        try:
+            with migration_engine.connect() as connection:
+                logger.info("Database connection for migration established.")
 
-        # Create Alembic configuration
-        alembic_cfg = Config(str(ALEMBIC_INI_PATH))
+                alembic_cfg = Config(str(ALEMBIC_INI_PATH))
 
-        # Get script directory
-        script = ScriptDirectory.from_config(alembic_cfg)
+                # Prevent Alembic from configuring logging, to avoid conflicts with Uvicorn's logger.
+                alembic_cfg.set_main_option("log_config_file", "")
+                alembic_cfg.attributes["configure_logger"] = False
 
-        def check_migration_needed() -> tuple[bool, str | None, str | None]:
-            """Check if migrations are needed using Alembic Python API"""
-            # Create a sync engine for migration checks
-            sync_engine = create_engine(SYNC_DATABASE_URL)
+                alembic_cfg.set_main_option("sqlalchemy.url", SYNC_DATABASE_URL)
+                alembic_cfg.attributes["connection"] = connection
 
-            with sync_engine.connect() as connection:
-                # Get current revision from database
-                from alembic.migration import MigrationContext
-
+                script = ScriptDirectory.from_config(alembic_cfg)
                 migration_context = MigrationContext.configure(connection)
                 current_rev = migration_context.get_current_revision()
-
-                # Get head revision from migration files
                 head_rev = script.get_current_head()
 
-                return current_rev != head_rev, current_rev, head_rev
+                logger.info(f"Current database revision: {current_rev or 'None (empty database)'}")
+                logger.info(f"Target head revision: {head_rev}")
 
-        # Run migration check in thread to avoid blocking async event loop
-        migration_needed, current_rev, head_rev = await asyncio.to_thread(check_migration_needed)
+                if current_rev == head_rev:
+                    logger.info("✅ Database is already up to date.")
+                    return
 
-        logger.info(f"Current database revision: {current_rev or 'None (empty database)'}")
-        logger.info(f"Target head revision: {head_rev}")
+                logger.info("Pending migrations detected, proceeding with upgrade...")
+                command.upgrade(alembic_cfg, "head")
+                logger.info("✅ Database migrations applied successfully!")
 
-        if not migration_needed:
-            logger.info("✅ Database is already up to date (no pending migrations)")
-            return
+        finally:
+            migration_engine.dispose()
+            logger.info("Migration engine disposed.")
 
-        logger.info("Pending migrations detected, proceeding with upgrade...")
-
-        # Apply migrations using Alembic Python API
-        def apply_migrations() -> None:
-            """Apply migrations using Alembic Python API"""
-            command.upgrade(alembic_cfg, "head")
-
-        logger.info("Applying database migrations...")
-        await asyncio.to_thread(apply_migrations)
-
-        logger.info("✅ Database migrations applied successfully!")
-
+    try:
+        await asyncio.to_thread(run_migrations_sync)
     except Exception as e:
         error_msg = f"Database migration failed: {e}"
-        logger.error(error_msg)
+        logger.error(error_msg, exc_info=True)
         raise RuntimeError(error_msg)
 
 

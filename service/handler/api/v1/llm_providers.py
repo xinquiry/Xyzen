@@ -4,6 +4,7 @@ Provides REST API for managing LLM providers stored in the database.
 """
 
 from typing import List, Optional
+from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel
@@ -11,7 +12,7 @@ from sqlmodel import Session, select
 
 from core.providers import ProviderType, provider_manager
 from middleware.database.connection import get_session
-from models.providers import Provider, ProviderCreate, ProviderUpdate
+from models.provider import Provider, ProviderCreate, ProviderUpdate
 
 router = APIRouter(prefix="/api/v1/llm-providers", tags=["LLM Providers"])
 
@@ -19,13 +20,13 @@ router = APIRouter(prefix="/api/v1/llm-providers", tags=["LLM Providers"])
 class LLMProviderResponse(BaseModel):
     """Response model for LLM provider with runtime status."""
 
-    id: int
-    Name: str
-    Api: str
-    Model: Optional[str] = None
-    MaxTokens: int
-    Temperature: float
-    Timeout: int
+    id: UUID
+    name: str
+    api: str
+    model: Optional[str] = None
+    max_tokens: int
+    temperature: float
+    timeout: int
     # Runtime status from provider manager
     is_active: bool = False
     is_available: bool = False
@@ -35,7 +36,7 @@ class LLMProviderResponse(BaseModel):
 class ProviderSwitchRequest(BaseModel):
     """Request model for switching active provider."""
 
-    provider_id: int
+    provider_id: UUID
 
 
 @router.get("/", response_model=List[LLMProviderResponse])
@@ -50,21 +51,21 @@ async def list_providers(session: Session = Depends(get_session)) -> List[LLMPro
     result = []
     for provider in providers:
         # Get runtime status from provider manager
-        provider_key = f"db_{provider.Name.lower()}_{provider.id}"
+        provider_key = f"db_{provider.name.lower()}_{provider.id}"
         runtime_provider = provider_manager.get_provider(provider_key)
 
         result.append(
             LLMProviderResponse(
-                id=provider.id or 0,
-                Name=provider.Name,
-                Api=provider.Api,
-                Model=provider.Model,
-                MaxTokens=provider.MaxTokens,
-                Temperature=provider.Temperature,
-                Timeout=provider.Timeout,
+                id=provider.id,
+                name=provider.name,
+                api=provider.api,
+                model=provider.model,
+                max_tokens=provider.max_tokens,
+                temperature=provider.temperature,
+                timeout=provider.timeout,
                 is_active=bool(runtime_provider and runtime_provider == active_provider),
                 is_available=bool(runtime_provider and runtime_provider.is_available()),
-                provider_type=_map_provider_type(provider.Name),
+                provider_type=_map_provider_type(provider.name),
             )
         )
 
@@ -79,10 +80,10 @@ async def create_provider(
     Create a new LLM provider.
     """
     # Check if provider name already exists
-    existing = session.exec(select(Provider).where(Provider.Name == provider_data.Name)).first()
+    existing = session.exec(select(Provider).where(Provider.name == provider_data.name)).first()
     if existing:
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST, detail=f"Provider with name '{provider_data.Name}' already exists"
+            status_code=status.HTTP_400_BAD_REQUEST, detail=f"Provider with name '{provider_data.name}' already exists"
         )
 
     # Create provider in database
@@ -93,18 +94,18 @@ async def create_provider(
 
     # Add to runtime provider manager
     try:
-        provider_type = _map_provider_type(db_provider.Name)
-        provider_key = f"db_{db_provider.Name.lower()}_{db_provider.id}"
+        provider_type = _map_provider_type(db_provider.name)
+        provider_key = f"db_{db_provider.name.lower()}_{db_provider.id}"
 
         provider_manager.add_provider(
             name=provider_key,
             provider_type=provider_type,
-            api_key=db_provider.Key,
-            base_url=db_provider.Api,
-            default_model=db_provider.Model or "gpt-4o",
-            max_tokens=db_provider.MaxTokens,
-            temperature=db_provider.Temperature,
-            timeout=db_provider.Timeout,
+            api_key=db_provider.key,
+            base_url=db_provider.api,
+            default_model=db_provider.model or "gpt-4o",
+            max_tokens=db_provider.max_tokens,
+            temperature=db_provider.temperature,
+            timeout=db_provider.timeout,
         )
     except Exception as e:
         # Rollback database changes if provider manager fails
@@ -117,13 +118,13 @@ async def create_provider(
     runtime_provider = provider_manager.get_provider(provider_key)
 
     return LLMProviderResponse(
-        id=db_provider.id or 0,
-        Name=db_provider.Name,
-        Api=db_provider.Api,
-        Model=db_provider.Model,
-        MaxTokens=db_provider.MaxTokens,
-        Temperature=db_provider.Temperature,
-        Timeout=db_provider.Timeout,
+        id=db_provider.id,
+        name=db_provider.name,
+        api=db_provider.api,
+        model=db_provider.model,
+        max_tokens=db_provider.max_tokens,
+        temperature=db_provider.temperature,
+        timeout=db_provider.timeout,
         is_active=False,
         is_available=runtime_provider.is_available() if runtime_provider else False,
         provider_type=provider_type,
@@ -140,21 +141,21 @@ async def get_provider(provider_id: int, session: Session = Depends(get_session)
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Provider not found")
 
     # Get runtime status
-    provider_key = f"db_{provider.Name.lower()}_{provider.id}"
+    provider_key = f"db_{provider.name.lower()}_{provider.id}"
     runtime_provider = provider_manager.get_provider(provider_key)
     active_provider = provider_manager.get_active_provider()
 
     return LLMProviderResponse(
-        id=provider.id or 0,
-        Name=provider.Name,
-        Api=provider.Api,
-        Model=provider.Model,
-        MaxTokens=provider.MaxTokens,
-        Temperature=provider.Temperature,
-        Timeout=provider.Timeout,
+        id=provider.id,
+        name=provider.name,
+        api=provider.api,
+        model=provider.model,
+        max_tokens=provider.max_tokens,
+        temperature=provider.temperature,
+        timeout=provider.timeout,
         is_active=bool(runtime_provider and runtime_provider == active_provider),
         is_available=bool(runtime_provider and runtime_provider.is_available()),
-        provider_type=_map_provider_type(provider.Name),
+        provider_type=_map_provider_type(provider.name),
     )
 
 
@@ -170,16 +171,16 @@ async def update_provider(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Provider not found")
 
     # Check if changing name would conflict
-    if provider_data.Name != provider.Name:
-        existing = session.exec(select(Provider).where(Provider.Name == provider_data.Name)).first()
+    if provider_data.name != provider.name:
+        existing = session.exec(select(Provider).where(Provider.name == provider_data.name)).first()
         if existing and existing.id != provider_id:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"Provider with name '{provider_data.Name}' already exists",
+                detail=f"Provider with name '{provider_data.name}' already exists",
             )
 
     # Remove old provider from manager
-    old_provider_key = f"db_{provider.Name.lower()}_{provider.id}"
+    old_provider_key = f"db_{provider.name.lower()}_{provider.id}"
     try:
         provider_manager.remove_provider(old_provider_key)
     except ValueError:
@@ -195,18 +196,18 @@ async def update_provider(
 
     # Add updated provider to manager
     try:
-        provider_type = _map_provider_type(provider.Name)
-        new_provider_key = f"db_{provider.Name.lower()}_{provider.id}"
+        provider_type = _map_provider_type(provider.name)
+        new_provider_key = f"db_{provider.name.lower()}_{provider.id}"
 
         provider_manager.add_provider(
             name=new_provider_key,
             provider_type=provider_type,
-            api_key=provider.Key,
-            base_url=provider.Api,
-            default_model=provider.Model or "gpt-4o",
-            max_tokens=provider.MaxTokens,
-            temperature=provider.Temperature,
-            timeout=provider.Timeout,
+            api_key=provider.key,
+            base_url=provider.api,
+            default_model=provider.model or "gpt-4o",
+            max_tokens=provider.max_tokens,
+            temperature=provider.temperature,
+            timeout=provider.timeout,
         )
     except Exception as e:
         raise HTTPException(
@@ -217,13 +218,13 @@ async def update_provider(
     active_provider = provider_manager.get_active_provider()
 
     return LLMProviderResponse(
-        id=provider.id or 0,
-        Name=provider.Name,
-        Api=provider.Api,
-        Model=provider.Model,
-        MaxTokens=provider.MaxTokens,
-        Temperature=provider.Temperature,
-        Timeout=provider.Timeout,
+        id=provider.id,
+        name=provider.name,
+        api=provider.api,
+        model=provider.model,
+        max_tokens=provider.max_tokens,
+        temperature=provider.temperature,
+        timeout=provider.timeout,
         is_active=bool(runtime_provider and runtime_provider == active_provider),
         is_available=bool(runtime_provider and runtime_provider.is_available()),
         provider_type=provider_type,
@@ -240,7 +241,7 @@ async def delete_provider(provider_id: int, session: Session = Depends(get_sessi
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Provider not found")
 
     # Remove from provider manager
-    provider_key = f"db_{provider.Name.lower()}_{provider.id}"
+    provider_key = f"db_{provider.name.lower()}_{provider.id}"
     try:
         provider_manager.remove_provider(provider_key)
     except ValueError:
@@ -262,7 +263,7 @@ async def switch_active_provider(request: ProviderSwitchRequest, session: Sessio
     if not provider:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Provider not found")
 
-    provider_key = f"db_{provider.Name.lower()}_{provider.id}"
+    provider_key = f"db_{provider.name.lower()}_{provider.id}"
     try:
         provider_manager.set_active_provider(provider_key)
     except ValueError:
@@ -270,7 +271,7 @@ async def switch_active_provider(request: ProviderSwitchRequest, session: Sessio
             status_code=status.HTTP_400_BAD_REQUEST, detail="Provider is not available in the runtime manager"
         )
 
-    return {"message": f"Switched to provider '{provider.Name}'"}
+    return {"message": f"Switched to provider '{provider.name}'"}
 
 
 @router.get("/supported-types/", response_model=List[str])

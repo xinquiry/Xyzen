@@ -11,10 +11,10 @@ from sqlmodel.ext.asyncio.session import AsyncSession
 from core.chat import get_ai_response
 from middleware.database import get_session
 from models.agent import Agent as AgentModel
-from models.messages import Message as MessageModel
-from models.messages import MessageCreate
+from models.message import Message as MessageModel
+from models.message import MessageCreate
 from models.sessions import Session as SessionModel
-from models.topics import Topic as TopicModel
+from models.topic import Topic as TopicModel
 
 # --- Logger Setup ---
 logger = logging.getLogger(__name__)

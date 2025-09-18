@@ -7,7 +7,7 @@ from sqlalchemy.dialects.postgresql import TIMESTAMP
 from sqlmodel import Field, Relationship, SQLModel
 
 if TYPE_CHECKING:
-    from .messages import Message
+    from .message import Message
     from .sessions import Session
 
 

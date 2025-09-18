@@ -24,8 +24,12 @@ config = context.config
 
 # Interpret the config file for Python logging.
 # This line sets up loggers basically.
-if config.config_file_name is not None:
-    fileConfig(config.config_file_name)
+# Check if the 'configure_logger' attribute is set to False.
+# This is a custom flag to prevent Alembic from reconfiguring logging
+# when called from within the application, which can cause deadlocks.
+if config.attributes.get("configure_logger", True):
+    if config.config_file_name is not None:
+        fileConfig(config.config_file_name)
 
 # add your model's MetaData object here
 # for 'autogenerate' support

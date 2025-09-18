@@ -7,7 +7,7 @@ from sqlalchemy.dialects.postgresql import TIMESTAMP
 from sqlmodel import Field, Relationship, SQLModel
 
 if TYPE_CHECKING:
-    from .topics import Topic
+    from .topic import Topic
 
 
 class MessageBase(SQLModel):

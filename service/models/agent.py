@@ -4,7 +4,7 @@ from uuid import UUID, uuid4
 from sqlmodel import JSON, Column, Field, Relationship, SQLModel
 
 from .links import AgentMcpServerLink
-from .mcps import McpServer
+from .mcp import McpServer
 
 if TYPE_CHECKING:
     from .sessions import Session
@@ -19,6 +19,8 @@ class AgentBase(SQLModel):
     temperature: Optional[float] = None
     prompt: Optional[str] = None
     user_id: str = Field(index=True, description="The user ID from Casdoor")
+
+    provider_id: Optional[UUID] = Field(default=None, foreign_key="provider.id", index=True)
 
 
 class Agent(AgentBase, table=True):

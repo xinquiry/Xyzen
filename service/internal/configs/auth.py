@@ -25,6 +25,34 @@ class CasdoorAuthConfig(BaseModel):
     )
 
 
+class BohriumAuthConfig(BaseModel):
+
+    ClientId: str = Field(
+        default="",
+        description="Bohrium client ID for JWT signature verification",
+    )
+    SecretKey: str = Field(
+        default="",
+        description="Bohrium client secret for JWT signature verification",
+    )
+    Issuer: str = Field(
+        default="",
+        description="Bohrium service address",
+    )
+    JwksUri: str | None = Field(
+        default="http://localhost:7000/.well-known/jwks",
+        description="Bohrium JWKS endpoint",
+    )
+    Algorithm: str = Field(
+        default="RS256",
+        description="Encryption algorithm used for authentication, typically RS256",
+    )
+    Audience: str = Field(
+        default="your-bohrium-client-id",
+        description="Bohrium application Client ID",
+    )
+
+
 class AuthConfig(BaseSettings):
     model_config = SettingsConfigDict(
         env_nested_delimiter="_",
@@ -37,4 +65,9 @@ class AuthConfig(BaseSettings):
     Casdoor: CasdoorAuthConfig = Field(
         default_factory=lambda: CasdoorAuthConfig(),
         description="Casdoor authentication configuration",
+    )
+
+    Bohrium: BohriumAuthConfig = Field(
+        default_factory=lambda: BohriumAuthConfig(),
+        description="Bohrium authentication configuration",
     )

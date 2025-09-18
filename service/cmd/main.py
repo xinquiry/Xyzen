@@ -24,7 +24,7 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     await create_db_and_tables()
 
     # Initialize LLM providers
-    from core.chat import initialize_providers
+    from core.providers import initialize_providers
 
     await initialize_providers()
 
