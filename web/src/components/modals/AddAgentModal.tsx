@@ -22,7 +22,7 @@ const AddAgentModal: React.FC<AddAgentModalProps> = ({ isOpen, onClose }) => {
     description: "",
     prompt: "",
   });
-  const [mcpServerIds, setMcpServerIds] = useState<number[]>([]);
+  const [mcpServerIds, setMcpServerIds] = useState<string[]>([]);
 
   useEffect(() => {
     if (isOpen) {
@@ -37,7 +37,7 @@ const AddAgentModal: React.FC<AddAgentModalProps> = ({ isOpen, onClose }) => {
     setAgent((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleMcpServerChange = (serverId: number) => {
+  const handleMcpServerChange = (serverId: string) => {
     setMcpServerIds((prevIds) =>
       prevIds.includes(serverId)
         ? prevIds.filter((id) => id !== serverId)

@@ -34,7 +34,7 @@ class Agent(AgentBase, table=True):
 
 
 class AgentCreate(AgentBase):
-    mcp_server_ids: List[int] = []
+    mcp_server_ids: List[UUID] = []
 
 
 class AgentRead(AgentBase):
@@ -50,7 +50,7 @@ class AgentUpdate(SQLModel):
     model: Optional[str] = None
     temperature: Optional[float] = None
     prompt: Optional[str] = None
-    mcp_server_ids: Optional[List[int]] = None
+    mcp_server_ids: Optional[List[UUID]] = None
 
 
 Agent.model_rebuild()

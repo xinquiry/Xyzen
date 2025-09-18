@@ -27,7 +27,7 @@ export const mcpService = {
   },
 
   async updateMcpServer(
-    id: number,
+    id: string,
     server: Partial<McpServerCreate>,
   ): Promise<McpServer> {
     const response = await fetch(`${getBackendUrl()}/api/v1/mcps/${id}`, {
@@ -43,7 +43,7 @@ export const mcpService = {
     return response.json();
   },
 
-  async deleteMcpServer(id: number): Promise<void> {
+  async deleteMcpServer(id: string): Promise<void> {
     const response = await fetch(`${getBackendUrl()}/api/v1/mcps/${id}`, {
       method: "DELETE",
     });

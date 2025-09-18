@@ -21,7 +21,7 @@ const EditAgentModal: React.FC<EditAgentModalProps> = ({
   const { updateAgent, mcpServers, fetchMcpServers, openAddMcpServerModal } =
     useXyzen();
   const [agent, setAgent] = useState<Agent | null>(agentToEdit);
-  const [mcpServerIds, setMcpServerIds] = useState<number[]>([]);
+  const [mcpServerIds, setMcpServerIds] = useState<string[]>([]);
 
   useEffect(() => {
     setAgent(agentToEdit);
@@ -41,7 +41,7 @@ const EditAgentModal: React.FC<EditAgentModalProps> = ({
     setAgent({ ...agent, [name]: value });
   };
 
-  const handleMcpServerChange = (serverId: number) => {
+  const handleMcpServerChange = (serverId: string) => {
     setMcpServerIds((prevIds) =>
       prevIds.includes(serverId)
         ? prevIds.filter((id) => id !== serverId)

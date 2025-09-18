@@ -11,8 +11,8 @@ export type Agent = {
   name: string;
   description: string;
   prompt: string;
-  mcp_servers: { id: number }[];
-  mcp_server_ids?: number[];
+  mcp_servers: { id: string }[];
+  mcp_server_ids?: string[];
   user_id: string;
 };
 
@@ -52,7 +52,11 @@ const AgentCard: React.FC<AgentCardProps> = ({ agent, onClick, onEdit }) => {
     >
       {/* 头像 */}
       <img
-        src="https://cdn1.deepmd.net/static/img/affb038eChatGPT Image 2025年8月6日 10_33_07.png"
+        src={
+          agent.id === "default-chat"
+            ? "https://avatars.githubusercontent.com/u/176685?v=4" // 使用一个友好的默认头像
+            : "https://cdn1.deepmd.net/static/img/affb038eChatGPT Image 2025年8月6日 10_33_07.png"
+        }
         alt={agent.name}
         className="h-10 w-10 rounded-full object-cover border border-neutral-200 dark:border-neutral-700"
       />
@@ -69,15 +73,18 @@ const AgentCard: React.FC<AgentCardProps> = ({ agent, onClick, onEdit }) => {
                 {agent.mcp_servers.length} MCPs
               </span>
             )}
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                onEdit?.(agent);
-              }}
-              className="z-10 text-xs text-neutral-500 hover:text-indigo-600 dark:text-neutral-400 dark:hover:text-indigo-400"
-            >
-              编辑
-            </button>
+            {/* 默认助手不显示编辑按钮 */}
+            {agent.id !== "default-chat" && (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onEdit?.(agent);
+                }}
+                className="z-10 text-xs text-neutral-500 hover:text-indigo-600 dark:text-neutral-400 dark:hover:text-indigo-400"
+              >
+                编辑
+              </button>
+            )}
           </div>
         </div>
 
@@ -106,18 +113,40 @@ export default function XyzenAgent() {
   const [editingAgent, setEditingAgent] = useState<Agent | null>(null);
   const { agents, fetchAgents, createDefaultChannel } = useXyzen();
 
+  // 默认的"随便聊聊"助手
+  const defaultAgent: Agent = {
+    id: "default-chat",
+    name: "随便聊聊",
+    description: "与AI助手自由对话，无需特定的设定或工具",
+    prompt: "",
+    mcp_servers: [],
+    user_id: "system",
+  };
+
   useEffect(() => {
     fetchAgents();
   }, [fetchAgents]);
 
   const handleAgentClick = (agent: Agent) => {
-    createDefaultChannel(agent.id);
+    // 如果是默认助手，不传agent_id，让后端创建一个普通的session
+    if (agent.id === "default-chat") {
+      createDefaultChannel();
+    } else {
+      createDefaultChannel(agent.id);
+    }
   };
 
   const handleEditClick = (agent: Agent) => {
+    // 默认助手不可编辑
+    if (agent.id === "default-chat") {
+      return;
+    }
     setEditingAgent(agent);
     setEditModalOpen(true);
   };
+
+  // 合并默认助手和用户助手
+  const allAgents = [defaultAgent, ...agents];
 
   return (
     <motion.div
@@ -126,7 +155,7 @@ export default function XyzenAgent() {
       initial="hidden"
       animate="visible"
     >
-      {agents.map((agent) => (
+      {allAgents.map((agent) => (
         <AgentCard
           key={agent.id}
           agent={agent}

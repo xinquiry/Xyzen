@@ -1,4 +1,5 @@
 from typing import Any
+from uuid import UUID
 
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException
 from sqlmodel import select
@@ -40,7 +41,7 @@ async def read_mcp_servers(
 
 
 @router.get("/mcps/{mcp_server_id}", response_model=McpServer)
-async def read_mcp_server(*, session: AsyncSession = Depends(get_session), mcp_server_id: int) -> McpServer:
+async def read_mcp_server(*, session: AsyncSession = Depends(get_session), mcp_server_id: UUID) -> McpServer:
     mcp_server = await session.get(McpServer, mcp_server_id)
     if not mcp_server:
         raise HTTPException(status_code=404, detail="McpServer not found")
@@ -51,7 +52,7 @@ async def read_mcp_server(*, session: AsyncSession = Depends(get_session), mcp_s
 async def update_mcp_server(
     *,
     session: AsyncSession = Depends(get_session),
-    mcp_server_id: int,
+    mcp_server_id: UUID,
     mcp_server: McpServer,
 ) -> McpServer:
     db_mcp_server = await session.get(McpServer, mcp_server_id)
@@ -67,7 +68,7 @@ async def update_mcp_server(
 
 
 @router.delete("/mcps/{mcp_server_id}")
-async def delete_mcp_server(*, session: AsyncSession = Depends(get_session), mcp_server_id: int) -> dict[str, Any]:
+async def delete_mcp_server(*, session: AsyncSession = Depends(get_session), mcp_server_id: UUID) -> dict[str, Any]:
     mcp_server = await session.get(McpServer, mcp_server_id)
     if not mcp_server:
         raise HTTPException(status_code=404, detail="McpServer not found")

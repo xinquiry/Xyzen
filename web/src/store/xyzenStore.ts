@@ -113,10 +113,10 @@ interface XyzenState {
   fetchMcpServers: () => Promise<void>;
   addMcpServer: (server: McpServerCreate) => Promise<void>;
   editMcpServer: (
-    id: number,
+    id: string,
     server: Partial<McpServerCreate>,
   ) => Promise<void>;
-  removeMcpServer: (id: number) => Promise<void>;
+  removeMcpServer: (id: string) => Promise<void>;
   updateMcpServerInList: (server: McpServer) => void;
 
   fetchLlmProviders: () => Promise<void>;

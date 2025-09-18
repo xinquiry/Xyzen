@@ -36,7 +36,7 @@ const ServerStatusIndicator: React.FC<ServerStatusIndicatorProps> = ({
 
 interface McpServerCardProps {
   server: McpServer;
-  onRemove: (id: number) => void;
+  onRemove: (id: string) => void;
 }
 
 const McpServerCard: React.FC<McpServerCardProps> = ({ server, onRemove }) => {
