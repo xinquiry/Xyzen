@@ -32,6 +32,7 @@ import { LlmProviders } from "@/app/LlmProviders";
 import { Mcp } from "@/app/Mcp";
 import LlmIcon from "@/assets/LlmIcon";
 import McpIcon from "@/assets/McpIcon";
+import { AuthStatus } from "@/components/features";
 import XyzenAgent from "@/components/layouts/XyzenAgent";
 import XyzenChat from "@/components/layouts/XyzenChat";
 import XyzenHistory from "@/components/layouts/XyzenHistory";
@@ -284,6 +285,8 @@ export function Xyzen({ backendUrl = DEFAULT_BACKEND_URL }: XyzenProps) {
               >
                 <PlusIcon className="h-5 w-5" />
               </button>
+              <div className="mx-2 h-6 w-px bg-neutral-200 dark:bg-neutral-700"></div>
+              <AuthStatus className="ml-2" />
               <button
                 onClick={closeXyzen}
                 className="rounded-md p-1.5 text-neutral-500 hover:bg-neutral-100 dark:text-neutral-400 dark:hover:bg-neutral-800"

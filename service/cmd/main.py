@@ -12,7 +12,8 @@ from handler import root_router
 from handler.api.v1 import agents, mcps, sessions, topics
 from handler.mcp import dify_mcp, lab_mcp, other_mcp
 from internal import configs
-from middleware.auth.casdoor import casdoor_mcp_auth
+
+# from middleware.auth.casdoor import casdoor_mcp_auth
 from middleware.database import create_db_and_tables
 from middleware.logger import LOGGING_CONFIG
 
@@ -33,7 +34,7 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
         server=lab_mcp,  # FastMCP Instance, don't need to pass auth
         streamable_http_path="/",  # Relative path for the MCP server
         debug=configs.Debug,
-        auth=casdoor_mcp_auth,
+        # auth=casdoor_mcp_auth,
     )
 
     other_app = create_streamable_http_app(
