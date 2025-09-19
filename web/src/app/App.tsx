@@ -18,14 +18,7 @@ import {
   Transition,
   TransitionChild,
 } from "@headlessui/react";
-import {
-  CogIcon,
-  ComputerDesktopIcon,
-  MoonIcon,
-  SparklesIcon,
-  SunIcon,
-  XMarkIcon,
-} from "@heroicons/react/24/outline";
+import { SparklesIcon, XMarkIcon } from "@heroicons/react/24/outline";
 import { Fragment, useEffect, useRef, useState } from "react";
 
 import { LlmProviders } from "@/app/LlmProviders";
@@ -37,7 +30,6 @@ import XyzenChat from "@/components/layouts/XyzenChat";
 import { AddLlmProviderModal } from "@/components/modals/AddLlmProviderModal";
 import { AddMcpServerModal } from "@/components/modals/AddMcpServerModal";
 import { DEFAULT_BACKEND_URL } from "@/configs";
-import useTheme from "@/hooks/useTheme";
 
 // 定义最小宽度和最大宽度限制
 const MIN_WIDTH = 280;
@@ -114,7 +106,7 @@ export function Xyzen({ backendUrl = DEFAULT_BACKEND_URL }: XyzenProps) {
     setBackendUrl,
     fetchUserByToken,
   } = useXyzen();
-  const { theme, cycleTheme } = useTheme();
+  // const { theme, cycleTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
   const [isMcpOpen, setIsMcpOpen] = useState(false);
@@ -251,7 +243,7 @@ export function Xyzen({ backendUrl = DEFAULT_BACKEND_URL }: XyzenProps) {
               ))}
             </Tab.List>
             <div className="flex items-center space-x-1">
-              <button
+              {/* <button
                 className="rounded-md p-1.5 text-neutral-500 hover:bg-neutral-100 dark:text-neutral-400 dark:hover:bg-neutral-800"
                 title="切换主题"
                 onClick={cycleTheme}
@@ -261,7 +253,7 @@ export function Xyzen({ backendUrl = DEFAULT_BACKEND_URL }: XyzenProps) {
                 {theme === "system" && (
                   <ComputerDesktopIcon className="h-5 w-5" />
                 )}
-              </button>
+              </button> */}
               <button
                 className="rounded-md p-1.5 text-neutral-500 hover:bg-neutral-100 dark:text-neutral-400 dark:hover:bg-neutral-800"
                 title="MCP 管理"
@@ -269,13 +261,13 @@ export function Xyzen({ backendUrl = DEFAULT_BACKEND_URL }: XyzenProps) {
               >
                 <McpIcon className="h-5 w-5" />
               </button>
-              <button
+              {/* <button
                 className="rounded-md p-1.5 text-neutral-500 hover:bg-neutral-100 dark:text-neutral-400 dark:hover:bg-neutral-800"
                 title="LLM 提供商"
                 onClick={() => setIsLlmProvidersOpen(true)}
               >
                 <CogIcon className="h-5 w-5" />
-              </button>
+              </button> */}
               <div className="mx-2 h-6 w-px bg-neutral-200 dark:bg-neutral-700"></div>
               <AuthStatus className="ml-2" />
               <button

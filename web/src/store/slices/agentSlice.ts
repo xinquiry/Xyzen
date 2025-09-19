@@ -1,4 +1,5 @@
 import type { Agent } from "@/components/layouts/XyzenAgent";
+import { authService } from "@/service/authService";
 import type { StateCreator } from "zustand";
 import type { XyzenState } from "../types";
 
@@ -11,6 +12,20 @@ export interface AgentSlice {
   deleteAgent: (id: string) => Promise<void>;
 }
 
+// 创建带认证头的请求选项
+const createAuthHeaders = (): HeadersInit => {
+  const token = authService.getToken();
+  const headers: HeadersInit = {
+    "Content-Type": "application/json",
+  };
+
+  if (token) {
+    headers["Authorization"] = `Bearer ${token}`;
+  }
+
+  return headers;
+};
+
 export const createAgentSlice: StateCreator<
   XyzenState,
   [["zustand/immer", never]],
@@ -22,7 +37,9 @@ export const createAgentSlice: StateCreator<
   fetchAgents: async () => {
     set({ agentsLoading: true });
     try {
-      const response = await fetch(`${get().backendUrl}/api/v1/agents/`);
+      const response = await fetch(`${get().backendUrl}/api/v1/agents/`, {
+        headers: createAuthHeaders(),
+      });
       if (!response.ok) {
         throw new Error("Failed to fetch agents");
       }
@@ -38,7 +55,7 @@ export const createAgentSlice: StateCreator<
     try {
       const response = await fetch(`${get().backendUrl}/api/v1/agents/`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: createAuthHeaders(),
         body: JSON.stringify(agent),
       });
       if (!response.ok) {
@@ -57,7 +74,7 @@ export const createAgentSlice: StateCreator<
         `${get().backendUrl}/api/v1/agents/${agent.id}`,
         {
           method: "PATCH",
-          headers: { "Content-Type": "application/json" },
+          headers: createAuthHeaders(),
           body: JSON.stringify(agent),
         },
       );
@@ -75,6 +92,7 @@ export const createAgentSlice: StateCreator<
     try {
       const response = await fetch(`${get().backendUrl}/api/v1/agents/${id}`, {
         method: "DELETE",
+        headers: createAuthHeaders(),
       });
       if (!response.ok) {
         const errorText = await response.text();
