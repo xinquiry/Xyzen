@@ -1,4 +1,4 @@
-import { useXyzen } from "@/store/xyzenStore";
+import { useXyzen } from "@/store";
 import type { McpServer, McpServerCreate } from "@/types/mcp";
 
 const getBackendUrl = () => useXyzen.getState().backendUrl;

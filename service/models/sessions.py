@@ -15,7 +15,7 @@ class SessionBase(SQLModel):
     name: str
     description: str | None = None
     is_active: bool = True
-    username: str = Field(index=True, description="The username from Casdoor")
+    user_id: str = Field(index=True, description="The user ID")
     agent_id: UUID | None = Field(default=None, foreign_key="agent.id")
 
 
@@ -27,7 +27,7 @@ class Session(SessionBase, table=True):
 
 
 class SessionCreate(SessionBase):
-    username: str
+    user_id: str
     agent_id: UUID | None = None
 
 

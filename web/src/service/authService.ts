@@ -1,4 +1,4 @@
-import { useXyzen } from "@/store/xyzenStore";
+import { useXyzen } from "@/store";
 
 const getBackendUrl = () => useXyzen.getState().backendUrl;
 

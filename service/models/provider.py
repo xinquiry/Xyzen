@@ -7,7 +7,7 @@ from sqlmodel import Field, SQLModel
 class ProviderBase(SQLModel):
     """Base model for a provider with required fields for creation."""
 
-    user: UUID = Field(index=True)
+    user_id: str = Field(index=True, description="The user ID from authentication provider")
     name: str = Field(index=True)
     api: str
     key: str

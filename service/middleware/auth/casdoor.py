@@ -55,7 +55,13 @@ class CasdoorAuthProvider(BaseAuthProvider):
                 )
 
             userinfo_data = response.json()
-            logger.info(f"Casdoor: 成功获取用户信息: {userinfo_data}")
+            logger.info(f"Casdoor: 获取用户信息响应: {userinfo_data}")
+
+            # 检查 Casdoor API 响应状态
+            if userinfo_data.get("status") == "error":
+                error_msg = userinfo_data.get("msg", "Unknown error")
+                logger.error(f"Casdoor: API 返回错误: {error_msg}")
+                return AuthResult(success=False, error_code="CASDOOR_API_ERROR", error_message=error_msg)
 
             # 解析用户信息
             user_info = self.parse_userinfo_response(userinfo_data)
@@ -76,7 +82,7 @@ class CasdoorAuthProvider(BaseAuthProvider):
         logger.info("Casdoor: 解析 userinfo API 响应中的用户信息")
         logger.info(f"Casdoor: userinfo 数据: {userinfo_data}")
 
-        # Casdoor userinfo API 响应结构解析
+        # Casdoor 返回标准的 JWT userinfo 格式
         user_info = UserInfo(
             id=userinfo_data.get("sub", ""),
             username=userinfo_data.get("preferred_username", ""),

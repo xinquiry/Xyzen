@@ -1,5 +1,5 @@
 import { LoadingSpinner } from "@/components/base/LoadingSpinner";
-import { useXyzen } from "@/store/xyzenStore";
+import { useXyzen } from "@/store";
 import type { LlmProviderResponse } from "@/types/llmProvider";
 import { Button } from "@headlessui/react";
 import {

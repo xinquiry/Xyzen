@@ -196,11 +196,6 @@ export function AuthStatus({ onTokenInput, className = "" }: AuthStatusProps) {
               <span className="text-sm font-medium text-neutral-900 dark:text-neutral-100">
                 {auth.user?.display_name || auth.user?.username}
               </span>
-              {auth.provider && (
-                <span className="text-xs text-neutral-500 dark:text-neutral-400">
-                  {auth.provider}
-                </span>
-              )}
             </div>
           </div>
         </div>

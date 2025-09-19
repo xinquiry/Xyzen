@@ -4,7 +4,7 @@ import React, { useEffect, useState } from "react";
 
 import AddAgentModal from "@/components/modals/AddAgentModal";
 import EditAgentModal from "@/components/modals/EditAgentModal";
-import { useXyzen } from "@/store/xyzenStore";
+import { useXyzen } from "@/store";
 
 export type Agent = {
   id: string;

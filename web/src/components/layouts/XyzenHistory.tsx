@@ -2,7 +2,8 @@
 
 import { LoadingSpinner } from "@/components/base/LoadingSpinner";
 import { formatTime } from "@/lib/formatDate";
-import { type ChatHistoryItem, useXyzen } from "@/store/xyzenStore";
+import { useXyzen } from "@/store";
+import type { ChatHistoryItem } from "@/store/types";
 import { MapPinIcon } from "@heroicons/react/20/solid";
 import { ChevronRightIcon, ClockIcon } from "@heroicons/react/24/outline";
 import { useEffect } from "react";

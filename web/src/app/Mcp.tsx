@@ -1,6 +1,6 @@
 import { LoadingSpinner } from "@/components/base/LoadingSpinner";
 import { websocketService } from "@/service/websocketService";
-import { useXyzen } from "@/store/xyzenStore";
+import { useXyzen } from "@/store";
 import type { McpServer } from "@/types/mcp";
 import { Button } from "@headlessui/react";
 import { PlusIcon, TrashIcon } from "@heroicons/react/24/outline";

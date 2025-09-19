@@ -1,4 +1,4 @@
-import { useXyzen } from "@/store/xyzenStore";
+import { useXyzen } from "@/store";
 import type { DragEndEvent, DragMoveEvent } from "@dnd-kit/core";
 import {
   DndContext,
@@ -21,7 +21,6 @@ import {
 import {
   ComputerDesktopIcon,
   MoonIcon,
-  PlusIcon,
   SparklesIcon,
   SunIcon,
   XMarkIcon,
@@ -35,7 +34,6 @@ import McpIcon from "@/assets/McpIcon";
 import { AuthStatus } from "@/components/features";
 import XyzenAgent from "@/components/layouts/XyzenAgent";
 import XyzenChat from "@/components/layouts/XyzenChat";
-import XyzenHistory from "@/components/layouts/XyzenHistory";
 import { AddLlmProviderModal } from "@/components/modals/AddLlmProviderModal";
 import { AddMcpServerModal } from "@/components/modals/AddMcpServerModal";
 import { DEFAULT_BACKEND_URL } from "@/configs";
@@ -113,8 +111,8 @@ export function Xyzen({ backendUrl = DEFAULT_BACKEND_URL }: XyzenProps) {
     toggleXyzen,
     activeTabIndex,
     setTabIndex,
-    createDefaultChannel,
     setBackendUrl,
+    fetchUserByToken,
   } = useXyzen();
   const { theme, cycleTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
@@ -130,13 +128,13 @@ export function Xyzen({ backendUrl = DEFAULT_BACKEND_URL }: XyzenProps) {
   const tabs = [
     { id: "agent", title: "助手", component: <XyzenAgent /> },
     { id: "chat", title: "聊天", component: <XyzenChat /> },
-    { id: "history", title: "历史", component: <XyzenHistory /> },
   ];
 
   useEffect(() => {
     setMounted(true);
     setBackendUrl(backendUrl);
-  }, [backendUrl, setBackendUrl]);
+    fetchUserByToken();
+  }, [backendUrl, setBackendUrl, fetchUserByToken]);
 
   // 优化 dnd-kit sensor 配置
   const sensors = useSensors(
@@ -277,13 +275,6 @@ export function Xyzen({ backendUrl = DEFAULT_BACKEND_URL }: XyzenProps) {
                 onClick={() => setIsLlmProvidersOpen(true)}
               >
                 <LlmIcon className="h-5 w-5" />
-              </button>
-              <button
-                className="rounded-md p-1.5 text-neutral-500 hover:bg-neutral-100 dark:text-neutral-400 dark:hover:bg-neutral-800"
-                title="新对话"
-                onClick={() => createDefaultChannel()}
-              >
-                <PlusIcon className="h-5 w-5" />
               </button>
               <div className="mx-2 h-6 w-px bg-neutral-200 dark:bg-neutral-700"></div>
               <AuthStatus className="ml-2" />

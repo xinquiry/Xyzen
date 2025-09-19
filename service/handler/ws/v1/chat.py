@@ -51,8 +51,8 @@ manager = ConnectionManager()
 async def get_current_user(websocket: WebSocket) -> str:
     # This is a placeholder. In a real app, you'd get the user
     # from a token passed in headers or query params.
-    # For now, we'll use a hardcoded username that matches the session owner.
-    return "Harvey"
+    # For now, we'll use a hardcoded user_id that matches the session owner.
+    return "harvey-123"
 
 
 # --- WebSocket Endpoint ---
@@ -88,7 +88,7 @@ async def chat_websocket(
 
     # Optional: Verify session belongs to user
     session = await db.get(SessionModel, session_id)
-    if not session or session.username != user:
+    if not session or session.user_id != user:
         await websocket.close(code=4003, reason="Session not found or access denied")
         return
 

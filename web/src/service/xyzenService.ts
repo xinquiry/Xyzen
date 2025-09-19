@@ -1,4 +1,4 @@
-import { type Message } from "@/store/xyzenStore";
+import type { Message } from "@/store/types";
 
 interface StatusChangePayload {
   connected: boolean;

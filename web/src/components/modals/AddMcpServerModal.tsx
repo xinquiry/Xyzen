@@ -1,6 +1,6 @@
 import { Input } from "@/components/base/Input";
 import { Modal } from "@/components/base/Modal";
-import { useXyzen } from "@/store/xyzenStore";
+import { useXyzen } from "@/store";
 import type { McpServerCreate } from "@/types/mcp";
 import { Button, Field, Label } from "@headlessui/react";
 import { useState, type ChangeEvent } from "react";

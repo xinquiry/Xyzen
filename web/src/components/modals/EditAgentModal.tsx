@@ -1,6 +1,6 @@
 import { Input } from "@/components/base/Input";
 import { Modal } from "@/components/base/Modal";
-import { useXyzen } from "@/store/xyzenStore";
+import { useXyzen } from "@/store";
 import { Button, Field, Label } from "@headlessui/react";
 import { PlusIcon } from "@heroicons/react/24/outline";
 import React, { useEffect, useState } from "react";
