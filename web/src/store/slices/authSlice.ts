@@ -23,7 +23,7 @@ export const createAuthSlice: StateCreator<
   [["zustand/immer", never]],
   [],
   AuthSlice
-> = (set, get) => ({
+> = (set, _) => ({
   user: mockUser, // Default to mock user for now
   token: null,
   status: "idle",

@@ -27,6 +27,7 @@ export function AddLlmProviderModal() {
   const [supportedTypes, setSupportedTypes] = useState<SupportedProviderType[]>(
     [],
   );
+  console.log(supportedTypes);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
