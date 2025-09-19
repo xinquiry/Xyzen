@@ -1,3 +1,4 @@
+import { Badge } from "@/components/base/Badge";
 import { Switch } from "@/components/base/Switch";
 import type { McpServer } from "@/types/mcp";
 import clsx from "clsx";
@@ -41,9 +42,7 @@ export const McpServerItem: React.FC<McpServerItemProps> = ({
             {mcp.name}
           </p>
           {mcp.tools && mcp.tools.length > 0 && (
-            <span className="rounded-full bg-blue-100 px-2 py-0.5 text-xs font-medium text-blue-800 dark:bg-blue-900 dark:text-blue-200">
-              {mcp.tools.length} Tools
-            </span>
+            <Badge variant="blue">{mcp.tools.length} Tools</Badge>
           )}
         </div>
         <p className="mt-1 text-sm text-neutral-600 dark:text-neutral-400 line-clamp-1">

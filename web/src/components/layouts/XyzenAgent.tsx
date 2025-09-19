@@ -1,4 +1,7 @@
 "use client";
+import McpIcon from "@/assets/McpIcon";
+import { Badge } from "@/components/base/Badge";
+import { PencilIcon } from "@heroicons/react/24/outline";
 import { motion, type Variants } from "framer-motion";
 import React, { useEffect, useState } from "react";
 
@@ -63,35 +66,37 @@ const AgentCard: React.FC<AgentCardProps> = ({ agent, onClick, onEdit }) => {
 
       {/* 内容 */}
       <div className="flex flex-1 flex-col">
-        <div className="flex items-center justify-between">
+        <div className="flex items-center">
           <h3 className="text-sm font-semibold text-neutral-800 dark:text-white">
             {agent.name}
           </h3>
-          <div className="flex items-center space-x-2">
-            {agent.mcp_servers && agent.mcp_servers.length > 0 && (
-              <span className="text-xs text-gray-500">
-                {agent.mcp_servers.length} MCPs
-              </span>
-            )}
-            {/* 默认助手不显示编辑按钮 */}
-            {agent.id !== "default-chat" && (
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onEdit?.(agent);
-                }}
-                className="z-10 text-xs text-neutral-500 hover:text-indigo-600 dark:text-neutral-400 dark:hover:text-indigo-400"
-              >
-                编辑
-              </button>
-            )}
-          </div>
+          {agent.mcp_servers && agent.mcp_servers.length > 0 && (
+            <Badge variant="blue" className="ml-2 flex items-center gap-1">
+              <McpIcon className="h-3 w-3" />
+              {agent.mcp_servers.length}
+            </Badge>
+          )}
         </div>
 
         <p className="mt-1 text-xs text-neutral-600 dark:text-neutral-400 line-clamp-2">
           {agent.description}
         </p>
       </div>
+
+      {/* 编辑按钮 - 高度和整个条目相同，带动画效果 */}
+      {agent.id !== "default-chat" && (
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            onEdit?.(agent);
+          }}
+          className="z-10 ml-3 flex items-center justify-center rounded-lg bg-transparent px-3 text-neutral-400 opacity-0 transition-all duration-300 ease-in-out hover:bg-neutral-100 hover:text-indigo-600 hover:shadow-md hover:scale-105 group-hover:opacity-100 group-hover:shadow-sm active:scale-95 dark:text-neutral-500 dark:hover:bg-neutral-800 dark:hover:text-indigo-400"
+          style={{ alignSelf: "stretch", margin: "4px 0" }}
+          title="编辑助手"
+        >
+          <PencilIcon className="h-5 w-5 transition-transform duration-200" />
+        </button>
+      )}
     </motion.div>
   );
 };

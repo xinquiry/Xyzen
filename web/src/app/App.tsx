@@ -19,6 +19,7 @@ import {
   TransitionChild,
 } from "@headlessui/react";
 import {
+  CogIcon,
   ComputerDesktopIcon,
   MoonIcon,
   SparklesIcon,
@@ -29,7 +30,6 @@ import { Fragment, useEffect, useRef, useState } from "react";
 
 import { LlmProviders } from "@/app/LlmProviders";
 import { Mcp } from "@/app/Mcp";
-import LlmIcon from "@/assets/LlmIcon";
 import McpIcon from "@/assets/McpIcon";
 import { AuthStatus } from "@/components/features";
 import XyzenAgent from "@/components/layouts/XyzenAgent";
@@ -274,7 +274,7 @@ export function Xyzen({ backendUrl = DEFAULT_BACKEND_URL }: XyzenProps) {
                 title="LLM 提供商"
                 onClick={() => setIsLlmProvidersOpen(true)}
               >
-                <LlmIcon className="h-5 w-5" />
+                <CogIcon className="h-5 w-5" />
               </button>
               <div className="mx-2 h-6 w-px bg-neutral-200 dark:bg-neutral-700"></div>
               <AuthStatus className="ml-2" />

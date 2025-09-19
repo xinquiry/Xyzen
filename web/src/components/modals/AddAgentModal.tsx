@@ -55,8 +55,8 @@ const AddAgentModal: React.FC<AddAgentModalProps> = ({ isOpen, onClose }) => {
       await createAgent({
         ...agent,
         mcp_server_ids: mcpServerIds,
-        user_id: "user123",
-        mcp_servers: [],
+        user_id: "temp", // TODO: 应该由后端从认证token中获取
+        mcp_servers: [], // 后端会自动处理关联
       });
       onClose();
       setAgent({ name: "", description: "", prompt: "" });

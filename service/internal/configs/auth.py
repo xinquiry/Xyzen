@@ -27,16 +27,12 @@ class CasdoorAuthConfig(BaseModel):
 
 class BohriumAuthConfig(BaseModel):
 
-    ClientId: str = Field(
-        default="",
-        description="Bohrium client ID for JWT signature verification",
-    )
     SecretKey: str = Field(
-        default="",
+        default="inputyourownsecret",
         description="Bohrium client secret for JWT signature verification",
     )
     Issuer: str = Field(
-        default="",
+        default="https://localhost:8000",
         description="Bohrium service address",
     )
     JwksUri: str | None = Field(
@@ -57,7 +53,7 @@ class AuthConfig(BaseSettings):
     model_config = SettingsConfigDict(
         env_nested_delimiter="_",
         case_sensitive=False,
-        extra="ignore",
+        extra="forbid",
     )
 
     Provider: str = Field(default="casdoor", description="Authentication provider")
