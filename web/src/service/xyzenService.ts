@@ -1,4 +1,5 @@
 import type { Message } from "@/store/types";
+import { authService } from "./authService";
 
 interface StatusChangePayload {
   connected: boolean;
@@ -32,10 +33,23 @@ class XyzenService {
     this.onMessageCallback = onMessage;
     this.onStatusChangeCallback = onStatusChange;
 
+    // Get authentication token
+    const token = authService.getToken();
+    if (!token) {
+      console.error("XyzenService: No authentication token available");
+      this.onStatusChangeCallback?.({
+        connected: false,
+        error: "Authentication required",
+      });
+      return;
+    }
+
+    // Build WebSocket URL with token as query parameter
     const wsUrl = `${this.backendUrl.replace(
       /^http(s?):\/\//,
       "ws$1://",
-    )}/ws/v1/chat/sessions/${sessionId}/topics/${topicId}`;
+    )}/ws/v1/chat/sessions/${sessionId}/topics/${topicId}?token=${encodeURIComponent(token)}`;
+
     this.ws = new WebSocket(wsUrl);
 
     this.ws.onopen = () => {
@@ -52,11 +66,13 @@ class XyzenService {
       }
     };
 
-    this.ws.onclose = () => {
-      console.log("XyzenService: WebSocket disconnected");
+    this.ws.onclose = (event) => {
+      console.log(
+        `XyzenService: WebSocket disconnected (code: ${event.code}, reason: ${event.reason})`,
+      );
       this.onStatusChangeCallback?.({
         connected: false,
-        error: "Connection closed.",
+        error: event.reason || "Connection closed.",
       });
     };
 

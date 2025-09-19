@@ -1,3 +1,4 @@
+import { authService } from "@/service/authService";
 import xyzenService from "@/service/xyzenService";
 import type { StateCreator } from "zustand";
 import type {
@@ -40,7 +41,19 @@ export const createChatSlice: StateCreator<
   fetchChatHistory: async () => {
     set({ chatHistoryLoading: true });
     try {
-      const response = await fetch(`${get().backendUrl}/api/v1/sessions/`);
+      const token = authService.getToken();
+      const headers: Record<string, string> = {
+        "Content-Type": "application/json",
+      };
+
+      if (token) {
+        headers.Authorization = `Bearer ${token}`;
+      }
+
+      const response = await fetch(`${get().backendUrl}/api/v1/sessions/`, {
+        headers,
+      });
+
       if (!response.ok) {
         throw new Error("Failed to fetch chat history");
       }
@@ -106,7 +119,18 @@ export const createChatSlice: StateCreator<
 
     if (!channel) {
       try {
-        const response = await fetch(`${backendUrl}/api/v1/sessions/`);
+        const token = authService.getToken();
+        const headers: Record<string, string> = {
+          "Content-Type": "application/json",
+        };
+
+        if (token) {
+          headers.Authorization = `Bearer ${token}`;
+        }
+
+        const response = await fetch(`${backendUrl}/api/v1/sessions/`, {
+          headers,
+        });
         if (!response.ok) throw new Error("Failed to fetch sessions");
 
         const sessions: SessionResponse[] = await response.json();
@@ -156,8 +180,18 @@ export const createChatSlice: StateCreator<
     if (channel) {
       if (channel.messages.length === 0) {
         try {
+          const token = authService.getToken();
+          const headers: Record<string, string> = {
+            "Content-Type": "application/json",
+          };
+
+          if (token) {
+            headers.Authorization = `Bearer ${token}`;
+          }
+
           const response = await fetch(
             `${backendUrl}/api/v1/topics/${topicId}/messages`,
+            { headers },
           );
           if (response.ok) {
             const messages = await response.json();
@@ -215,12 +249,88 @@ export const createChatSlice: StateCreator<
 
   createDefaultChannel: async (agentId) => {
     try {
+      const agentIdParam = agentId || "default";
+      const token = authService.getToken();
+
+      if (!token) {
+        console.error("No authentication token available");
+        return;
+      }
+
+      const headers: Record<string, string> = {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      };
+
+      // First, try to find an existing session for this user-agent combination
+      try {
+        const existingSessionResponse = await fetch(
+          `${get().backendUrl}/api/v1/sessions/by-agent/${agentIdParam}`,
+          { headers },
+        );
+
+        if (existingSessionResponse.ok) {
+          // Found existing session, create a new topic for it
+          const existingSession = await existingSessionResponse.json();
+
+          const newTopicResponse = await fetch(
+            `${get().backendUrl}/api/v1/topics/`,
+            {
+              method: "POST",
+              headers,
+              body: JSON.stringify({
+                name: "新的聊天",
+                session_id: existingSession.id,
+              }),
+            },
+          );
+
+          if (!newTopicResponse.ok) {
+            throw new Error("Failed to create new topic in existing session");
+          }
+
+          const newTopic = await newTopicResponse.json();
+
+          const newChannel: ChatChannel = {
+            id: newTopic.id,
+            sessionId: existingSession.id,
+            title: newTopic.name,
+            messages: [],
+            connected: false,
+            error: null,
+          };
+
+          const newHistoryItem: ChatHistoryItem = {
+            id: newTopic.id,
+            title: newTopic.name,
+            updatedAt: newTopic.updated_at,
+            assistantTitle: "通用助理",
+            lastMessage: "",
+            isPinned: false,
+          };
+
+          set((state: XyzenState) => {
+            state.channels[newTopic.id] = newChannel;
+            state.chatHistory.unshift(newHistoryItem);
+            state.activeChatChannel = newTopic.id;
+            state.activeTabIndex = 1;
+          });
+
+          get().connectToChannel(existingSession.id, newTopic.id);
+          return;
+        }
+      } catch {
+        // If session lookup fails, we'll create a new session below
+        console.log("No existing session found, creating new session");
+      }
+
+      // No existing session found, create a new session
+      // The backend will automatically extract user_id from the token
       const response = await fetch(`${get().backendUrl}/api/v1/sessions/`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers,
         body: JSON.stringify({
           name: "New Session",
-          user_id: get().user?.id || get().user?.username || "default-user",
           agent_id: agentId,
         }),
       });
@@ -262,7 +372,7 @@ export const createChatSlice: StateCreator<
         get().connectToChannel(newSession.id, newTopic.id);
       }
     } catch (error) {
-      console.error("Failed to create new channel:", error);
+      console.error("Failed to create channel:", error);
     }
   },
 });

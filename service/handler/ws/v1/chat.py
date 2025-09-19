@@ -1,14 +1,15 @@
 import logging
 from datetime import datetime, timezone
-from typing import Dict
+from typing import Dict, Optional
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, WebSocket, WebSocketDisconnect
+from fastapi import APIRouter, Depends, Query, WebSocket, WebSocketDisconnect
 from sqlalchemy.orm import selectinload
 from sqlmodel import select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 from core.chat import get_ai_response
+from middleware.auth import get_auth_provider, is_auth_configured
 from middleware.database import get_session
 from models.agent import Agent as AgentModel
 from models.message import Message as MessageModel
@@ -46,13 +47,30 @@ class ConnectionManager:
 manager = ConnectionManager()
 
 
-# --- Placeholder for Authentication ---
-# TODO: Replace with your actual user authentication logic from Casdoor
-async def get_current_user(websocket: WebSocket) -> str:
-    # This is a placeholder. In a real app, you'd get the user
-    # from a token passed in headers or query params.
-    # For now, we'll use a hardcoded user_id that matches the session owner.
-    return "harvey-123"
+# --- WebSocket Authentication ---
+async def get_current_user_websocket(
+    token: Optional[str] = Query(None, alias="token"),
+) -> str:
+    """从查询参数中的token获取当前用户ID"""
+
+    # 检查认证服务是否配置
+    if not is_auth_configured():
+        raise Exception("Authentication service is not configured")
+
+    # 检查 token
+    if not token:
+        raise Exception("Missing authentication token")
+
+    # 获取认证提供商并验证 token
+    provider = get_auth_provider()
+    if not provider:
+        raise Exception("Authentication provider initialization failed")
+
+    auth_result = provider.validate_token(token)
+    if not auth_result.success or not auth_result.user_info:
+        raise Exception(auth_result.error_message or "Token validation failed")
+
+    return auth_result.user_info.id
 
 
 # --- WebSocket Endpoint ---
@@ -61,7 +79,7 @@ async def chat_websocket(
     websocket: WebSocket,
     session_id: UUID,
     topic_id: UUID,
-    user: str = Depends(get_current_user),
+    user: str = Depends(get_current_user_websocket),
     db: AsyncSession = Depends(get_session),
 ) -> None:
     connection_id = f"{session_id}:{topic_id}"

@@ -1,5 +1,5 @@
 from typing import List
-from uuid import UUID
+from uuid import UUID, uuid4
 
 from fastapi import APIRouter, Depends, HTTPException
 from sqlmodel import select
@@ -7,9 +7,31 @@ from sqlmodel.ext.asyncio.session import AsyncSession
 
 from middleware.database import get_session
 from models.message import Message, MessageRead
-from models.topic import Topic
+from models.sessions import Session
+from models.topic import Topic, TopicCreate, TopicRead
 
 router = APIRouter()
+
+
+@router.post("/", response_model=TopicRead)
+async def create_topic(topic_data: TopicCreate, db: AsyncSession = Depends(get_session)) -> Topic:
+    """
+    Create a new topic in an existing session.
+    """
+    # Verify that the session exists
+    session = await db.get(Session, topic_data.session_id)
+    if not session:
+        raise HTTPException(status_code=404, detail="Session not found")
+
+    # Create the topic
+    topic = Topic.model_validate(topic_data)
+    topic.id = uuid4()
+
+    db.add(topic)
+    await db.commit()
+    await db.refresh(topic)
+
+    return topic
 
 
 @router.get("/{topic_id}/messages", response_model=List[MessageRead])

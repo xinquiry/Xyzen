@@ -26,9 +26,12 @@ class Session(SessionBase, table=True):
     topics: List["Topic"] = Relationship(back_populates="session", sa_relationship_kwargs={"lazy": "selectin"})
 
 
-class SessionCreate(SessionBase):
-    user_id: str
+class SessionCreate(SQLModel):
+    name: str
+    description: str | None = None
+    is_active: bool = True
     agent_id: UUID | None = None
+    # user_id is intentionally omitted - it will be set from authentication
 
 
 class SessionRead(SessionBase):
