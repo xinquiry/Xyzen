@@ -18,7 +18,14 @@ import {
   Transition,
   TransitionChild,
 } from "@headlessui/react";
-import { SparklesIcon, XMarkIcon } from "@heroicons/react/24/outline";
+import {
+  CogIcon,
+  ComputerDesktopIcon,
+  MoonIcon,
+  SparklesIcon,
+  SunIcon,
+  XMarkIcon,
+} from "@heroicons/react/24/outline";
 import { Fragment, useEffect, useRef, useState } from "react";
 
 import { LlmProviders } from "@/app/LlmProviders";
@@ -30,6 +37,7 @@ import XyzenChat from "@/components/layouts/XyzenChat";
 import { AddLlmProviderModal } from "@/components/modals/AddLlmProviderModal";
 import { AddMcpServerModal } from "@/components/modals/AddMcpServerModal";
 import { DEFAULT_BACKEND_URL } from "@/configs";
+import useTheme from "@/hooks/useTheme";
 
 // 定义最小宽度和最大宽度限制
 const MIN_WIDTH = 280;
@@ -92,9 +100,15 @@ const FloatingButton = ({ onOpenClick }: { onOpenClick: () => void }) => {
 
 export interface XyzenProps {
   backendUrl?: string;
+  showThemeToggle?: boolean;
+  showLlmProvider?: boolean;
 }
 
-export function Xyzen({ backendUrl = DEFAULT_BACKEND_URL }: XyzenProps) {
+export function Xyzen({
+  backendUrl = DEFAULT_BACKEND_URL,
+  showThemeToggle = false,
+  showLlmProvider = false,
+}: XyzenProps) {
   const {
     isXyzenOpen,
     closeXyzen,
@@ -106,7 +120,7 @@ export function Xyzen({ backendUrl = DEFAULT_BACKEND_URL }: XyzenProps) {
     setBackendUrl,
     fetchUserByToken,
   } = useXyzen();
-  // const { theme, cycleTheme } = useTheme();
+  const { theme, cycleTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
   const [isMcpOpen, setIsMcpOpen] = useState(false);
@@ -243,17 +257,19 @@ export function Xyzen({ backendUrl = DEFAULT_BACKEND_URL }: XyzenProps) {
               ))}
             </Tab.List>
             <div className="flex items-center space-x-1">
-              {/* <button
-                className="rounded-md p-1.5 text-neutral-500 hover:bg-neutral-100 dark:text-neutral-400 dark:hover:bg-neutral-800"
-                title="切换主题"
-                onClick={cycleTheme}
-              >
-                {theme === "light" && <SunIcon className="h-5 w-5" />}
-                {theme === "dark" && <MoonIcon className="h-5 w-5" />}
-                {theme === "system" && (
-                  <ComputerDesktopIcon className="h-5 w-5" />
-                )}
-              </button> */}
+              {showThemeToggle && (
+                <button
+                  className="rounded-md p-1.5 text-neutral-500 hover:bg-neutral-100 dark:text-neutral-400 dark:hover:bg-neutral-800"
+                  title="切换主题"
+                  onClick={cycleTheme}
+                >
+                  {theme === "light" && <SunIcon className="h-5 w-5" />}
+                  {theme === "dark" && <MoonIcon className="h-5 w-5" />}
+                  {theme === "system" && (
+                    <ComputerDesktopIcon className="h-5 w-5" />
+                  )}
+                </button>
+              )}
               <button
                 className="rounded-md p-1.5 text-neutral-500 hover:bg-neutral-100 dark:text-neutral-400 dark:hover:bg-neutral-800"
                 title="MCP 管理"
@@ -261,13 +277,15 @@ export function Xyzen({ backendUrl = DEFAULT_BACKEND_URL }: XyzenProps) {
               >
                 <McpIcon className="h-5 w-5" />
               </button>
-              {/* <button
-                className="rounded-md p-1.5 text-neutral-500 hover:bg-neutral-100 dark:text-neutral-400 dark:hover:bg-neutral-800"
-                title="LLM 提供商"
-                onClick={() => setIsLlmProvidersOpen(true)}
-              >
-                <CogIcon className="h-5 w-5" />
-              </button> */}
+              {showLlmProvider && (
+                <button
+                  className="rounded-md p-1.5 text-neutral-500 hover:bg-neutral-100 dark:text-neutral-400 dark:hover:bg-neutral-800"
+                  title="LLM 提供商"
+                  onClick={() => setIsLlmProvidersOpen(true)}
+                >
+                  <CogIcon className="h-5 w-5" />
+                </button>
+              )}
               <div className="mx-2 h-6 w-px bg-neutral-200 dark:bg-neutral-700"></div>
               <AuthStatus className="ml-2" />
               <button
@@ -326,43 +344,45 @@ export function Xyzen({ backendUrl = DEFAULT_BACKEND_URL }: XyzenProps) {
           </Dialog>
         </Transition>
 
-        <Transition appear show={isLlmProvidersOpen} as={Fragment}>
-          <Dialog
-            open={isLlmProvidersOpen}
-            onClose={() => setIsLlmProvidersOpen(false)}
-            className="relative z-50"
-          >
-            <TransitionChild
-              as={Fragment}
-              enter="ease-out duration-300"
-              enterFrom="opacity-0"
-              enterTo="opacity-100"
-              leave="ease-in duration-200"
-              leaveFrom="opacity-100"
-              leaveTo="opacity-0"
+        {showLlmProvider && (
+          <Transition appear show={isLlmProvidersOpen} as={Fragment}>
+            <Dialog
+              open={isLlmProvidersOpen}
+              onClose={() => setIsLlmProvidersOpen(false)}
+              className="relative z-50"
             >
-              <div className="fixed inset-0 bg-black/30" aria-hidden="true" />
-            </TransitionChild>
-            <div className="fixed inset-0 flex w-screen items-center justify-center p-4">
               <TransitionChild
                 as={Fragment}
                 enter="ease-out duration-300"
-                enterFrom="opacity-0 scale-95"
-                enterTo="opacity-100 scale-100"
+                enterFrom="opacity-0"
+                enterTo="opacity-100"
                 leave="ease-in duration-200"
-                leaveFrom="opacity-100 scale-100"
-                leaveTo="opacity-0 scale-95"
+                leaveFrom="opacity-100"
+                leaveTo="opacity-0"
               >
-                <DialogPanel className="w-full max-w-2xl rounded-lg bg-white p-6 dark:bg-neutral-900">
-                  <LlmProviders />
-                </DialogPanel>
+                <div className="fixed inset-0 bg-black/30" aria-hidden="true" />
               </TransitionChild>
-            </div>
-          </Dialog>
-        </Transition>
+              <div className="fixed inset-0 flex w-screen items-center justify-center p-4">
+                <TransitionChild
+                  as={Fragment}
+                  enter="ease-out duration-300"
+                  enterFrom="opacity-0 scale-95"
+                  enterTo="opacity-100 scale-100"
+                  leave="ease-in duration-200"
+                  leaveFrom="opacity-100 scale-100"
+                  leaveTo="opacity-0 scale-95"
+                >
+                  <DialogPanel className="w-full max-w-2xl rounded-lg bg-white p-6 dark:bg-neutral-900">
+                    <LlmProviders />
+                  </DialogPanel>
+                </TransitionChild>
+              </div>
+            </Dialog>
+          </Transition>
+        )}
       </div>
       <AddMcpServerModal />
-      <AddLlmProviderModal />
+      {showLlmProvider && <AddLlmProviderModal />}
     </DndContext>
   );
 }
