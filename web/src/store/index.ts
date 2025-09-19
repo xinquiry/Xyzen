@@ -29,6 +29,7 @@ export const useXyzen = create<XyzenState>()(
         panelWidth: state.panelWidth,
         theme: state.theme,
         token: state.token,
+        user: state.user, // 持久化用户数据
       }),
     },
   ),

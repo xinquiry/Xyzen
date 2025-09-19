@@ -2,13 +2,6 @@ import { authService } from "@/service/authService";
 import type { StateCreator } from "zustand";
 import type { User, XyzenState } from "../types";
 
-// --- Mock Data ---
-const mockUser: User = {
-  id: "harvey-123",
-  username: "Harvey",
-  avatar: `https://i.pravatar.cc/40?u=harvey`,
-};
-
 export interface AuthSlice {
   user: User | null;
   token: string | null;
@@ -24,27 +17,38 @@ export const createAuthSlice: StateCreator<
   [],
   AuthSlice
 > = (set, _) => ({
-  user: mockUser, // Default to mock user for now
+  user: null, // 移除mock用户，初始为null
   token: null,
   status: "idle",
   login: async (token: string) => {
     set({ status: "loading" });
     try {
-      // For now, we'll just set the token and user directly
-      // In a real app, you'd call authService.login(token)
-      authService.setToken(token);
-      set({
-        token,
-        user: mockUser, // Replace with actual user from API response
-        status: "succeeded",
-      });
+      const authResult = await authService.login(token);
+      if (authResult.state === "authenticated" && authResult.user) {
+        set({
+          token,
+          user: {
+            id: authResult.user.id,
+            username:
+              authResult.user.username ||
+              authResult.user.display_name ||
+              "Unknown",
+            avatar:
+              authResult.user.avatar_url ||
+              `https://i.pravatar.cc/40?u=${authResult.user.id}`,
+          },
+          status: "succeeded",
+        });
+      } else {
+        throw new Error(authResult.message);
+      }
     } catch (error) {
       set({ status: "failed" });
       console.error("Login failed:", error);
     }
   },
   logout: () => {
-    authService.removeToken();
+    authService.logout();
     set({ user: null, token: null, status: "idle" });
   },
   fetchUserByToken: async () => {
@@ -52,14 +56,26 @@ export const createAuthSlice: StateCreator<
     if (token) {
       set({ status: "loading" });
       try {
-        // In a real app, you would fetch the user from the backend
-        // const user = await authService.getUser();
-        // For now, we'll just use the mock user if a token exists
-        set({
-          token,
-          user: mockUser,
-          status: "succeeded",
-        });
+        const authResult = await authService.checkAuthState(true);
+        if (authResult.state === "authenticated" && authResult.user) {
+          set({
+            token,
+            user: {
+              id: authResult.user.id,
+              username:
+                authResult.user.username ||
+                authResult.user.display_name ||
+                "Unknown",
+              avatar:
+                authResult.user.avatar_url ||
+                `https://i.pravatar.cc/40?u=${authResult.user.id}`,
+            },
+            status: "succeeded",
+          });
+        } else {
+          set({ status: "failed" });
+          authService.removeToken();
+        }
       } catch (error) {
         set({ status: "failed" });
         authService.removeToken();
