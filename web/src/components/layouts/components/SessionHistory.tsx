@@ -12,7 +12,7 @@ import {
   UserIcon,
   XMarkIcon,
 } from "@heroicons/react/24/outline";
-import { Fragment, useMemo } from "react";
+import { Fragment, useEffect, useMemo } from "react";
 
 interface SessionHistoryProps {
   isOpen: boolean;
@@ -33,27 +33,53 @@ export default function SessionHistory({
     activateChannel,
     togglePinChat,
     user,
+    fetchChatHistory,
   } = useXyzen();
+
+  // 当组件打开时获取历史记录
+  useEffect(() => {
+    if (isOpen) {
+      console.log("SessionHistory: Component opened, fetching history...");
+      fetchChatHistory();
+    }
+  }, [isOpen]); // 移除fetchChatHistory依赖，避免函数引用变化导致重复调用
 
   // 检查用户是否已登录
   const isUserLoggedIn = useMemo(() => {
-    // 由于目前使用mock用户，我们暂时认为用户已登录
-    // 在实际应用中，这里应该检查真实的认证状态
-    // 例如检查是否有有效的认证token等
-    return user && user.username; // 只要有用户信息就认为已登录
+    // 使用真实的认证检查而不是mock用户
+    const hasUser = user && (user.id || user.username);
+    console.log("SessionHistory: User login check:", { user, hasUser });
+    return hasUser;
   }, [user]);
 
   // 获取当前session的topics
   const currentSessionTopics = useMemo(() => {
+    console.log("SessionHistory: Processing topics", {
+      activeChatChannel,
+      channels,
+      chatHistory: chatHistory.length,
+    });
+
     if (!activeChatChannel || !channels[activeChatChannel]) {
+      console.log("SessionHistory: No active channel or channel not found");
       return [];
     }
 
     const currentSessionId = channels[activeChatChannel].sessionId;
-    return chatHistory.filter((chat) => {
+    console.log("SessionHistory: Current session ID:", currentSessionId);
+
+    const topics = chatHistory.filter((chat) => {
       const channel = channels[chat.id];
-      return channel && channel.sessionId === currentSessionId;
+      const belongs = channel && channel.sessionId === currentSessionId;
+      console.log(
+        `SessionHistory: Topic ${chat.id} belongs to current session:`,
+        belongs,
+      );
+      return belongs;
     });
+
+    console.log("SessionHistory: Current session topics:", topics.length);
+    return topics;
   }, [activeChatChannel, channels, chatHistory]);
 
   // 根据置顶状态对聊天记录进行排序
@@ -65,8 +91,11 @@ export default function SessionHistory({
     return dateB.getTime() - dateA.getTime();
   });
 
-  // 激活聊天会话
-  const handleActivateChat = async (chatId: string) => {
+  console.log("SessionHistory: Final sorted history:", sortedHistory.length);
+
+  // 选择并激活聊天频道
+  const handleViewChat = async (chatId: string) => {
+    // 激活选中的频道，建立WebSocket连接
     await activateChannel(chatId);
     onSelectTopic?.(chatId);
     onClose(); // 选择topic后关闭侧边栏
@@ -150,7 +179,7 @@ export default function SessionHistory({
                   ? "border-indigo-200 bg-indigo-50 dark:border-indigo-800 dark:bg-indigo-950"
                   : "border-neutral-200 dark:border-neutral-800"
               }`}
-              onClick={() => handleActivateChat(chat.id)}
+              onClick={() => handleViewChat(chat.id)}
             >
               <div className="flex-1 overflow-hidden">
                 <div className="flex items-center">
@@ -234,16 +263,28 @@ export default function SessionHistory({
         leaveTo="translate-x-full"
       >
         <div className="fixed inset-y-0 right-0 z-50 w-80 bg-white shadow-2xl dark:bg-neutral-900">
-          {!isUserLoggedIn && renderLoginPrompt()}
-          {isUserLoggedIn && chatHistoryLoading && renderLoading()}
-          {isUserLoggedIn &&
-            !chatHistoryLoading &&
-            sortedHistory.length === 0 &&
-            renderEmpty()}
-          {isUserLoggedIn &&
-            !chatHistoryLoading &&
-            sortedHistory.length > 0 &&
-            renderHistoryList()}
+          {(() => {
+            console.log("SessionHistory: Render decision", {
+              isUserLoggedIn,
+              chatHistoryLoading,
+              sortedHistoryLength: sortedHistory.length,
+            });
+
+            if (!isUserLoggedIn) {
+              console.log("SessionHistory: Rendering login prompt");
+              return renderLoginPrompt();
+            }
+            if (chatHistoryLoading) {
+              console.log("SessionHistory: Rendering loading state");
+              return renderLoading();
+            }
+            if (sortedHistory.length === 0) {
+              console.log("SessionHistory: Rendering empty state");
+              return renderEmpty();
+            }
+            console.log("SessionHistory: Rendering history list");
+            return renderHistoryList();
+          })()}
         </div>
       </Transition>
     </>

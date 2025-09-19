@@ -41,59 +41,98 @@ export const createChatSlice: StateCreator<
   fetchChatHistory: async () => {
     set({ chatHistoryLoading: true });
     try {
-      const token = authService.getToken();
-      const headers: Record<string, string> = {
-        "Content-Type": "application/json",
-      };
+      console.log("ChatSlice: Starting to fetch chat history...");
 
-      if (token) {
-        headers.Authorization = `Bearer ${token}`;
+      const token = authService.getToken();
+      if (!token) {
+        console.error("ChatSlice: No authentication token available");
+        set({ chatHistoryLoading: false });
+        return;
       }
 
+      const headers: Record<string, string> = {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      };
+
+      console.log("ChatSlice: Making request to sessions API...");
       const response = await fetch(`${get().backendUrl}/api/v1/sessions/`, {
         headers,
       });
 
-      if (!response.ok) {
-        throw new Error("Failed to fetch chat history");
-      }
-      const history: SessionResponse[] = await response.json();
+      console.log(
+        `ChatSlice: Sessions API response status: ${response.status}`,
+      );
 
-      const channels: Record<string, ChatChannel> = {};
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error(
+          `ChatSlice: Sessions API error: ${response.status} - ${errorText}`,
+        );
+        throw new Error(
+          `Failed to fetch chat history: ${response.status} ${errorText}`,
+        );
+      }
+
+      const history: SessionResponse[] = await response.json();
+      console.log("ChatSlice: Received sessions data:", history);
+
+      // 获取当前的 channels 状态，避免覆盖现有的连接和消息
+      const currentChannels = get().channels;
+      const newChannels: Record<string, ChatChannel> = { ...currentChannels };
+
       const chatHistory: ChatHistoryItem[] = history.flatMap(
-        (session: SessionResponse) =>
-          session.topics.map((topic: TopicResponse) => {
-            channels[topic.id] = {
-              id: topic.id,
-              sessionId: session.id,
-              title: topic.name,
-              messages: [],
-              connected: false,
-              error: null,
-            };
-            return {
-              id: topic.id,
-              title: topic.name,
-              updatedAt: topic.updated_at,
-              assistantTitle: "通用助理",
-              lastMessage: "",
-              isPinned: false,
-            };
-          }),
+        (session: SessionResponse) => {
+          console.log(
+            `ChatSlice: Processing session ${session.id} with ${session.topics?.length || 0} topics`,
+          );
+          return (
+            session.topics?.map((topic: TopicResponse) => {
+              // 只有当频道不存在时才创建新的频道，否则保留现有状态
+              if (!newChannels[topic.id]) {
+                newChannels[topic.id] = {
+                  id: topic.id,
+                  sessionId: session.id,
+                  title: topic.name,
+                  messages: [],
+                  connected: false,
+                  error: null,
+                };
+              } else {
+                // 更新现有频道的基本信息，但保留消息和连接状态
+                newChannels[topic.id].sessionId = session.id;
+                newChannels[topic.id].title = topic.name;
+              }
+
+              return {
+                id: topic.id,
+                title: topic.name,
+                updatedAt: topic.updated_at,
+                assistantTitle: "通用助理",
+                lastMessage: "",
+                isPinned: false,
+              };
+            }) || []
+          );
+        },
+      );
+
+      console.log(
+        `ChatSlice: Processed ${chatHistory.length} chat history items`,
       );
 
       set({
         chatHistory,
-        channels,
+        channels: newChannels,
         chatHistoryLoading: false,
-        activeChatChannel: chatHistory.length > 0 ? chatHistory[0].id : null,
+        // 不要自动设置 activeChatChannel，保持当前选中的
       });
 
-      if (chatHistory.length > 0) {
-        await get().activateChannel(chatHistory[0].id);
-      }
+      console.log(
+        `ChatSlice: Loaded ${chatHistory.length} chat history items, keeping current active channel`,
+      );
     } catch (error) {
-      console.error("Failed to fetch chat history:", error);
+      console.error("ChatSlice: Failed to fetch chat history:", error);
       set({ chatHistoryLoading: false });
     }
   },
