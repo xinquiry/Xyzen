@@ -1,4 +1,5 @@
 "use client";
+import EditableTitle from "@/components/base/EditableTitle";
 import { useXyzen } from "@/store";
 import type { Message } from "@/store/types";
 import { ArrowPathIcon } from "@heroicons/react/24/outline";
@@ -13,8 +14,14 @@ import SessionHistory from "./components/SessionHistory";
 import WelcomeMessage from "./components/WelcomeMessage";
 
 export default function XyzenChat() {
-  const { activeChatChannel, channels, agents, sendMessage, connectToChannel } =
-    useXyzen();
+  const {
+    activeChatChannel,
+    channels,
+    agents,
+    sendMessage,
+    connectToChannel,
+    updateTopicName,
+  } = useXyzen();
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
@@ -133,18 +140,34 @@ export default function XyzenChat() {
         <>
           {currentAgent ? (
             <div className="flex-shrink-0 px-4 pb-2">
-              <h2 className="text-lg font-medium text-neutral-800 dark:text-white">
-                {currentAgent.name}
-              </h2>
+              <EditableTitle
+                title={currentChannel?.title || "新的聊天"}
+                onSave={(newTitle) => {
+                  if (activeChatChannel) {
+                    return updateTopicName(activeChatChannel, newTitle);
+                  }
+                  return Promise.resolve();
+                }}
+                className="mb-1"
+                textClassName="text-lg font-medium text-neutral-800 dark:text-white"
+              />
               <p className="text-sm text-neutral-500 dark:text-neutral-400">
                 {currentAgent.description}
               </p>
             </div>
           ) : (
             <div className="flex-shrink-0 px-4 pb-2">
-              <h2 className="text-lg font-medium text-neutral-800 dark:text-white">
-                自由对话
-              </h2>
+              <EditableTitle
+                title={currentChannel?.title || "新的聊天"}
+                onSave={(newTitle) => {
+                  if (activeChatChannel) {
+                    return updateTopicName(activeChatChannel, newTitle);
+                  }
+                  return Promise.resolve();
+                }}
+                className="mb-1"
+                textClassName="text-lg font-medium text-neutral-800 dark:text-white"
+              />
               <p className="text-sm text-neutral-500 dark:text-neutral-400">
                 您可以在这里与AI助手自由讨论任何话题
               </p>

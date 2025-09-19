@@ -1,5 +1,6 @@
 "use client";
 
+import EditableTitle from "@/components/base/EditableTitle";
 import { LoadingSpinner } from "@/components/base/LoadingSpinner";
 import { formatTime } from "@/lib/formatDate";
 import { useXyzen } from "@/store";
@@ -34,6 +35,7 @@ export default function SessionHistory({
     togglePinChat,
     user,
     fetchChatHistory,
+    updateTopicName,
   } = useXyzen();
 
   // 当组件打开时获取历史记录
@@ -179,24 +181,29 @@ export default function SessionHistory({
                   ? "border-indigo-200 bg-indigo-50 dark:border-indigo-800 dark:bg-indigo-950"
                   : "border-neutral-200 dark:border-neutral-800"
               }`}
-              onClick={() => handleViewChat(chat.id)}
             >
-              <div className="flex-1 overflow-hidden">
+              <div
+                className="flex-1 overflow-hidden"
+                onClick={() => handleViewChat(chat.id)}
+              >
                 <div className="flex items-center">
                   {chat.isPinned && (
                     <MapPinIcon className="mr-2 h-3.5 w-3.5 rotate-45 text-indigo-500 dark:text-indigo-400" />
                   )}
-                  <h3
-                    className={`truncate text-sm font-medium ${
-                      chat.id === activeChatChannel
-                        ? "text-indigo-700 dark:text-indigo-300"
-                        : chat.isPinned
-                          ? "text-indigo-700 dark:text-indigo-400"
-                          : "text-neutral-800 dark:text-white"
-                    }`}
-                  >
-                    {chat.title}
-                  </h3>
+                  <div className="flex-1">
+                    <EditableTitle
+                      title={chat.title}
+                      onSave={(newTitle) => updateTopicName(chat.id, newTitle)}
+                      className="w-full"
+                      textClassName={`truncate text-sm font-medium ${
+                        chat.id === activeChatChannel
+                          ? "text-indigo-700 dark:text-indigo-300"
+                          : chat.isPinned
+                            ? "text-indigo-700 dark:text-indigo-400"
+                            : "text-neutral-800 dark:text-white"
+                      }`}
+                    />
+                  </div>
                 </div>
                 <div className="mt-1 flex items-center text-xs text-neutral-500 dark:text-neutral-400">
                   <span className="truncate">{chat.assistantTitle}</span>

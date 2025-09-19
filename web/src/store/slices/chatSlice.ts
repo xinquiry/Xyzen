@@ -23,6 +23,7 @@ export interface ChatSlice {
   disconnectFromChannel: () => void;
   sendMessage: (message: string) => void;
   createDefaultChannel: (agentId?: string) => Promise<void>;
+  updateTopicName: (topicId: string, newName: string) => Promise<void>;
 }
 
 export const createChatSlice: StateCreator<
@@ -412,6 +413,55 @@ export const createChatSlice: StateCreator<
       }
     } catch (error) {
       console.error("Failed to create channel:", error);
+    }
+  },
+
+  updateTopicName: async (topicId: string, newName: string) => {
+    try {
+      const token = authService.getToken();
+      if (!token) {
+        console.error("No authentication token available");
+        return;
+      }
+
+      const headers: Record<string, string> = {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      };
+
+      const response = await fetch(
+        `${get().backendUrl}/api/v1/topics/${topicId}`,
+        {
+          method: "PUT",
+          headers,
+          body: JSON.stringify({ name: newName }),
+        },
+      );
+
+      if (!response.ok) {
+        throw new Error("Failed to update topic name");
+      }
+
+      // 更新本地状态
+      set((state: XyzenState) => {
+        // 更新 channels 中的标题
+        if (state.channels[topicId]) {
+          state.channels[topicId].title = newName;
+        }
+
+        // 更新 chatHistory 中的标题
+        const chatHistoryItem = state.chatHistory.find(
+          (item) => item.id === topicId,
+        );
+        if (chatHistoryItem) {
+          chatHistoryItem.title = newName;
+        }
+      });
+
+      console.log(`Topic ${topicId} name updated to: ${newName}`);
+    } catch (error) {
+      console.error("Failed to update topic name:", error);
+      throw error;
     }
   },
 });
