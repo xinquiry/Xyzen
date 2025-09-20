@@ -9,4 +9,7 @@ export interface McpServer {
   user_id: string;
 }
 
-export type McpServerCreate = Omit<McpServer, "id" | "status" | "tools">;
+export type McpServerCreate = Omit<
+  McpServer,
+  "id" | "status" | "tools" | "user_id"
+>;
