@@ -5,3 +5,7 @@ Generate a migration after changing your models:(Run it in container or anywhere
 ```sh
 uv run alembic revision --autogenerate -m "Some message"
 ```
+
+```sh
+uv run alembic upgrade head
+```

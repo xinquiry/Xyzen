@@ -12,7 +12,7 @@ from .links import AgentMcpServerLink
 
 class MCPServerBase(SQLModel):
 
-    user: Optional[UUID] = Field(default=None, index=True)
+    user_id: str = Field(default=None, index=True, description="The user ID of mcp server owner")
     name: str = Field(index=True)
     description: Optional[str] = Field(default=None)
     url: str

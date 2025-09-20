@@ -6,7 +6,7 @@ export interface McpServer {
   token: string;
   status: "online" | "offline" | string;
   tools?: { name: string; description?: string }[];
-  user_id?: string;
+  user_id: string;
 }
 
 export type McpServerCreate = Omit<McpServer, "id" | "status" | "tools">;

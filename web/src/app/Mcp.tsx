@@ -76,13 +76,15 @@ const McpServerCard: React.FC<McpServerCardProps> = ({ server, onRemove }) => {
 export function Mcp() {
   const {
     mcpServers,
-    mcpServersLoading,
     fetchMcpServers,
     removeMcpServer,
     updateMcpServerInList,
     backendUrl,
     openAddMcpServerModal,
+    getLoading,
   } = useXyzen();
+
+  const mcpServersLoading = getLoading("mcpServers");
 
   useEffect(() => {
     if (backendUrl) {

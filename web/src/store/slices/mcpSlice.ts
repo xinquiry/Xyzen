@@ -2,10 +2,10 @@ import { mcpService } from "@/service/mcpService";
 import type { McpServer, McpServerCreate } from "@/types/mcp";
 import type { StateCreator } from "zustand";
 import type { XyzenState } from "../types";
+import { LoadingKeys } from "./loadingSlice";
 
 export interface McpSlice {
   mcpServers: McpServer[];
-  mcpServersLoading: boolean;
   fetchMcpServers: () => Promise<void>;
   addMcpServer: (server: McpServerCreate) => Promise<void>;
   editMcpServer: (
@@ -23,18 +23,25 @@ export const createMcpSlice: StateCreator<
   McpSlice
 > = (set, get) => ({
   mcpServers: [],
-  mcpServersLoading: false,
   fetchMcpServers: async () => {
-    set({ mcpServersLoading: true });
+    const { setLoading } = get();
+    setLoading(LoadingKeys.MCP_SERVERS, true);
+
     try {
+      console.log("McpSlice: Starting to fetch MCP servers...");
       const servers = await mcpService.getMcpServers();
-      set({ mcpServers: servers, mcpServersLoading: false });
+      console.log(`McpSlice: Loaded ${servers.length} MCP servers`);
+      set({ mcpServers: servers });
     } catch (error) {
       console.error("Failed to fetch MCP servers:", error);
-      set({ mcpServersLoading: false });
+    } finally {
+      setLoading(LoadingKeys.MCP_SERVERS, false);
     }
   },
   addMcpServer: async (server) => {
+    const { setLoading } = get();
+    setLoading(LoadingKeys.MCP_SERVER_CREATE, true);
+
     try {
       const newServer = await mcpService.createMcpServer(server);
       set((state: McpSlice) => {
@@ -44,9 +51,14 @@ export const createMcpSlice: StateCreator<
     } catch (error) {
       console.error("Failed to add MCP server:", error);
       throw error;
+    } finally {
+      setLoading(LoadingKeys.MCP_SERVER_CREATE, false);
     }
   },
   editMcpServer: async (id, server) => {
+    const { setLoading } = get();
+    setLoading(LoadingKeys.MCP_SERVER_UPDATE, true);
+
     try {
       const updatedServer = await mcpService.updateMcpServer(id, server);
       set((state: McpSlice) => {
@@ -57,9 +69,15 @@ export const createMcpSlice: StateCreator<
       });
     } catch (error) {
       console.error("Failed to edit MCP server:", error);
+      throw error;
+    } finally {
+      setLoading(LoadingKeys.MCP_SERVER_UPDATE, false);
     }
   },
   removeMcpServer: async (id) => {
+    const { setLoading } = get();
+    setLoading(LoadingKeys.MCP_SERVER_DELETE, true);
+
     try {
       await mcpService.deleteMcpServer(id);
       set((state: McpSlice) => {
@@ -67,6 +85,9 @@ export const createMcpSlice: StateCreator<
       });
     } catch (error) {
       console.error("Failed to remove MCP server:", error);
+      throw error;
+    } finally {
+      setLoading(LoadingKeys.MCP_SERVER_DELETE, false);
     }
   },
   updateMcpServerInList: (server) => {

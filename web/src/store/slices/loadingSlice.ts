@@ -51,6 +51,10 @@ export const LoadingKeys = {
   AGENT_CREATE: "agentCreate",
   AGENT_UPDATE: "agentUpdate",
   AGENT_DELETE: "agentDelete",
+  MCP_SERVERS: "mcpServers",
+  MCP_SERVER_CREATE: "mcpServerCreate",
+  MCP_SERVER_UPDATE: "mcpServerUpdate",
+  MCP_SERVER_DELETE: "mcpServerDelete",
 } as const;
 
 export type LoadingKey = (typeof LoadingKeys)[keyof typeof LoadingKeys];
