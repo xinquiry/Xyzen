@@ -336,7 +336,7 @@ export function Xyzen({
                 leaveFrom="opacity-100 scale-100"
                 leaveTo="opacity-0 scale-95"
               >
-                <DialogPanel className="w-full max-w-2xl rounded-lg bg-white p-6 dark:bg-neutral-900">
+                <DialogPanel className="w-full max-w-2xl rounded-lg">
                   <Mcp />
                 </DialogPanel>
               </TransitionChild>
