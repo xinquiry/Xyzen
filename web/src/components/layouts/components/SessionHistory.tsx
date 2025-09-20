@@ -44,7 +44,7 @@ export default function SessionHistory({
       console.log("SessionHistory: Component opened, fetching history...");
       fetchChatHistory();
     }
-  }, [isOpen]); // 移除fetchChatHistory依赖，避免函数引用变化导致重复调用
+  }, [isOpen, fetchChatHistory]);
 
   // 检查用户是否已登录
   const isUserLoggedIn = useMemo(() => {
@@ -133,7 +133,7 @@ export default function SessionHistory({
   // 加载中的UI
   const renderLoading = () => (
     <div className="flex h-full items-center justify-center">
-      <LoadingSpinner />
+      <LoadingSpinner size="lg" />
     </div>
   );
 
@@ -153,7 +153,7 @@ export default function SessionHistory({
   // 历史记录列表UI
   const renderHistoryList = () => (
     <div className="h-full overflow-y-auto">
-      <div className="sticky top-0 bg-white px-4 py-3 border-b border-neutral-200 dark:bg-neutral-900 dark:border-neutral-800">
+      <div className="sticky top-0 z-10 bg-white px-4 py-3 border-b border-neutral-200 dark:bg-neutral-900 dark:border-neutral-800">
         <div className="flex items-center justify-between">
           <h2 className="text-lg font-semibold text-neutral-800 dark:text-white">
             会话历史

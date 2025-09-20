@@ -40,14 +40,15 @@ export const createChatSlice: StateCreator<
   setActiveChatChannel: (channelId) => set({ activeChatChannel: channelId }),
 
   fetchChatHistory: async () => {
-    set({ chatHistoryLoading: true });
+    const { setLoading } = get();
+    setLoading("chatHistory", true);
+
     try {
       console.log("ChatSlice: Starting to fetch chat history...");
 
       const token = authService.getToken();
       if (!token) {
         console.error("ChatSlice: No authentication token available");
-        set({ chatHistoryLoading: false });
         return;
       }
 
@@ -138,6 +139,8 @@ export const createChatSlice: StateCreator<
     } catch (error) {
       console.error("ChatSlice: Failed to fetch chat history:", error);
       set({ chatHistoryLoading: false });
+    } finally {
+      setLoading("chatHistory", false);
     }
   },
 
@@ -222,6 +225,10 @@ export const createChatSlice: StateCreator<
 
     if (channel) {
       if (channel.messages.length === 0) {
+        const { setLoading } = get();
+        const loadingKey = `topicMessages-${topicId}`;
+        setLoading(loadingKey, true);
+
         try {
           const token = authService.getToken();
           const headers: Record<string, string> = {
@@ -260,6 +267,8 @@ export const createChatSlice: StateCreator<
           }
         } catch (error) {
           console.error("Failed to load topic messages:", error);
+        } finally {
+          setLoading(loadingKey, false);
         }
       }
       connectToChannel(channel.sessionId, channel.id);

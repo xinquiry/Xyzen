@@ -2,6 +2,7 @@ import type {
   AgentSlice,
   AuthSlice,
   ChatSlice,
+  LoadingSlice,
   McpSlice,
   ProviderSlice,
   UiSlice,
@@ -64,4 +65,5 @@ export type XyzenState = UiSlice &
   AgentSlice &
   McpSlice &
   ProviderSlice &
-  AuthSlice;
+  AuthSlice &
+  LoadingSlice;

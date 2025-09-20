@@ -4,6 +4,7 @@ from typing import Any, Dict
 import requests
 
 from . import AuthResult, BaseAuthProvider, UserInfo
+from .simple_cache import cached_token_validation
 
 # 设置日志记录器
 logger = logging.getLogger(__name__)
@@ -21,6 +22,7 @@ class BohriumAuthProvider(BaseAuthProvider):
         logger.info(f"Bohrium 配置检查: issuer={self.issuer}, valid={is_valid}")
         return is_valid
 
+    @cached_token_validation
     def validate_token(self, access_token: str) -> AuthResult:
         """验证 access_token 并获取用户信息"""
         logger.info(f"Bohrium: 开始验证 token (前20字符): {access_token[:20]}...")
