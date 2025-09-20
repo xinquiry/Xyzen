@@ -193,7 +193,7 @@ export function AuthStatus({ onTokenInput, className = "" }: AuthStatusProps) {
               </div>
             )}
             <div className="flex flex-col">
-              <span className="text-sm font-medium text-neutral-900 dark:text-neutral-100">
+              <span className="text-sm font-medium max-w-16 truncate text-neutral-900 dark:text-neutral-100">
                 {auth.user?.display_name || auth.user?.username}
               </span>
             </div>

@@ -6,6 +6,7 @@ from pydantic import BaseModel
 from sqlmodel import select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
+from handler.api.v1.sessions import get_current_user
 from middleware.database import get_session
 from models.message import Message, MessageRead
 from models.sessions import Session
@@ -59,14 +60,28 @@ async def update_topic(topic_id: UUID, topic_data: TopicUpdate, db: AsyncSession
 
 
 @router.get("/{topic_id}/messages", response_model=List[MessageRead])
-async def get_topic_messages(topic_id: UUID, db: AsyncSession = Depends(get_session)) -> list[Message]:
+async def get_topic_messages(
+    topic_id: UUID, user: str = Depends(get_current_user), db: AsyncSession = Depends(get_session)
+) -> list[Message]:
     """
     Get all messages for a specific topic, ordered by creation time.
+    Only returns messages if the current user owns the session that contains this topic.
     """
+    # Get the topic first
     topic = await db.get(Topic, topic_id)
     if not topic:
         raise HTTPException(status_code=404, detail="Topic not found")
 
+    # Get the session that contains this topic
+    session = await db.get(Session, topic.session_id)
+    if not session:
+        raise HTTPException(status_code=404, detail="Session not found")
+
+    # Verify that the current user owns this session
+    if session.user_id != user:
+        raise HTTPException(status_code=403, detail="Access denied: You don't have permission to access this topic")
+
+    # Get messages for the topic
     statement = select(Message).where(Message.topic_id == topic_id).order_by(Message.created_at)  # type: ignore
     result = await db.exec(statement)
     messages = result.all()

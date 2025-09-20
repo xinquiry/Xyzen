@@ -101,8 +101,11 @@ export const createChatSlice: StateCreator<
                 };
               } else {
                 // 更新现有频道的基本信息，但保留消息和连接状态
-                newChannels[topic.id].sessionId = session.id;
-                newChannels[topic.id].title = topic.name;
+                newChannels[topic.id] = {
+                  ...newChannels[topic.id],
+                  sessionId: session.id,
+                  title: topic.name,
+                };
               }
 
               return {
@@ -235,11 +238,25 @@ export const createChatSlice: StateCreator<
           );
           if (response.ok) {
             const messages = await response.json();
+            console.log(
+              `ChatSlice: Loaded ${messages.length} messages for topic ${topicId}`,
+            );
             set((state: ChatSlice) => {
               if (state.channels[topicId]) {
                 state.channels[topicId].messages = messages;
               }
             });
+          } else {
+            const errorText = await response.text();
+            console.error(
+              `ChatSlice: Failed to load messages for topic ${topicId}: ${response.status} ${errorText}`,
+            );
+            // 如果是认证问题，可以考虑清除消息或显示错误状态
+            if (response.status === 401 || response.status === 403) {
+              console.error(
+                "ChatSlice: Authentication/authorization issue loading messages",
+              );
+            }
           }
         } catch (error) {
           console.error("Failed to load topic messages:", error);
