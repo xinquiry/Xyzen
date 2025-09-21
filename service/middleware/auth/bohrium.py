@@ -139,7 +139,10 @@ class BohriumAuthProvider(BaseAuthProvider):
         return user_info
 
     def parse_user_info(self, token_payload: Dict[str, Any]) -> UserInfo:
-        """从 token payload 解析用户信息 - Bohrium 主要通过 API 获取用户信息"""
+        """
+        从 token payload 解析用户信息 - Bohrium 主要通过 API 获取用户信息
+        """
+
         logger.info("Bohrium: 解析token payload中的用户信息")
         logger.info(f"Bohrium: payload内容: {token_payload}")
 

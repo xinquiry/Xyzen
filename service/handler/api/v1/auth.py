@@ -4,7 +4,7 @@ from typing import Optional
 from fastapi import APIRouter, Header, HTTPException, status
 from pydantic import BaseModel
 
-from middleware.auth import get_auth_provider, is_auth_configured
+from middleware.auth import AuthProvider
 
 # 设置日志记录器
 logger = logging.getLogger(__name__)
@@ -43,16 +43,8 @@ class AuthValidationResponse(BaseModel):
 @router.get("/status", response_model=AuthStatusResponse)
 async def get_auth_status() -> AuthStatusResponse:
     """获取认证服务配置状态"""
-    logger.info("检查认证服务配置状态")
 
-    if not is_auth_configured():
-        logger.warning("身份认证服务未配置")
-        return AuthStatusResponse(is_configured=False, message="身份认证服务未配置")
-
-    provider = get_auth_provider()
-    if not provider:
-        logger.error("认证提供商初始化失败")
-        return AuthStatusResponse(is_configured=False, message="认证提供商初始化失败")
+    provider = AuthProvider  # 使用全局的 AuthProvider 实例
 
     logger.info(f"认证服务已配置，使用提供商: {provider.get_provider_name()}")
     return AuthStatusResponse(
@@ -68,11 +60,6 @@ async def validate_token(
 ) -> AuthValidationResponse:
     """验证 access_token 并返回用户信息"""
     logger.info("开始验证 access_token")
-
-    # 检查认证服务是否配置
-    if not is_auth_configured():
-        logger.error("身份认证服务未配置，无法验证token")
-        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail="身份认证服务未配置")
 
     # 检查 Authorization header
     if not authorization:
@@ -90,7 +77,7 @@ async def validate_token(
     logger.info(f"解析得到 access_token (前20字符): {access_token[:20]}...")
 
     # 获取认证提供商并验证 token
-    provider = get_auth_provider()
+    provider = AuthProvider
 
     if not provider:
         logger.error("认证提供商初始化失败")

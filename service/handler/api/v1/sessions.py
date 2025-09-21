@@ -1,51 +1,15 @@
 from datetime import datetime
-from typing import List, Optional
+from typing import List
 from uuid import uuid4
 
-from fastapi import APIRouter, Depends, Header, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException
 from sqlmodel import select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
-from middleware.auth import get_auth_provider, is_auth_configured
+from middleware.auth import get_current_user
 from middleware.database import get_session
 from models.sessions import Session, SessionCreate, SessionRead
 from models.topic import Topic, TopicCreate
-
-
-async def get_current_user(authorization: Optional[str] = Header(None)) -> str:
-    """从 Authorization header 中获取当前用户ID"""
-
-    # 检查认证服务是否配置
-    if not is_auth_configured():
-        raise HTTPException(
-            status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail="Authentication service is not configured"
-        )
-
-    # 检查 Authorization header
-    if not authorization:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Missing authorization header")
-
-    # 解析 Bearer token
-    if not authorization.startswith("Bearer "):
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid authorization header format")
-
-    access_token = authorization[7:]  # Remove "Bearer " prefix
-
-    # 获取认证提供商并验证 token
-    provider = get_auth_provider()
-    if not provider:
-        raise HTTPException(
-            status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail="Authentication provider initialization failed"
-        )
-
-    auth_result = provider.validate_token(access_token)
-    if not auth_result.success or not auth_result.user_info:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED, detail=auth_result.error_message or "Token validation failed"
-        )
-
-    return auth_result.user_info.id
-
 
 router = APIRouter()
 

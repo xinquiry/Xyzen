@@ -7,7 +7,7 @@ from fastmcp.server.auth import JWTVerifier
 from fastmcp.server.dependencies import AccessToken, get_access_token
 
 from internal import configs
-from middleware.auth import get_auth_provider
+from middleware.auth import AuthProvider
 
 logger = logging.getLogger(__name__)
 
@@ -57,16 +57,8 @@ async def show_user_info() -> dict[str, Any]:
 
     assert access_token is not None, "Access token is required for this operation."
 
-    auth_provider = get_auth_provider()
-
-    if not auth_provider:
-        return {
-            "message": "Authentication provider not configured.",
-            "success": False,
-        }
-
     # 使用现有的 parse_user_info 方法从 AccessToken 的 claims 中解析用户信息
-    user_info = auth_provider.parse_user_info(access_token.claims)
+    user_info = AuthProvider.parse_user_info(access_token.claims)
 
     if not user_info or not user_info.id:
         return {

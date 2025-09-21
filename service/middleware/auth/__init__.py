@@ -5,6 +5,7 @@ from typing import Any, Dict, Optional
 
 import jwt
 import requests
+from fastapi import Header, HTTPException, Query, status
 
 from internal import configs
 
@@ -38,7 +39,7 @@ class AuthResult:
 class BaseAuthProvider(ABC):
     """基础认证提供商抽象类"""
 
-    def __init__(self, config: Dict[str, Any]):
+    def __init__(self, config: Dict[str, Any]) -> None:
         self.config = config
         self.issuer = config.get("Issuer")
         self.jwks_uri = config.get("JwksUri")
@@ -142,40 +143,94 @@ class BaseAuthProvider(ABC):
         return is_valid
 
 
-def get_auth_provider() -> Optional[BaseAuthProvider]:
-    """根据配置获取认证提供商实例"""
+def _get_auth_provider() -> BaseAuthProvider:
+    """根据配置获取认证提供商实例，如果配置无效则抛出错误"""
     logger.info("开始初始化认证提供商...")
     auth_config = configs.Auth
     provider_name = auth_config.Provider.lower()
     logger.info(f"配置的认证提供商: {provider_name}")
 
-    if provider_name == "casdoor":
-        from .casdoor import CasdoorAuthProvider
+    # 首先检查认证提供商类型是否支持
+    match provider_name:
+        case "casdoor":
+            from .casdoor import CasdoorAuthProvider
 
-        logger.info("初始化 Casdoor 认证提供商")
-        provider_config = auth_config.Casdoor.model_dump()
-        logger.info(f"Casdoor 配置: {provider_config}")
-        return CasdoorAuthProvider(provider_config)
-    elif provider_name == "bohrium":
-        from .bohrium import BohriumAuthProvider
+            logger.info("初始化 Casdoor 认证提供商")
+            provider_config = auth_config.Casdoor.model_dump()
+            logger.info(f"Casdoor 配置: {provider_config}")
+            provider: BaseAuthProvider = CasdoorAuthProvider(provider_config)
+        case "bohrium":
+            from .bohrium import BohriumAuthProvider
 
-        logger.info("初始化 Bohrium 认证提供商")
-        provider_config = auth_config.Bohrium.model_dump()
-        logger.info(f"Bohrium 配置: {provider_config}")
-        return BohriumAuthProvider(provider_config)
-    else:
-        logger.error(f"不支持的认证提供商: {provider_name}")
-        return None
+            logger.info("初始化 Bohrium 认证提供商")
+            provider_config = auth_config.Bohrium.model_dump()
+            logger.info(f"Bohrium 配置: {provider_config}")
+            provider = BohriumAuthProvider(provider_config)
+        case _:
+            error_msg = f"不支持的认证提供商类型: {provider_name}"
+            logger.error(error_msg)
+            raise ValueError(error_msg)
+
+    # 检查认证提供商配置是否有效
+    if not provider.is_configured():
+        error_msg = f"认证提供商 {provider_name} 配置无效"
+        logger.error(error_msg)
+        raise ValueError(error_msg)
+
+    logger.info(f"认证提供商 {provider_name} 初始化并配置检查成功")
+    return provider
+
+
+# 全局认证提供商实例
+try:
+    AuthProvider = _get_auth_provider()
+except ValueError as e:
+    logger.error(f"认证提供商初始化失败: {e}")
+    raise RuntimeError(f"认证提供商初始化失败: {e}") from e  # 抛出异常，防止继续使用未初始化的 AuthProvider
+
+
+# === 统一认证依赖函数 ===
+
+
+async def get_current_user(authorization: Optional[str] = Header(None)) -> str:
+    """从 Authorization header 中获取当前用户ID (用于 HTTP API)"""
+
+    # 检查 Authorization header
+    if not authorization:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Missing authorization header")
+
+    # 解析 Bearer token
+    if not authorization.startswith("Bearer "):
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid authorization header format")
+
+    access_token = authorization[7:]  # Remove "Bearer " prefix
+
+    # 验证 token
+    auth_result = AuthProvider.validate_token(access_token)
+    if not auth_result.success or not auth_result.user_info:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail=auth_result.error_message or "Token validation failed",
+        )
+
+    return auth_result.user_info.id
+
+
+async def get_current_user_websocket(token: Optional[str] = Query(None, alias="token")) -> str:
+    """从查询参数中的token获取当前用户ID (用于 WebSocket)"""
+
+    # 检查 token
+    if not token:
+        raise Exception("Missing authentication token")
+
+    # 验证 token
+    auth_result = AuthProvider.validate_token(token)
+    if not auth_result.success or not auth_result.user_info:
+        raise Exception(auth_result.error_message or "Token validation failed")
+
+    return auth_result.user_info.id
 
 
 def is_auth_configured() -> bool:
     """检查是否已配置身份认证服务"""
-    logger.info("检查身份认证服务配置...")
-    provider = get_auth_provider()
-    if provider is None:
-        logger.warning("认证提供商初始化失败")
-        return False
-
-    is_configured = provider.is_configured()
-    logger.info(f"身份认证服务配置检查结果: {is_configured}")
-    return is_configured
+    return AuthProvider is not None
