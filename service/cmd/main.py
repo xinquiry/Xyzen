@@ -11,6 +11,7 @@ from starlette.types import Receive, Scope, Send
 from handler import root_router
 from handler.api.v1 import agents, mcps, sessions, topics
 from handler.mcp import dify_mcp, lab_mcp, other_mcp
+from handler.mcp.lab import lab_auth
 from internal import configs
 
 # from middleware.auth.casdoor import casdoor_mcp_auth
@@ -34,7 +35,7 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
         server=lab_mcp,  # FastMCP Instance, don't need to pass auth
         streamable_http_path="/",  # Relative path for the MCP server
         debug=configs.Debug,
-        # auth=casdoor_mcp_auth,
+        auth=lab_auth,  # Optional authentication for MCP
     )
 
     other_app = create_streamable_http_app(
