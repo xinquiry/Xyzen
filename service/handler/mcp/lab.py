@@ -76,6 +76,52 @@ async def show_user_info() -> dict[str, Any]:
 
 
 @lab_mcp.tool
+async def list_laboratories() -> dict:
+    """
+    Lists laboratories by calling an internal lab API.
+    Authentication is handled automatically on the server.
+
+    Returns:
+        A dictionary containing the result of the operation.
+        On success, the dictionary will contain the following keys:
+        - `success` (bool): Always `True` if the operation was successful.
+        - `labs` (list[dict]): A list of labs with their details.
+        If an error occurs, the dictionary will contain `error` (str) and `success` (bool, always `False`).
+    """
+    try:
+        url = f"{configs.Lab.Api}/api/v1/lab/list?page=1&page_size=1000"
+        access_token = get_access_token()
+        if not access_token:
+            raise ValueError("Access token is required for this operation.")
+        logger.info(f"Authorization: Bearer {access_token.token}")
+        resp = requests.get(
+            url,
+            headers={"Authorization": f"Bearer {access_token.token}"},
+            timeout=configs.Lab.Timeout,
+        )
+
+        resp.raise_for_status()
+        result = resp.json()
+
+        if result.get("code") != 0:
+            error_msg = f"API returned an error: {result.get('msg', 'Unknown Error')}"
+            logger.error(error_msg)
+            return {"error": error_msg, "success": False}
+        labs = result.get("data", {}).get("data", [])
+        logger.info(f"Successfully retrieved {len(labs)} labs.")
+        return {"success": True, "labs": labs}
+    except requests.exceptions.RequestException as e:
+        error_msg = f"Network error when calling lab API: {str(e)}"
+        logger.error(error_msg)
+        return {"error": error_msg, "success": False}
+    except Exception as e:
+        error_msg = f"An unexpected error occurred: {str(e)}"
+        logger.error(error_msg)
+        return {"error": error_msg, "success": False}
+
+
+# TODO: 以下所有代码接口需要更新，以及 key 不需要再显示设置，使用 get_access_token().token 即可获取用户 ak 用以接下来的操作。
+@lab_mcp.tool
 async def list_laboratory_devices() -> dict:
     """
     Lists laboratory devices by calling an internal lab API.
