@@ -7,6 +7,7 @@ import {
   createChatSlice,
   createLoadingSlice,
   createMcpSlice,
+  createMcpToolSlice,
   createProviderSlice,
   createUiSlice,
 } from "./slices";
@@ -19,6 +20,7 @@ export const useXyzen = create<XyzenState>()(
       ...createChatSlice(...a),
       ...createAgentSlice(...a),
       ...createMcpSlice(...a),
+      ...createMcpToolSlice(...a),
       ...createProviderSlice(...a),
       ...createAuthSlice(...a),
       ...createLoadingSlice(...a),

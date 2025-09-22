@@ -1,11 +1,15 @@
 import { LoadingSpinner } from "@/components/base/LoadingSpinner";
+import { ToolTestModal } from "@/components/modals/ToolTestModal";
 import { websocketService } from "@/service/websocketService";
 import { useXyzen } from "@/store";
 import type { McpServer } from "@/types/mcp";
 import { Button } from "@headlessui/react";
 import {
+  ChevronRightIcon,
+  CommandLineIcon,
   ExclamationTriangleIcon,
   GlobeAltIcon,
+  PlayIcon,
   PlusIcon,
   ServerStackIcon,
   TrashIcon,
@@ -45,11 +49,21 @@ const ServerStatusIndicator: React.FC<ServerStatusIndicatorProps> = ({
 interface McpServerCardProps {
   server: McpServer;
   onRemove: (id: string) => void;
+  onTestTool: (
+    server: McpServer,
+    toolName: string,
+    toolDescription?: string,
+  ) => void;
 }
 
-const McpServerCard: React.FC<McpServerCardProps> = ({ server, onRemove }) => {
+const McpServerCard: React.FC<McpServerCardProps> = ({
+  server,
+  onRemove,
+  onTestTool,
+}) => {
   const toolCount = server.tools?.length || 0;
   const [isRemoving, setIsRemoving] = useState(false);
+  const [isExpanded, setIsExpanded] = useState(false);
 
   const handleRemove = async () => {
     setIsRemoving(true);
@@ -61,6 +75,12 @@ const McpServerCard: React.FC<McpServerCardProps> = ({ server, onRemove }) => {
     }
   };
 
+  const handleToggleExpand = () => {
+    if (toolCount > 0) {
+      setIsExpanded(!isExpanded);
+    }
+  };
+
   return (
     <motion.div
       layout
@@ -68,59 +88,132 @@ const McpServerCard: React.FC<McpServerCardProps> = ({ server, onRemove }) => {
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -20 }}
       transition={{ duration: 0.2 }}
-      className="group relative flex items-center justify-between rounded-xl border border-neutral-200/50 bg-white/50 p-4 shadow-sm backdrop-blur-sm transition-all duration-300 hover:border-indigo-200 hover:bg-white/80 hover:shadow-md dark:border-neutral-800/50 dark:bg-neutral-900/50 dark:hover:border-indigo-800 dark:hover:bg-neutral-900/80"
+      className="group relative overflow-hidden rounded-xl border border-neutral-200/50 bg-white/50 shadow-sm backdrop-blur-sm transition-all duration-300 hover:border-indigo-200 hover:bg-white/80 hover:shadow-md dark:border-neutral-800/50 dark:bg-neutral-900/50 dark:hover:border-indigo-800 dark:hover:bg-neutral-900/80"
     >
-      <div className="flex-1 overflow-hidden">
-        <div className="flex items-center">
-          <ServerStatusIndicator status={server.status} />
-          <div className="ml-3 flex items-center space-x-2">
-            <ServerStackIcon className="h-4 w-4 text-indigo-500" />
-            <h3 className="truncate text-sm font-semibold text-neutral-800 dark:text-white">
-              {server.name}
-            </h3>
+      <div className="flex items-center justify-between p-4">
+        <div className="flex-1 overflow-hidden">
+          <div className="flex items-center">
+            <ServerStatusIndicator status={server.status} />
+            <div className="ml-3 flex items-center space-x-2">
+              <ServerStackIcon className="h-4 w-4 text-indigo-500" />
+              <h3 className="truncate text-sm font-semibold text-neutral-800 dark:text-white">
+                {server.name}
+              </h3>
+            </div>
           </div>
-        </div>
 
-        {server.description && (
-          <p className="mt-2 truncate text-xs text-neutral-600 dark:text-neutral-400">
-            {server.description}
-          </p>
-        )}
-
-        <div className="mt-3 flex items-center space-x-4 text-xs text-neutral-500">
-          <div className="flex items-center space-x-1">
-            <GlobeAltIcon className="h-3.5 w-3.5" />
-            <span className="truncate max-w-48">{server.url}</span>
-          </div>
-          <div className="flex items-center space-x-1">
-            <WrenchScrewdriverIcon className="h-3.5 w-3.5" />
-            <span className="whitespace-nowrap font-medium">
-              {toolCount} {toolCount === 1 ? "Tool" : "Tools"}
-            </span>
-          </div>
-        </div>
-      </div>
-
-      <div className="ml-6 flex items-center">
-        <motion.button
-          whileTap={{ scale: 0.95 }}
-          onClick={handleRemove}
-          disabled={isRemoving}
-          className="rounded-lg p-2 text-neutral-400 opacity-0 transition-all duration-200 hover:bg-red-50 hover:text-red-600 group-hover:opacity-100 disabled:opacity-50 dark:hover:bg-red-900/20 dark:hover:text-red-400"
-          title="Remove Server"
-        >
-          {isRemoving ? (
-            <motion.div
-              animate={{ rotate: 360 }}
-              transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-            >
-              <LoadingSpinner className="h-4 w-4" />
-            </motion.div>
-          ) : (
-            <TrashIcon className="h-4 w-4" />
+          {server.description && (
+            <p className="mt-2 truncate text-xs text-neutral-600 dark:text-neutral-400">
+              {server.description}
+            </p>
           )}
-        </motion.button>
+
+          <div className="mt-3 flex items-center space-x-4 text-xs text-neutral-500">
+            <div className="flex items-center space-x-1">
+              <GlobeAltIcon className="h-3.5 w-3.5" />
+              <span className="truncate max-w-48">{server.url}</span>
+            </div>
+            <motion.button
+              onClick={handleToggleExpand}
+              disabled={toolCount === 0}
+              className={`flex items-center space-x-1 rounded-md px-2 py-1 transition-colors ${
+                toolCount > 0
+                  ? "hover:bg-indigo-50 dark:hover:bg-indigo-900/20"
+                  : "cursor-not-allowed opacity-50"
+              }`}
+            >
+              <WrenchScrewdriverIcon className="h-3.5 w-3.5" />
+              <span className="whitespace-nowrap font-medium">
+                {toolCount} {toolCount === 1 ? "Tool" : "Tools"}
+              </span>
+              {toolCount > 0 && (
+                <motion.div
+                  animate={{ rotate: isExpanded ? 90 : 0 }}
+                  transition={{ duration: 0.2 }}
+                >
+                  <ChevronRightIcon className="h-3 w-3" />
+                </motion.div>
+              )}
+            </motion.button>
+          </div>
+        </div>
+
+        <div className="ml-6 flex items-center">
+          <motion.button
+            whileTap={{ scale: 0.95 }}
+            onClick={handleRemove}
+            disabled={isRemoving}
+            className="rounded-lg p-2 text-neutral-400 opacity-0 transition-all duration-200 hover:bg-red-50 hover:text-red-600 group-hover:opacity-100 disabled:opacity-50 dark:hover:bg-red-900/20 dark:hover:text-red-400"
+            title="Remove Server"
+          >
+            {isRemoving ? (
+              <motion.div
+                animate={{ rotate: 360 }}
+                transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+              >
+                <LoadingSpinner size="sm" />
+              </motion.div>
+            ) : (
+              <TrashIcon className="h-4 w-4" />
+            )}
+          </motion.button>
+        </div>
       </div>
+
+      {/* Expandable Tools List */}
+      <AnimatePresence>
+        {isExpanded && toolCount > 0 && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: "auto", opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.3, ease: "easeInOut" }}
+            className="overflow-hidden border-t border-neutral-200/30 dark:border-neutral-700/30"
+          >
+            <div className="p-4 pt-3">
+              <div className="mb-2 flex items-center space-x-2">
+                <CommandLineIcon className="h-3.5 w-3.5 text-indigo-500" />
+                <span className="text-xs font-medium text-neutral-700 dark:text-neutral-300">
+                  Available Tools
+                </span>
+              </div>
+              <div className="max-h-64 overflow-y-auto space-y-2 scrollbar-thin scrollbar-thumb-neutral-300 scrollbar-track-transparent dark:scrollbar-thumb-neutral-600 pr-2">
+                {server.tools?.map((tool, index) => (
+                  <motion.button
+                    key={`${tool.name}-${index}`}
+                    initial={{ opacity: 0, x: -10 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: index * 0.05 }}
+                    onClick={() =>
+                      onTestTool(server, tool.name, tool.description)
+                    }
+                    className="w-full flex items-start justify-between rounded-lg bg-neutral-50/80 p-3 text-left transition-all hover:bg-neutral-100/80 hover:shadow-sm active:scale-[0.99] dark:bg-neutral-800/50 dark:hover:bg-neutral-700/50 group cursor-pointer"
+                  >
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center space-x-2">
+                        <code className="text-xs font-mono font-semibold text-indigo-600 dark:text-indigo-400">
+                          {tool.name}
+                        </code>
+                        <span className="text-xs text-neutral-500 opacity-0 group-hover:opacity-100 transition-opacity">
+                          Click to test
+                        </span>
+                      </div>
+                      {tool.description && (
+                        <p className="mt-1 text-xs text-neutral-600 dark:text-neutral-400 line-clamp-2">
+                          {tool.description}
+                        </p>
+                      )}
+                    </div>
+                    <div className="ml-3 opacity-60 group-hover:opacity-100 transition-opacity">
+                      <PlayIcon className="h-4 w-4 text-indigo-500" />
+                    </div>
+                  </motion.button>
+                ))}
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </motion.div>
   );
 };
@@ -134,9 +227,21 @@ export function Mcp() {
     backendUrl,
     openAddMcpServerModal,
     getLoading,
+    // MCP Tool actions
+    toolTestModal,
+    openToolTestModal,
+    closeToolTestModal,
   } = useXyzen();
 
   const mcpServersLoading = getLoading("mcpServers");
+
+  const handleTestTool = (
+    server: McpServer,
+    toolName: string,
+    toolDescription?: string,
+  ) => {
+    openToolTestModal(server, toolName, toolDescription);
+  };
 
   useEffect(() => {
     if (backendUrl) {
@@ -201,7 +306,6 @@ export function Mcp() {
         >
           {/* Enhanced container with fixed height and layers */}
           <div className="relative min-h-[66vh] max-h-[66vh] overflow-hidden rounded-3xl border border-neutral-200/30 bg-gradient-to-br from-white/80 via-white/60 to-white/40 backdrop-blur-xl dark:border-neutral-700/30 dark:from-neutral-900/80 dark:via-neutral-900/60 dark:to-neutral-900/40">
-
             {/* Subtle background patterns for depth */}
             <div className="absolute inset-0 opacity-30">
               <div className="absolute top-0 right-0 w-96 h-96 bg-gradient-to-bl from-indigo-100/50 via-transparent to-transparent rounded-full blur-3xl dark:from-indigo-900/30" />
@@ -220,7 +324,7 @@ export function Mcp() {
                     className="flex items-center justify-center h-full min-h-[400px]"
                   >
                     <div className="text-center">
-                      <LoadingSpinner className="mx-auto h-8 w-8 text-indigo-600" />
+                      <LoadingSpinner size="md" centered />
                       <p className="mt-3 text-sm text-neutral-600 dark:text-neutral-400">
                         Loading MCP servers...
                       </p>
@@ -242,7 +346,11 @@ export function Mcp() {
                           animate={{ opacity: 1, y: 0 }}
                           transition={{ duration: 0.3, delay: index * 0.1 }}
                         >
-                          <McpServerCard server={server} onRemove={removeMcpServer} />
+                          <McpServerCard
+                            server={server}
+                            onRemove={removeMcpServer}
+                            onTestTool={handleTestTool}
+                          />
                         </motion.div>
                       ))}
                     </AnimatePresence>
@@ -274,8 +382,8 @@ export function Mcp() {
                         No MCP Servers Found
                       </h3>
                       <p className="mt-2 max-w-md text-sm text-neutral-600 dark:text-neutral-400">
-                        Get started by adding your first MCP server to connect tools
-                        and enhance your AI capabilities.
+                        Get started by adding your first MCP server to connect
+                        tools and enhance your AI capabilities.
                       </p>
                     </motion.div>
 
@@ -299,6 +407,19 @@ export function Mcp() {
           </div>
         </motion.div>
       </motion.div>
+
+      {/* Tool Test Modal */}
+      {toolTestModal.isOpen &&
+        toolTestModal.server &&
+        toolTestModal.toolName && (
+          <ToolTestModal
+            isOpen={toolTestModal.isOpen}
+            onClose={closeToolTestModal}
+            server={toolTestModal.server}
+            toolName={toolTestModal.toolName}
+            toolDescription={toolTestModal.toolDescription}
+          />
+        )}
     </div>
   );
 }

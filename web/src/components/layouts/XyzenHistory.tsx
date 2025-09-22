@@ -45,7 +45,7 @@ export default function XyzenHistory() {
   };
 
   if (chatHistoryLoading) {
-    return <LoadingSpinner />;
+    return <LoadingSpinner centered />;
   }
 
   if (sortedHistory.length === 0) {

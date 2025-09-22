@@ -1,7 +1,8 @@
-from typing import Any
+from typing import Any, Dict, Optional
 from uuid import UUID
 
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException
+from pydantic import BaseModel
 from sqlmodel import select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
@@ -12,6 +13,17 @@ from models import McpServer
 from .sessions import get_current_user
 
 router = APIRouter()
+
+
+class ToolTestRequest(BaseModel):
+    parameters: Dict[str, Any] = {}
+
+
+class ToolTestResponse(BaseModel):
+    success: bool
+    result: Optional[Any] = None
+    error: Optional[str] = None
+    execution_time_ms: Optional[int] = None
 
 
 @router.post("/mcps", response_model=McpServer)
@@ -116,3 +128,60 @@ async def delete_mcp_server(
     await session.delete(mcp_server)
     await session.commit()
     return {"ok": True}
+
+
+@router.post("/mcps/{mcp_server_id}/tools/{tool_name}/test", response_model=ToolTestResponse)
+async def test_mcp_tool(
+    *,
+    session: AsyncSession = Depends(get_session),
+    user: str = Depends(get_current_user),
+    mcp_server_id: UUID,
+    tool_name: str,
+    test_request: ToolTestRequest,
+) -> ToolTestResponse:
+    """
+    Test an MCP tool by calling it with the provided parameters.
+    """
+    import time
+
+    # Get the MCP server
+    mcp_server = await session.get(McpServer, mcp_server_id)
+    if not mcp_server:
+        raise HTTPException(status_code=404, detail="McpServer not found")
+
+    # Check if the MCP server belongs to the current user
+    if mcp_server.user_id != user:
+        raise HTTPException(
+            status_code=403, detail="Access denied: You don't have permission to access this MCP server"
+        )
+
+    # Check if server is online
+    if mcp_server.status != "online":
+        raise HTTPException(status_code=400, detail="MCP server is offline")
+
+    # Check if the tool exists
+    if not mcp_server.tools:
+        raise HTTPException(status_code=404, detail="No tools available on this server")
+
+    tool_exists = any(tool.get("name") == tool_name for tool in mcp_server.tools)
+    if not tool_exists:
+        raise HTTPException(status_code=404, detail=f"Tool '{tool_name}' not found on this server")
+
+    try:
+        start_time = time.time()
+
+        # Use the same tool execution logic as in chat.py
+        from core.chat import _call_mcp_tool
+
+        result = await _call_mcp_tool(mcp_server, tool_name, test_request.parameters)
+
+        end_time = time.time()
+        execution_time_ms = int((end_time - start_time) * 1000)
+
+        return ToolTestResponse(success=True, result=result, execution_time_ms=execution_time_ms)
+
+    except Exception as e:
+        end_time = time.time()
+        execution_time_ms = int((end_time - start_time) * 1000)
+
+        return ToolTestResponse(success=False, error=str(e), execution_time_ms=execution_time_ms)

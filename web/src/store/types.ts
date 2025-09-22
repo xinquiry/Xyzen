@@ -4,6 +4,7 @@ import type {
   ChatSlice,
   LoadingSlice,
   McpSlice,
+  McpToolSlice,
   ProviderSlice,
   UiSlice,
 } from "./slices";
@@ -64,6 +65,7 @@ export type XyzenState = UiSlice &
   ChatSlice &
   AgentSlice &
   McpSlice &
+  McpToolSlice &
   ProviderSlice &
   AuthSlice &
   LoadingSlice;

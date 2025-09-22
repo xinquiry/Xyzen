@@ -166,7 +166,7 @@ export function LlmProviders() {
       </div>
 
       {llmProvidersLoading ? (
-        <LoadingSpinner />
+        <LoadingSpinner centered />
       ) : llmProviders.length > 0 ? (
         <div className="space-y-2">
           {llmProviders.map((provider) => (

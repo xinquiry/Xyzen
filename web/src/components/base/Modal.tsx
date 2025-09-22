@@ -9,9 +9,16 @@ interface ModalProps {
   onClose: () => void;
   title: string;
   children: ReactNode;
+  maxWidth?: string;
 }
 
-export function Modal({ isOpen, onClose, title, children }: ModalProps) {
+export function Modal({
+  isOpen,
+  onClose,
+  title,
+  children,
+  maxWidth = "max-w-2xl",
+}: ModalProps) {
   return (
     <AnimatePresence>
       {isOpen && (
@@ -51,10 +58,12 @@ export function Modal({ isOpen, onClose, title, children }: ModalProps) {
               transition={{
                 duration: 0.3,
                 ease: [0.4, 0, 0.2, 1],
-                opacity: { duration: 0.25 }
+                opacity: { duration: 0.25 },
               }}
             >
-              <DialogPanel className="w-full max-w-2xl min-w-xl space-y-4 rounded-2xl border border-neutral-200/20 bg-white/95 p-8 shadow-2xl shadow-black/20 backdrop-blur-xl dark:border-neutral-700/30 dark:bg-neutral-900/95 dark:shadow-black/40">
+              <DialogPanel
+                className={`w-full ${maxWidth} min-w-xl space-y-4 rounded-2xl border border-neutral-200/20 bg-white/95 p-8 shadow-2xl shadow-black/20 backdrop-blur-xl dark:border-neutral-700/30 dark:bg-neutral-900/95 dark:shadow-black/40`}
+              >
                 <DialogTitle className="text-lg font-bold text-neutral-900 dark:text-neutral-100">
                   {title}
                 </DialogTitle>
