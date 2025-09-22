@@ -34,8 +34,8 @@ export default function XyzenChat() {
   });
 
   const currentChannel = activeChatChannel ? channels[activeChatChannel] : null;
-  const currentAgent = currentChannel?.assistantId
-    ? agents.find((a) => a.id === currentChannel.assistantId)
+  const currentAgent = currentChannel?.agentId
+    ? agents.find((a) => a.id === currentChannel.agentId)
     : null;
   const messages: Message[] = currentChannel?.messages || [];
   const connected = currentChannel?.connected || false;

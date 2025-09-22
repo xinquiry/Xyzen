@@ -11,7 +11,7 @@ import {
   useSensor,
   useSensors,
 } from "@dnd-kit/core";
-import { ClockIcon, CogIcon, PlusIcon } from "@heroicons/react/24/outline";
+import { ClockIcon, PlusIcon } from "@heroicons/react/24/outline";
 import { useMemo, useRef, useState } from "react";
 
 interface ChatToolbarProps {
@@ -53,9 +53,6 @@ export default function ChatToolbar({
     const savedHeight = localStorage.getItem("chatInputHeight");
     return savedHeight ? parseInt(savedHeight, 10) : 80;
   });
-
-  // State for MCP tooltip
-  const [showMcpTooltip, setShowMcpTooltip] = useState(false);
 
   // Get current channel and associated MCP tools
   const currentMcpInfo = useMemo(() => {
