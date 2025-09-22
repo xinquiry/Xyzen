@@ -53,7 +53,7 @@ async def _async_check_mcp_server_status(server_id: Optional[UUID]) -> None:
                 exc_info=True,
             )
         finally:
-            server.last_checked_at = datetime.datetime.now(datetime.timezone.utc)
+            server.last_checked_at = datetime.datetime.now(datetime.timezone.utc).replace(tzinfo=None)
             session.add(server)
             await session.commit()
             await session.refresh(server)
