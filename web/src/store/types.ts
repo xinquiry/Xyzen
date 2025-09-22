@@ -25,7 +25,7 @@ export interface ChatChannel {
   sessionId: string; // The session this topic belongs to
   title: string;
   messages: Message[];
-  assistantId?: string;
+  agentId?: string;
   connected: boolean;
   error: string | null;
 }
@@ -58,6 +58,7 @@ export interface SessionResponse {
   id: string;
   name: string;
   user_id: string;
+  agent_id?: string;
   topics: TopicResponse[];
 }
 

@@ -97,6 +97,7 @@ export const createChatSlice: StateCreator<
                   sessionId: session.id,
                   title: topic.name,
                   messages: [],
+                  agentId: session.agent_id,
                   connected: false,
                   error: null,
                 };
@@ -106,6 +107,7 @@ export const createChatSlice: StateCreator<
                   ...newChannels[topic.id],
                   sessionId: session.id,
                   title: topic.name,
+                  agentId: session.agent_id,
                 };
               }
 
@@ -198,6 +200,7 @@ export const createChatSlice: StateCreator<
             sessionId: sessionId,
             title: topicName,
             messages: [],
+            agentId: undefined, // 这里需要从session数据中获取，但目前先设为undefined
             connected: false,
             error: null,
           };
@@ -362,6 +365,7 @@ export const createChatSlice: StateCreator<
             sessionId: existingSession.id,
             title: newTopic.name,
             messages: [],
+            agentId: existingSession.agent_id,
             connected: false,
             error: null,
           };
@@ -415,6 +419,7 @@ export const createChatSlice: StateCreator<
           sessionId: newSession.id,
           title: newTopic.name,
           messages: [],
+          agentId: newSession.agent_id,
           connected: false,
           error: null,
         };

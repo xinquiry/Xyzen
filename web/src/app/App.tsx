@@ -119,6 +119,9 @@ export function Xyzen({
     setTabIndex,
     setBackendUrl,
     fetchUserByToken,
+    user,
+    fetchAgents,
+    fetchMcpServers,
   } = useXyzen();
   const { theme, cycleTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
@@ -141,6 +144,15 @@ export function Xyzen({
     setBackendUrl(backendUrl);
     fetchUserByToken();
   }, [backendUrl, setBackendUrl, fetchUserByToken]);
+
+  // 初始化加载基础数据
+  useEffect(() => {
+    if (user && backendUrl) {
+      // 加载 agents 和 MCP servers 数据，这些是 ChatToolbar 需要的
+      fetchAgents().catch(console.error);
+      fetchMcpServers().catch(console.error);
+    }
+  }, [user, backendUrl, fetchAgents, fetchMcpServers]);
 
   // 优化 dnd-kit sensor 配置
   const sensors = useSensors(
