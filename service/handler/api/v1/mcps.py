@@ -6,7 +6,7 @@ from pydantic import BaseModel
 from sqlmodel import select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
-from core.mcp import check_mcp_server_status
+from core.mcp import _async_check_mcp_server_status
 from middleware.database.connection import get_session
 from models import McpServer
 
@@ -43,7 +43,7 @@ async def create_mcp_server(
     await session.refresh(db_mcp_server)
 
     if db_mcp_server.id:
-        background_tasks.add_task(check_mcp_server_status, db_mcp_server.id)
+        background_tasks.add_task(_async_check_mcp_server_status, db_mcp_server.id)
 
     return db_mcp_server
 
@@ -185,3 +185,24 @@ async def test_mcp_tool(
         execution_time_ms = int((end_time - start_time) * 1000)
 
         return ToolTestResponse(success=False, error=str(e), execution_time_ms=execution_time_ms)
+
+
+@router.post("/mcps/refresh", status_code=202)
+async def refresh_all_mcp_servers(
+    *,
+    session: AsyncSession = Depends(get_session),
+    user: str = Depends(get_current_user),
+    background_tasks: BackgroundTasks,
+) -> dict[str, bool]:
+    """
+    Trigger a background task to refresh the status of all MCP servers for the current user.
+    """
+    statement = select(McpServer).where(McpServer.user_id == user)
+    result = await session.exec(statement)
+    mcp_servers = result.all()
+
+    for server in mcp_servers:
+        if server.id:
+            background_tasks.add_task(_async_check_mcp_server_status, server.id)
+
+    return {"ok": True}

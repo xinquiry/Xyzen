@@ -7,6 +7,7 @@ import { LoadingKeys } from "./loadingSlice";
 export interface McpSlice {
   mcpServers: McpServer[];
   fetchMcpServers: () => Promise<void>;
+  refreshMcpServers: () => Promise<void>;
   addMcpServer: (server: McpServerCreate) => Promise<void>;
   editMcpServer: (
     id: string,
@@ -36,6 +37,24 @@ export const createMcpSlice: StateCreator<
       console.error("Failed to fetch MCP servers:", error);
     } finally {
       setLoading(LoadingKeys.MCP_SERVERS, false);
+    }
+  },
+  refreshMcpServers: async () => {
+    const { setLoading } = get();
+    setLoading(LoadingKeys.MCP_SERVERS, true);
+    try {
+      await mcpService.refreshMcpServers();
+      // The backend will send updates via WebSocket,
+      // so we just need to wait a bit for the updates to arrive.
+      // A better solution might be to refetch after a delay.
+      setTimeout(() => {
+        get().fetchMcpServers();
+      }, 1000); // Refetch after 1 second
+    } catch (error) {
+      console.error("Failed to refresh MCP servers:", error);
+    } finally {
+      // Keep loading true for a moment to show feedback
+      setTimeout(() => setLoading(LoadingKeys.MCP_SERVERS, false), 1500);
     }
   },
   addMcpServer: async (server) => {

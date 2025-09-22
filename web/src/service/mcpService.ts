@@ -73,4 +73,17 @@ export const mcpService = {
       );
     }
   },
+
+  async refreshMcpServers(): Promise<void> {
+    const response = await fetch(`${getBackendUrl()}/api/v1/mcps/refresh`, {
+      method: "POST",
+      headers: createAuthHeaders(),
+    });
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(
+        `Failed to trigger MCP server refresh: ${response.status} ${errorText}`,
+      );
+    }
+  },
 };

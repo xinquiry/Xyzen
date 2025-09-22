@@ -38,11 +38,11 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
         auth=lab_auth,  # Optional authentication for MCP
     )
 
-    other_app = create_streamable_http_app(
-        server=other_mcp,
-        streamable_http_path="/",
-        debug=configs.Debug,
-    )
+    # other_app = create_streamable_http_app(
+    #     server=other_mcp,
+    #     streamable_http_path="/",
+    #     debug=configs.Debug,
+    # )
 
     dify_app = create_streamable_http_app(
         server=dify_mcp,
@@ -53,12 +53,12 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     # 将 FastMCP 应用的生命周期管理器集成到 FastAPI 中
     async with (
         lab_app.router.lifespan_context(lab_app),
-        other_app.router.lifespan_context(other_app),
+        # other_app.router.lifespan_context(other_app),
         dify_app.router.lifespan_context(dify_app),
     ):
         # 将应用存储在 FastAPI 的状态中，以便在路由中使用
         app.state.lab_app = lab_app
-        app.state.other_app = other_app
+        # app.state.other_app = other_app
         app.state.dify_app = dify_app
         yield
 

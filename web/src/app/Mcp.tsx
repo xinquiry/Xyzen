@@ -5,6 +5,7 @@ import { useXyzen } from "@/store";
 import type { McpServer } from "@/types/mcp";
 import { Button } from "@headlessui/react";
 import {
+  ArrowPathIcon,
   ChevronRightIcon,
   CommandLineIcon,
   ExclamationTriangleIcon,
@@ -222,6 +223,7 @@ export function Mcp() {
   const {
     mcpServers,
     fetchMcpServers,
+    refreshMcpServers,
     removeMcpServer,
     updateMcpServerInList,
     backendUrl,
@@ -259,6 +261,10 @@ export function Mcp() {
     }
   }, [backendUrl, fetchMcpServers, updateMcpServerInList]);
 
+  const handleRefresh = () => {
+    refreshMcpServers();
+  };
+
   return (
     <div className="min-h-full rounded-2xl bg-gradient-to-br from-neutral-50 via-white to-neutral-100 p-6 dark:from-neutral-950 dark:via-neutral-900 dark:to-neutral-950">
       <motion.div
@@ -275,26 +281,38 @@ export function Mcp() {
           className="mb-8 flex items-center justify-between"
         >
           <div className="flex items-center space-x-3">
-            <div className="rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 p-2.5">
+            <div className="rounded-xl bg-gradient-to-r from-indigo-500 to-purple-500 p-2.5 shadow-lg">
               <ServerStackIcon className="h-6 w-6 text-white" />
             </div>
             <div>
-              <h1 className="text-2xl font-bold text-neutral-900 dark:text-white">
+              <h1 className="text-2xl font-bold tracking-tight text-neutral-900 dark:text-neutral-100">
                 MCP Servers
               </h1>
               <p className="text-sm text-neutral-500 dark:text-neutral-400">
-                Manage your Model Context Protocol servers
+                Manage your Model-Context-Protocol servers.
               </p>
             </div>
           </div>
 
-          <Button
-            onClick={openAddMcpServerModal}
-            className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-indigo-600 to-indigo-700 px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-indigo-500/25 transition-all duration-200 hover:from-indigo-500 hover:to-indigo-600 hover:shadow-xl hover:shadow-indigo-500/30 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 dark:shadow-indigo-500/20 dark:hover:shadow-indigo-500/40"
-          >
-            <PlusIcon className="h-4 w-4" />
-            Add Server
-          </Button>
+          <div className="flex items-center space-x-2">
+            <button
+              onClick={handleRefresh}
+              disabled={mcpServersLoading}
+              className="inline-flex items-center gap-2 rounded-xl border border-neutral-200 bg-white px-4 py-2.5 text-sm font-semibold text-neutral-700 shadow-sm transition-colors hover:bg-neutral-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-neutral-800 dark:bg-neutral-900 dark:text-neutral-200 dark:hover:bg-neutral-800"
+            >
+              <ArrowPathIcon
+                className={`h-4 w-4 ${mcpServersLoading ? "animate-spin" : ""}`}
+              />
+              <span>Refresh</span>
+            </button>
+            <button
+              onClick={openAddMcpServerModal}
+              className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-indigo-600 to-indigo-700 px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-indigo-500/25 transition-all duration-200 hover:from-indigo-500 hover:to-indigo-600 hover:shadow-xl hover:shadow-indigo-500/30 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 dark:shadow-indigo-500/20 dark:hover:shadow-indigo-500/40"
+            >
+              <PlusIcon className="h-4 w-4" />
+              Add Server
+            </button>
+          </div>
         </motion.div>
 
         {/* Content Section */}
