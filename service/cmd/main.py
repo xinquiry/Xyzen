@@ -1,17 +1,14 @@
 from collections.abc import AsyncGenerator
-from contextlib import asynccontextmanager
+from contextlib import AsyncExitStack, asynccontextmanager
 
 import uvicorn
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastmcp.server.http import create_streamable_http_app
-from starlette.routing import Mount
-from starlette.types import Receive, Scope, Send
 
 from handler import root_router
 from handler.api.v1 import agents, mcps, sessions, topics
-from handler.mcp import dify_mcp, lab_mcp, other_mcp
-from handler.mcp.lab import lab_auth
+from handler.mcp import setup_mcp_routes
 from internal import configs
 
 # from middleware.auth.casdoor import casdoor_mcp_auth
@@ -30,37 +27,49 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
 
     await initialize_providers()
 
-    # Laboratory MCP Application
-    lab_app = create_streamable_http_app(
-        server=lab_mcp,  # FastMCP Instance, don't need to pass auth
-        streamable_http_path="/",  # Relative path for the MCP server
-        debug=configs.Debug,
-        auth=lab_auth,  # Optional authentication for MCP
-    )
+    # 自动创建和管理所有 MCP 服务器
+    from handler.mcp import registry
 
-    # other_app = create_streamable_http_app(
-    #     server=other_mcp,
-    #     streamable_http_path="/",
-    #     debug=configs.Debug,
-    # )
+    mcp_apps = {}
+    lifespan_contexts = []
 
-    dify_app = create_streamable_http_app(
-        server=dify_mcp,
-        streamable_http_path="/",
-        debug=configs.Debug,
-    )
+    try:
+        # 为每个注册的 MCP 服务器创建应用
+        for server_name, server_config in registry.get_all_servers().items():
+            try:
+                mcp_app = create_streamable_http_app(
+                    server=server_config["server"],
+                    streamable_http_path="/",
+                    debug=configs.Debug,
+                    auth=server_config.get("auth"),
+                )
+                mcp_apps[server_name] = mcp_app
+                lifespan_contexts.append(mcp_app.router.lifespan_context(mcp_app))
 
-    # 将 FastMCP 应用的生命周期管理器集成到 FastAPI 中
-    async with (
-        lab_app.router.lifespan_context(lab_app),
-        # other_app.router.lifespan_context(other_app),
-        dify_app.router.lifespan_context(dify_app),
-    ):
-        # 将应用存储在 FastAPI 的状态中，以便在路由中使用
-        app.state.lab_app = lab_app
-        # app.state.other_app = other_app
-        app.state.dify_app = dify_app
-        yield
+                # 存储到 FastAPI 状态中
+                setattr(app.state, f"{server_name}_app", mcp_app)
+
+            except Exception as e:
+                import logging
+
+                from middleware.logger import LOGGING_CONFIG
+
+                logger = logging.getLogger(__name__)
+                logger.warning(f"Failed to create MCP app for {server_name}: {e}")
+
+        # 启动所有 MCP 应用的生命周期
+        async with AsyncExitStack() as stack:
+            for context in lifespan_contexts:
+                await stack.enter_async_context(context)
+
+            yield
+
+    except Exception as e:
+        import logging
+
+        logger = logging.getLogger(__name__)
+        logger.error(f"Error in MCP lifespan management: {e}")
+        yield  # 确保服务能够启动
 
     # Disconnect from the database, if needed (SQLModel manages sessions)
     pass
@@ -93,27 +102,9 @@ app.include_router(topics.router, prefix="/api/v1/topics", tags=["topics"])
 app.include_router(agents.router, prefix="/api/v1/agents", tags=["agents"])
 
 
-# Router Handlers
-async def lab_handler(scope: Scope, receive: Receive, send: Send) -> None:
-    await app.state.lab_app(scope, receive, send)
-
-
-async def other_handler(scope: Scope, receive: Receive, send: Send) -> None:
-    await app.state.other_app(scope, receive, send)
-
-
-async def dify_handler(scope: Scope, receive: Receive, send: Send) -> None:
-    await app.state.dify_app(scope, receive, send)
-
-
-# Use Mount to register the MCP applications
-app.router.routes.extend(
-    [
-        Mount("/mcp/lab", lab_handler),
-        Mount("/mcp/other", other_handler),
-        Mount("/mcp/dify", dify_handler),
-    ]
-)
+# 自动注册所有 MCP 路由
+mcp_routes = setup_mcp_routes(app.state)
+app.router.routes.extend(mcp_routes)
 
 
 if __name__ == "__main__":

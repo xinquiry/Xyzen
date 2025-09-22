@@ -30,7 +30,7 @@ const ResizeHandle = () => {
       ref={setNodeRef}
       {...listeners}
       {...attributes}
-      className="absolute -top-1 left-0 right-0 -mx-2 h-1 cursor-ns-resize transition-colors hover:bg-indigo-600"
+      className="absolute -top-1 left-0 right-0 h-1 cursor-ns-resize transition-colors hover:bg-indigo-600"
       title="拖动调整输入框高度"
     />
   );
