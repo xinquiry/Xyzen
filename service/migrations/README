@@ -2,9 +2,13 @@ Generic single-database configuration.
 
 Generate a migration after changing your models:(Run it in container or anywhere you can connect your postgresql)
 
+<!-- Generate migration files -->
+
 ```sh
 uv run alembic revision --autogenerate -m "Some message"
 ```
+
+<!-- Apply migrates -->
 
 ```sh
 uv run alembic upgrade head

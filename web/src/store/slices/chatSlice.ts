@@ -302,6 +302,130 @@ export const createChatSlice: StateCreator<
           }
         });
       },
+      // Message event handler for loading and streaming
+      (event) => {
+        set((state: ChatSlice) => {
+          const channel = state.channels[topicId];
+          if (!channel) return;
+
+          switch (event.type) {
+            case "loading": {
+              // Add or update loading message
+              const loadingMessageId = `loading-${Date.now()}`;
+              const existingLoadingIndex = channel.messages.findIndex(
+                (m) => m.isLoading,
+              );
+
+              if (existingLoadingIndex === -1) {
+                // Add new loading message
+                channel.messages.push({
+                  id: loadingMessageId,
+                  role: "assistant" as const,
+                  content: "",
+                  created_at: new Date().toISOString(),
+                  isLoading: true,
+                  isStreaming: false,
+                });
+              }
+              break;
+            }
+
+            case "streaming_start": {
+              // Convert loading message to streaming message
+              const loadingIndex = channel.messages.findIndex(
+                (m) => m.isLoading,
+              );
+              const eventData = event.data as { id: string };
+              if (loadingIndex !== -1) {
+                channel.messages[loadingIndex] = {
+                  ...channel.messages[loadingIndex],
+                  id: eventData.id,
+                  isLoading: false,
+                  isStreaming: true,
+                  content: "",
+                };
+              }
+              break;
+            }
+
+            case "streaming_chunk": {
+              // Update streaming message content
+              const eventData = event.data as { id: string; content: string };
+              const streamingIndex = channel.messages.findIndex(
+                (m) => m.id === eventData.id,
+              );
+              if (streamingIndex !== -1) {
+                const currentContent = channel.messages[streamingIndex].content;
+                channel.messages[streamingIndex].content =
+                  currentContent + eventData.content;
+              }
+              break;
+            }
+
+            case "streaming_end": {
+              // Finalize streaming message
+              const eventData = event.data as {
+                id: string;
+                created_at?: string;
+              };
+              const endingIndex = channel.messages.findIndex(
+                (m) => m.id === eventData.id,
+              );
+              if (endingIndex !== -1) {
+                channel.messages[endingIndex] = {
+                  ...channel.messages[endingIndex],
+                  isStreaming: false,
+                  created_at: eventData.created_at || new Date().toISOString(),
+                };
+              }
+              break;
+            }
+
+            case "message": {
+              // Handle regular message (fallback)
+              const regularMessage = event.data as import("../types").Message;
+              if (!channel.messages.some((m) => m.id === regularMessage.id)) {
+                channel.messages.push(regularMessage);
+              }
+              break;
+            }
+
+            case "message_saved": {
+              // Update the streaming message with the real database ID
+              const eventData = event.data as {
+                stream_id: string;
+                db_id: string;
+                created_at: string;
+              };
+              const messageIndex = channel.messages.findIndex(
+                (m) => m.id === eventData.stream_id,
+              );
+              if (messageIndex !== -1) {
+                channel.messages[messageIndex] = {
+                  ...channel.messages[messageIndex],
+                  id: eventData.db_id,
+                  created_at: eventData.created_at,
+                };
+              }
+              break;
+            }
+
+            case "error": {
+              // Handle error - remove loading messages and show error
+              const errorData = event.data as { error: string };
+              const errorLoadingIndex = channel.messages.findIndex(
+                (m) => m.isLoading,
+              );
+              if (errorLoadingIndex !== -1) {
+                channel.messages.splice(errorLoadingIndex, 1);
+              }
+              // You might want to show an error message here
+              console.error("Chat error:", errorData.error);
+              break;
+            }
+          }
+        });
+      },
     );
   },
 

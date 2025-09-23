@@ -4,7 +4,7 @@ Defines the interface that all LLM providers must implement.
 """
 
 from abc import ABC, abstractmethod
-from typing import Any, Dict, List, Optional
+from typing import Any, AsyncGenerator, Dict, List, Optional
 
 from pydantic import BaseModel
 
@@ -25,6 +25,14 @@ class ChatCompletionRequest(BaseModel):
     max_tokens: Optional[int] = None
     tools: Optional[List[Dict[str, Any]]] = None
     tool_choice: Optional[str] = None
+
+
+class ChatCompletionStreamChunk(BaseModel):
+    """Standardized chat completion stream chunk format."""
+
+    content: Optional[str] = None
+    finish_reason: Optional[str] = None
+    usage: Optional[Dict[str, Any]] = None
 
 
 class ChatCompletionResponse(BaseModel):
@@ -69,6 +77,32 @@ class BaseLLMProvider(ABC):
             The chat completion response
         """
         pass
+
+    async def chat_completion_stream(
+        self, request: ChatCompletionRequest
+    ) -> AsyncGenerator[ChatCompletionStreamChunk, None]:
+        """
+        Generate a streaming chat completion.
+
+        Args:
+            request: The chat completion request
+
+        Yields:
+            Stream chunks of the completion response
+        """
+        # Default implementation falls back to regular completion
+        response = await self.chat_completion(request)
+        if response.content:
+            yield ChatCompletionStreamChunk(content=response.content, finish_reason=response.finish_reason)
+
+    def supports_streaming(self) -> bool:
+        """
+        Check if the provider supports streaming.
+
+        Returns:
+            True if streaming is supported, False otherwise
+        """
+        return hasattr(self, "_streaming_supported") and getattr(self, "_streaming_supported", False)
 
     @abstractmethod
     def is_available(self) -> bool:

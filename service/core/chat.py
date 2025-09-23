@@ -5,8 +5,9 @@ including message processing, user management, and chat history management.
 """
 
 import asyncio
+import json
 import logging
-from typing import Any, Dict, List
+from typing import Any, AsyncGenerator, Dict, List
 
 from core.mcp import _async_check_mcp_server_status
 from core.providers import (
@@ -70,6 +71,94 @@ def _map_provider_type(provider_name: str) -> str:
         return "anthropic"
     else:
         return "openai"
+
+
+async def get_ai_response_stream(message_text: str, topic: TopicModel) -> AsyncGenerator[Dict[str, Any], None]:
+    """
+    Gets a streaming response from the AI model based on the message and chat history.
+
+    Args:
+        message_text: The user's message.
+        topic: The current chat topic containing the history.
+
+    Yields:
+        Dict containing stream events with type and data.
+    """
+    # Get active provider
+    provider = provider_manager.get_active_provider()
+    if not provider:
+        logger.error("No LLM provider configured")
+        yield {"type": "error", "data": {"error": "No AI provider is currently available."}}
+        return
+
+    # Prepare system prompt
+    system_prompt = "You are a helpful AI assistant."
+    if topic.session.agent and topic.session.agent.prompt:
+        system_prompt = topic.session.agent.prompt
+
+    # Build messages list
+    messages: List[ChatMessage] = [ChatMessage(role="system", content=system_prompt)]
+
+    # Add history messages from the topic
+    for msg in topic.messages:
+        messages.append(ChatMessage(role=msg.role, content=msg.content))
+
+    # Add the current user message
+    messages.append(ChatMessage(role="user", content=message_text))
+
+    logger.info(f"Sending {len(messages)} messages to AI provider {provider.provider_name} for topic {topic.id}")
+
+    try:
+        # Use default model from config or provider
+        model = configs.LLM.deployment
+
+        # Prepare tools if MCP servers are available
+        tools = await _prepare_mcp_tools(topic)
+
+        # Create request
+        request = ChatCompletionRequest(
+            messages=messages,
+            model=model,
+            temperature=0.7,
+            tools=tools if tools else None,
+            tool_choice="auto" if tools else None,
+        )
+
+        # Check if provider supports streaming
+        if provider.supports_streaming():
+            # Use streaming if available
+            message_id = f"stream_{int(asyncio.get_event_loop().time() * 1000)}"
+            yield {"type": "streaming_start", "data": {"id": message_id}}
+
+            content_chunks = []
+            async for chunk in provider.chat_completion_stream(request):
+                if chunk.content:
+                    content_chunks.append(chunk.content)
+                    yield {"type": "streaming_chunk", "data": {"id": message_id, "content": chunk.content}}
+
+            full_content = "".join(content_chunks)
+            yield {"type": "streaming_end", "data": {"id": message_id, "content": full_content}}
+        else:
+            # Fallback to regular completion
+            response = await provider.chat_completion(request)
+            message_id = f"msg_{int(asyncio.get_event_loop().time() * 1000)}"
+
+            if response.content:
+                yield {
+                    "type": "message",
+                    "data": {
+                        "id": message_id,
+                        "role": "assistant",
+                        "content": response.content,
+                        "created_at": asyncio.get_event_loop().time(),
+                    },
+                }
+            else:
+                yield {"type": "error", "data": {"error": "Sorry, I could not generate a response."}}
+
+    except Exception as e:
+        logger.error(f"Failed to call AI provider {provider.provider_name} for topic {topic.id}: {e}")
+        yield {"type": "error", "data": {"error": f"Sorry, the AI service is currently unavailable. Error: {e}"}}
 
 
 async def get_ai_response(message_text: str, topic: TopicModel) -> str:
@@ -284,7 +373,6 @@ async def _execute_tool_call(tool_name: str, tool_args: str, topic: TopicModel) 
 
         from middleware.database.connection import engine
 
-        # Parse tool arguments
         try:
             args_dict = json.loads(tool_args) if tool_args else {}
         except json.JSONDecodeError:
@@ -383,8 +471,6 @@ def _format_tool_result(tool_result: Any, tool_name: str) -> str:
             result_text = str(tool_result)
 
         # Try to parse as JSON for special formatting
-        import json
-
         try:
             data = json.loads(result_text)
 

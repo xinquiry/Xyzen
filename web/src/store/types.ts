@@ -18,6 +18,9 @@ export interface Message {
   // Legacy fields for backward compatibility
   sender?: "user" | "assistant" | "system";
   timestamp?: string;
+  // New fields for loading and streaming
+  isLoading?: boolean;
+  isStreaming?: boolean;
 }
 
 export interface ChatChannel {

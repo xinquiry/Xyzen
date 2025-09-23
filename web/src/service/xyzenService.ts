@@ -6,11 +6,34 @@ interface StatusChangePayload {
   error: string | null;
 }
 
+interface MessageEvent {
+  type:
+    | "message"
+    | "loading"
+    | "streaming_start"
+    | "streaming_chunk"
+    | "streaming_end"
+    | "message_saved"
+    | "error";
+  data:
+    | Message
+    | {
+        id: string;
+        content?: string;
+        error?: string;
+        stream_id?: string;
+        db_id?: string;
+        created_at?: string;
+      };
+}
+
 type ServiceCallback<T> = (payload: T) => void;
+type MessageEventCallback = (event: MessageEvent) => void;
 
 class XyzenService {
   private ws: WebSocket | null = null;
   private onMessageCallback: ServiceCallback<Message> | null = null;
+  private onMessageEventCallback: MessageEventCallback | null = null;
   private onStatusChangeCallback: ServiceCallback<StatusChangePayload> | null =
     null;
   private backendUrl = "";
@@ -24,6 +47,7 @@ class XyzenService {
     topicId: string,
     onMessage: ServiceCallback<Message>,
     onStatusChange: ServiceCallback<StatusChangePayload>,
+    onMessageEvent?: MessageEventCallback,
   ) {
     if (this.ws && this.ws.readyState === WebSocket.OPEN) {
       console.log("WebSocket is already connected.");
@@ -31,6 +55,7 @@ class XyzenService {
     }
 
     this.onMessageCallback = onMessage;
+    this.onMessageEventCallback = onMessageEvent || null;
     this.onStatusChangeCallback = onStatusChange;
 
     // Get authentication token
@@ -59,8 +84,15 @@ class XyzenService {
 
     this.ws.onmessage = (event) => {
       try {
-        const messageData = JSON.parse(event.data);
-        this.onMessageCallback?.(messageData);
+        const eventData = JSON.parse(event.data);
+
+        // Handle different message types
+        if (eventData.type && this.onMessageEventCallback) {
+          this.onMessageEventCallback(eventData);
+        } else {
+          // Legacy support - assume it's a direct message
+          this.onMessageCallback?.(eventData);
+        }
       } catch (error) {
         console.error("XyzenService: Failed to parse message data:", error);
       }

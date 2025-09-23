@@ -4,7 +4,7 @@ Supports both Azure OpenAI and standard OpenAI API.
 """
 
 import logging
-from typing import Any, List, Literal, Optional, Union, cast
+from typing import Any, AsyncGenerator, List, Literal, Optional, Union, cast
 
 from openai import AzureOpenAI, OpenAI
 from openai.types.chat import (
@@ -12,7 +12,7 @@ from openai.types.chat import (
 )
 from openai.types.chat.chat_completion_tool_param import ChatCompletionToolParam
 
-from .base import BaseLLMProvider, ChatCompletionRequest, ChatCompletionResponse
+from .base import BaseLLMProvider, ChatCompletionRequest, ChatCompletionResponse, ChatCompletionStreamChunk
 
 logger = logging.getLogger(__name__)
 
@@ -63,6 +63,9 @@ class OpenAIProvider(BaseLLMProvider):
                 api_key=self.api_key,
                 base_url=self.base_url,
             )
+
+        # Mark as supporting streaming
+        self._streaming_supported = True
 
     async def chat_completion(self, request: ChatCompletionRequest) -> ChatCompletionResponse:
         """
@@ -210,6 +213,89 @@ class OpenAIProvider(BaseLLMProvider):
 
         except Exception as e:
             logger.error(f"OpenAI API call failed: {e}")
+            raise e
+
+    async def chat_completion_stream(
+        self, request: ChatCompletionRequest
+    ) -> AsyncGenerator[ChatCompletionStreamChunk, None]:
+        """
+        Generate a streaming chat completion using OpenAI API.
+
+        Args:
+            request: The chat completion request
+
+        Yields:
+            Stream chunks of the completion response
+        """
+        try:
+            # Validate model
+            if request.model not in self.supported_models:
+                logger.warning(f"Model {request.model} is not in the supported models list for {self.provider_name}")
+
+            # Convert standard messages to OpenAI format (same as regular completion)
+            messages = []
+            for i, msg in enumerate(request.messages):
+                if msg.role == "tool":
+                    prev_msg = request.messages[i - 1] if i > 0 else None
+                    has_tool_calls = (
+                        prev_msg and hasattr(prev_msg, "tool_calls") and getattr(prev_msg, "tool_calls", None)
+                    )
+                    if has_tool_calls:
+                        message_dict = {"role": "user", "content": f"Tool execution result: {msg.content}"}
+                    else:
+                        message_dict = {"role": "user", "content": f"Tool result: {msg.content}"}
+                else:
+                    message_dict = {"role": msg.role, "content": msg.content}
+                messages.append(message_dict)
+
+            # Prepare API call parameters
+            api_params = {
+                "model": request.model,
+                "messages": messages,
+                "temperature": request.temperature,
+                "stream": True,  # Enable streaming
+            }
+
+            if request.max_tokens:
+                api_params["max_tokens"] = request.max_tokens
+
+            # Note: Streaming typically doesn't support tools, so we skip tool handling for now
+            if request.tools:
+                logger.warning("Tools are not supported in streaming mode, falling back to regular completion")
+                # Fall back to regular completion for tool calls
+                response = await self.chat_completion(request)
+                if response.content:
+                    yield ChatCompletionStreamChunk(content=response.content, finish_reason=response.finish_reason)
+                return
+
+            # Make the streaming API call
+            max_tokens_value = api_params.get("max_tokens")
+            max_tokens = cast(int, max_tokens_value) if max_tokens_value is not None else None
+
+            stream = self.client.chat.completions.create(
+                model=cast(str, api_params["model"]),
+                messages=cast(List[ChatCompletionMessageParam], api_params["messages"]),
+                temperature=cast(float, api_params["temperature"]),
+                max_tokens=max_tokens,
+                stream=True,
+            )
+
+            for chunk in stream:
+                if chunk.choices and len(chunk.choices) > 0:
+                    choice = chunk.choices[0]
+                    if choice.delta and choice.delta.content:
+                        yield ChatCompletionStreamChunk(
+                            content=choice.delta.content,
+                            finish_reason=choice.finish_reason,
+                        )
+                    elif choice.finish_reason:
+                        yield ChatCompletionStreamChunk(
+                            content=None,
+                            finish_reason=choice.finish_reason,
+                        )
+
+        except Exception as e:
+            logger.error(f"OpenAI streaming API call failed: {e}")
             raise e
 
     def is_available(self) -> bool:
