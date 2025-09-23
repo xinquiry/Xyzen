@@ -36,6 +36,7 @@
     "dev": "vite --host --port 32233 --strictPort",
     "build": "rimraf site && tsc -b && vite build",
     "build:lib": "rimraf dist && cross-env BUILD_MODE=library vite build",
+    "image:bohr": "docker buildx build . --build-arg VITE_BACKEND_URL=https://uni-xyzen.test.bohrium.com --platform linux/amd64 -t registry.dp.tech/public/xyzen-web:latest --push",
     "lint": "eslint .",
     "preview": "vite preview",
     "publish": "yarn npm publish"

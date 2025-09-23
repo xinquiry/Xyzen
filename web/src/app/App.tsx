@@ -106,7 +106,7 @@ export interface XyzenProps {
 
 export function Xyzen({
   backendUrl = DEFAULT_BACKEND_URL,
-  showThemeToggle = false,
+  showThemeToggle = true,
   showLlmProvider = false,
 }: XyzenProps) {
   const {
