@@ -14,6 +14,8 @@ interface MessageEvent {
     | "streaming_chunk"
     | "streaming_end"
     | "message_saved"
+    | "tool_call_request"
+    | "tool_call_response"
     | "error";
   data:
     | Message
@@ -24,6 +26,14 @@ interface MessageEvent {
         stream_id?: string;
         db_id?: string;
         created_at?: string;
+        // Tool call fields
+        name?: string;
+        description?: string;
+        arguments?: Record<string, unknown>;
+        status?: string;
+        timestamp?: number;
+        toolCallId?: string;
+        confirmed?: boolean;
       };
 }
 
@@ -120,6 +130,14 @@ class XyzenService {
   public sendMessage(message: string) {
     if (this.ws && this.ws.readyState === WebSocket.OPEN) {
       this.ws.send(JSON.stringify({ message }));
+    } else {
+      console.error("XyzenService: WebSocket is not connected.");
+    }
+  }
+
+  public sendStructuredMessage(data: Record<string, unknown>) {
+    if (this.ws && this.ws.readyState === WebSocket.OPEN) {
+      this.ws.send(JSON.stringify(data));
     } else {
       console.error("XyzenService: WebSocket is not connected.");
     }

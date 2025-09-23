@@ -19,6 +19,9 @@ class AgentBase(SQLModel):
     temperature: Optional[float] = None
     prompt: Optional[str] = None
     user_id: str = Field(index=True, description="The user ID from Casdoor")
+    require_tool_confirmation: bool = Field(
+        default=False, description="Whether to require user confirmation for tool calls"
+    )
 
     provider_id: Optional[UUID] = Field(default=None, foreign_key="provider.id", index=True)
 
@@ -50,6 +53,7 @@ class AgentUpdate(SQLModel):
     model: Optional[str] = None
     temperature: Optional[float] = None
     prompt: Optional[str] = None
+    require_tool_confirmation: Optional[bool] = None
     mcp_server_ids: Optional[List[UUID]] = None
 
 

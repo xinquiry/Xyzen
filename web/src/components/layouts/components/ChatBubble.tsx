@@ -1,30 +1,34 @@
 import ProfileIcon from "@/assets/ProfileIcon";
 import Markdown from "@/lib/Markdown";
+import { useXyzen } from "@/store";
+import type { Message } from "@/store/types";
 import LoadingMessage from "./LoadingMessage";
+import ToolCallCard from "./ToolCallCard";
 
 import { motion } from "framer-motion";
-import React, { useState } from "react";
-
-export interface Message {
-  id: string;
-  role: "user" | "assistant" | "system" | "tool";
-  content: string;
-  created_at: string;
-  avatar?: string;
-  isCurrentUser?: boolean;
-  isLoading?: boolean;
-  isStreaming?: boolean;
-}
+import React from "react";
 
 interface ChatBubbleProps {
   message: Message;
 }
 
 const ChatBubble: React.FC<ChatBubbleProps> = ({ message }) => {
-  const { role, content, created_at, avatar, isLoading, isStreaming } = message;
-  const [imageError, setImageError] = useState(false);
+  const { confirmToolCall, cancelToolCall, activeChatChannel } = useXyzen();
+
+  const { role, content, created_at, isLoading, isStreaming, toolCalls } =
+    message;
 
   const isUserMessage = role === "user";
+
+  // Debug logging for tool calls
+  React.useEffect(() => {
+    if (toolCalls && toolCalls.length > 0) {
+      console.log(
+        `ChatBubble: Message ${message.id} has ${toolCalls.length} tool calls:`,
+        toolCalls,
+      );
+    }
+  }, [toolCalls, message.id]);
 
   // Updated time format to include seconds
   const formattedTime = new Date(created_at).toLocaleTimeString([], {
@@ -48,22 +52,6 @@ const ChatBubble: React.FC<ChatBubbleProps> = ({ message }) => {
     ? "animate-pulse border-l-4 border-green-400 bg-green-50/30 dark:border-green-500 dark:bg-green-900/10"
     : loadingStyles;
 
-  // 获取头像 URL 但避免使用不存在的默认头像文件
-  const getAvatarUrl = (avatarPath?: string) => {
-    if (!avatarPath) return null;
-
-    // 如果已经是完整URL就直接使用
-    if (avatarPath.startsWith("http")) {
-      return avatarPath;
-    }
-
-    // 如果是相对路径，根据环境添加正确的基本URL
-    const baseUrl = process.env.NEXT_PUBLIC_API_URL || "";
-    return avatarPath.startsWith("/")
-      ? `${baseUrl}${avatarPath}`
-      : `${baseUrl}/${avatarPath}`;
-  };
-
   // 渲染头像，使用初始字母作为最后的备用选项
   const renderAvatar = () => {
     if (isUserMessage) {
@@ -72,29 +60,15 @@ const ChatBubble: React.FC<ChatBubbleProps> = ({ message }) => {
       );
     }
 
-    // 如果已经知道图像加载失败，或者没有提供头像
-    if (imageError || !avatar) {
-      // 显示AI的首字母作为头像
-      const initial = role?.charAt(0)?.toUpperCase() || "A";
+    // AI助手头像显示首字母
+    const initial = role?.charAt(0)?.toUpperCase() || "A";
 
-      return (
-        <div
-          className={`flex h-6 w-6 items-center justify-center rounded-full bg-purple-500 text-white`}
-        >
-          <span className="text-xs font-medium">{initial}</span>
-        </div>
-      );
-    }
-
-    // 尝试加载实际头像
-    const avatarUrl = getAvatarUrl(avatar);
     return (
-      <img
-        src={avatarUrl || ""}
-        alt="Assistant"
-        className="h-6 w-6 rounded-full shadow-sm transition-transform duration-200 group-hover:scale-110"
-        onError={() => setImageError(true)} // 加载失败时设置状态，不再尝试加载图片
-      />
+      <div
+        className={`flex h-6 w-6 items-center justify-center rounded-full bg-purple-500 text-white`}
+      >
+        <span className="text-xs font-medium">{initial}</span>
+      </div>
     );
   };
 
@@ -142,6 +116,26 @@ const ChatBubble: React.FC<ChatBubbleProps> = ({ message }) => {
               />
             )}
           </div>
+
+          {/* Tool Calls */}
+          {toolCalls && toolCalls.length > 0 && (
+            <div className="mt-3 space-y-2">
+              {toolCalls.map((toolCall) => (
+                <ToolCallCard
+                  key={toolCall.id}
+                  toolCall={toolCall}
+                  onConfirm={(toolCallId) =>
+                    activeChatChannel &&
+                    confirmToolCall(activeChatChannel, toolCallId)
+                  }
+                  onCancel={(toolCallId) =>
+                    activeChatChannel &&
+                    cancelToolCall(activeChatChannel, toolCallId)
+                  }
+                />
+              ))}
+            </div>
+          )}
         </div>
       </div>
     </motion.div>

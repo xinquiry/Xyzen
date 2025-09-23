@@ -24,6 +24,10 @@ export interface ChatSlice {
   sendMessage: (message: string) => void;
   createDefaultChannel: (agentId?: string) => Promise<void>;
   updateTopicName: (topicId: string, newName: string) => Promise<void>;
+
+  // Tool call confirmation methods
+  confirmToolCall: (channelId: string, toolCallId: string) => void;
+  cancelToolCall: (channelId: string, toolCallId: string) => void;
 }
 
 export const createChatSlice: StateCreator<
@@ -410,6 +414,121 @@ export const createChatSlice: StateCreator<
               break;
             }
 
+            case "tool_call_request": {
+              // Handle tool call request - create a new assistant message with tool calls
+              console.log(
+                "ChatSlice: Received tool_call_request event:",
+                event.data,
+              );
+              const toolCallData = event.data as {
+                id: string;
+                name: string;
+                description?: string;
+                arguments: Record<string, unknown>;
+                status: string;
+                timestamp: number;
+              };
+
+              // Clear any existing loading messages
+              const loadingIndex = channel.messages.findIndex(
+                (m) => m.isLoading,
+              );
+              if (loadingIndex !== -1) {
+                channel.messages.splice(loadingIndex, 1);
+              }
+
+              // Create a new assistant message with the tool call
+              const toolCallMessageId = `tool-call-${toolCallData.id}`;
+              const newMessage = {
+                id: toolCallMessageId,
+                role: "assistant" as const,
+                content: "我需要使用工具来帮助回答您的问题。",
+                created_at: new Date().toISOString(),
+                isLoading: false,
+                isStreaming: false,
+                toolCalls: [
+                  {
+                    id: toolCallData.id,
+                    name: toolCallData.name,
+                    description: toolCallData.description,
+                    arguments: toolCallData.arguments,
+                    status: toolCallData.status as
+                      | "waiting_confirmation"
+                      | "executing"
+                      | "completed"
+                      | "failed",
+                    timestamp: new Date(toolCallData.timestamp).toISOString(),
+                  },
+                ],
+              };
+
+              channel.messages.push(newMessage);
+              console.log(
+                `ChatSlice: Created new tool call message with tool ${toolCallData.name}`,
+              );
+              break;
+            }
+
+            case "tool_call_response": {
+              // Handle tool call response
+              console.log(
+                "ChatSlice: Received tool_call_response event:",
+                event.data,
+              );
+              const responseData = event.data as {
+                toolCallId: string;
+                status: string;
+                result?: unknown;
+                error?: string;
+              };
+
+              let toolCompleted = false;
+
+              // Find and update the tool call
+              channel.messages.forEach((message) => {
+                if (message.toolCalls) {
+                  message.toolCalls.forEach((toolCall) => {
+                    if (toolCall.id === responseData.toolCallId) {
+                      toolCall.status = responseData.status as
+                        | "waiting_confirmation"
+                        | "executing"
+                        | "completed"
+                        | "failed";
+                      if (responseData.result) {
+                        toolCall.result = JSON.stringify(responseData.result);
+                      }
+                      if (responseData.error) {
+                        toolCall.error = responseData.error;
+                      }
+                      console.log(
+                        `ChatSlice: Updated tool call ${toolCall.name} status to ${responseData.status}`,
+                      );
+
+                      // Check if tool completed successfully
+                      if (responseData.status === "completed") {
+                        toolCompleted = true;
+                      }
+                    }
+                  });
+                }
+              });
+
+              // If tool completed, create loading message for AI response
+              if (toolCompleted) {
+                console.log(
+                  "ChatSlice: Tool completed, creating loading message for AI response",
+                );
+                channel.messages.push({
+                  id: `loading-${Date.now()}`,
+                  role: "assistant",
+                  content: "",
+                  created_at: new Date().toISOString(),
+                  isLoading: true,
+                });
+              }
+              break;
+            }
+
             case "error": {
               // Handle error - remove loading messages and show error
               const errorData = event.data as { error: string };
@@ -618,5 +737,59 @@ export const createChatSlice: StateCreator<
       console.error("Failed to update topic name:", error);
       throw error;
     }
+  },
+
+  // Tool call confirmation methods
+  confirmToolCall: (channelId: string, toolCallId: string) => {
+    // Send confirmation to backend via WebSocket
+    xyzenService.sendStructuredMessage({
+      type: "tool_call_confirm",
+      data: { toolCallId },
+    });
+
+    // Update tool call status in messages
+    set((state: ChatSlice) => {
+      if (state.channels[channelId]) {
+        state.channels[channelId].messages.forEach((message) => {
+          if (message.toolCalls) {
+            message.toolCalls.forEach((toolCall) => {
+              if (
+                toolCall.id === toolCallId &&
+                toolCall.status === "waiting_confirmation"
+              ) {
+                toolCall.status = "executing";
+              }
+            });
+          }
+        });
+      }
+    });
+  },
+
+  cancelToolCall: (channelId: string, toolCallId: string) => {
+    // Send cancellation to backend via WebSocket
+    xyzenService.sendStructuredMessage({
+      type: "tool_call_cancel",
+      data: { toolCallId },
+    });
+
+    // Update tool call status to failed in messages
+    set((state: ChatSlice) => {
+      if (state.channels[channelId]) {
+        state.channels[channelId].messages.forEach((message) => {
+          if (message.toolCalls) {
+            message.toolCalls.forEach((toolCall) => {
+              if (
+                toolCall.id === toolCallId &&
+                toolCall.status === "waiting_confirmation"
+              ) {
+                toolCall.status = "failed";
+                toolCall.error = "用户取消执行";
+              }
+            });
+          }
+        });
+      }
+    });
   },
 });

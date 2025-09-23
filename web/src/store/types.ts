@@ -10,6 +10,22 @@ import type {
 } from "./slices";
 
 // 定义应用中的核心类型
+export interface ToolCall {
+  id: string;
+  name: string;
+  description?: string;
+  arguments: Record<string, unknown>;
+  status:
+    | "pending"
+    | "waiting_confirmation"
+    | "executing"
+    | "completed"
+    | "failed";
+  result?: string;
+  error?: string;
+  timestamp: string;
+}
+
 export interface Message {
   id: string;
   content: string;
@@ -21,6 +37,9 @@ export interface Message {
   // New fields for loading and streaming
   isLoading?: boolean;
   isStreaming?: boolean;
+  // Tool call related fields
+  toolCalls?: ToolCall[];
+  isToolCalling?: boolean;
 }
 
 export interface ChatChannel {

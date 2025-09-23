@@ -11,7 +11,11 @@ import {
   useSensor,
   useSensors,
 } from "@dnd-kit/core";
-import { ClockIcon, PlusIcon } from "@heroicons/react/24/outline";
+import {
+  ClockIcon,
+  PlusIcon,
+  ShieldCheckIcon,
+} from "@heroicons/react/24/outline";
 import { useMemo, useRef, useState } from "react";
 
 interface ChatToolbarProps {
@@ -46,6 +50,7 @@ export default function ChatToolbar({
     channels,
     agents,
     mcpServers,
+    updateAgent,
   } = useXyzen();
 
   // State for managing input height
@@ -74,6 +79,15 @@ export default function ChatToolbar({
     };
   }, [activeChatChannel, channels, agents, mcpServers]);
 
+  // Get current agent's tool call confirmation setting
+  const requireToolCallConfirmation = useMemo(() => {
+    if (!activeChatChannel) return false;
+    const channel = channels[activeChatChannel];
+    if (!channel?.agentId) return false;
+    const agent = agents.find((a) => a.id === channel.agentId);
+    return agent?.require_tool_confirmation || false;
+  }, [activeChatChannel, channels, agents]);
+
   // Refs for drag handling
   const initialHeightRef = useRef(inputHeight);
   const dragDeltaRef = useRef(0);
@@ -89,6 +103,31 @@ export default function ChatToolbar({
 
   const handleNewChat = () => {
     createDefaultChannel();
+  };
+
+  const handleToggleToolCallConfirmation = async () => {
+    if (!activeChatChannel) return;
+
+    const channel = channels[activeChatChannel];
+    if (!channel?.agentId) return;
+
+    const agent = agents.find((a) => a.id === channel.agentId);
+    if (!agent) return;
+
+    try {
+      // Update agent with new confirmation setting
+      const updatedAgent = {
+        ...agent,
+        require_tool_confirmation: !agent.require_tool_confirmation,
+      };
+
+      await updateAgent(updatedAgent);
+      console.log(
+        `Tool call confirmation ${updatedAgent.require_tool_confirmation ? "enabled" : "disabled"} for agent ${agent.name}`,
+      );
+    } catch (error) {
+      console.error("Failed to update tool call confirmation setting:", error);
+    }
   };
 
   // Handle drag start
@@ -141,11 +180,31 @@ export default function ChatToolbar({
             >
               <PlusIcon className="h-4 w-4" />
             </button>
+
+            {/* Tool Call Confirmation Toggle */}
+            {activeChatChannel && (
+              <button
+                onClick={handleToggleToolCallConfirmation}
+                className={`flex items-center justify-center rounded-md p-1.5 transition-colors ${
+                  requireToolCallConfirmation
+                    ? "bg-indigo-100 text-indigo-600 hover:bg-indigo-200/60 dark:bg-indigo-900/50 dark:text-indigo-400 dark:hover:bg-indigo-800/60"
+                    : "text-neutral-500 hover:bg-neutral-200/60 hover:text-neutral-700 dark:text-neutral-400 dark:hover:bg-neutral-800/60 dark:hover:text-neutral-300"
+                }`}
+                title={
+                  requireToolCallConfirmation
+                    ? "工具调用需要确认（开启）"
+                    : "工具调用需要确认（关闭）"
+                }
+              >
+                <ShieldCheckIcon className="h-4 w-4" />
+              </button>
+            )}
+
             {/* MCP Tool Button */}
             {currentMcpInfo && (
-              <div className="relative group/mcp w-80">
+              <div className="relative group/mcp w-fit">
                 <button
-                  className="flex items-center justify-center rounded-md p-1.5 text-neutral-500 transition-colors hover:bg-neutral-200/60 hover:text-neutral-700 dark:text-neutral-400 dark:hover:bg-neutral-800/60 dark:hover:text-neutral-300"
+                  className="flex items-center w-fit justify-center rounded-md p-1.5 text-neutral-500 transition-colors hover:bg-neutral-200/60 hover:text-neutral-700 dark:text-neutral-400 dark:hover:bg-neutral-800/60 dark:hover:text-neutral-300"
                   title="当前连接的MCP工具"
                 >
                   <McpIcon className="h-4 w-4" />
@@ -160,9 +219,11 @@ export default function ChatToolbar({
                 </button>
 
                 {/* MCP Tooltip */}
-
                 <div
-                  className=" transition-opacity max-w-full overflow-auto opacity-0 group-hover/mcp:opacity-100 absolute bottom-full left-0 mb-2 w-fit rounded-lg border
+                  className=" transition-opacity
+                  overflow-auto hidden w-80
+                  group-hover/mcp:block absolute bottom-full
+                  left-0 mb-2 rounded-lg border
                  border-neutral-200 bg-white p-3 shadow-lg
                   dark:border-neutral-700 dark:bg-neutral-800 z-50"
                 >
@@ -182,7 +243,8 @@ export default function ChatToolbar({
                     {currentMcpInfo.servers.map((server) => (
                       <div
                         key={server.id}
-                        className="rounded-md bg-neutral-50 p-2 dark:bg-neutral-700/50"
+                        className="rounded-md bg-neutral-50 p-2
+                         dark:bg-neutral-700/50"
                       >
                         <div className="flex items-center justify-between">
                           <div className="flex items-center space-x-2">
