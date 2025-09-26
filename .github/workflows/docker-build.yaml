@@ -38,7 +38,7 @@ jobs:
           kubectl \
             --server=${{ secrets.SCIENCEOL_K8S_SERVER_URL }} \
             --token=${{ secrets.SCIENCEOL_K8S_ADMIN_TOKEN }} \
-            --certificate-authority=ca.crt
+            --certificate-authority=ca.crt \
             rollout restart deployment xyzen -n sciol
 
       - name: Rolling update deployment
@@ -46,5 +46,5 @@ jobs:
           kubectl \
             --server=${{ secrets.SCIENCEOL_K8S_SERVER_URL }} \
             --token=${{ secrets.SCIENCEOL_K8S_ADMIN_TOKEN }} \
-            --certificate-authority=ca.crt
+            --certificate-authority=ca.crt \
             rollout restart deployment xyzen-web -n sciol
