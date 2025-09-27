@@ -7,6 +7,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastmcp.server.http import create_streamable_http_app
 
 from handler import root_router
+from handler.api.v1 import agents, mcps, sessions, topics
 from handler.mcp import setup_mcp_routes
 from internal import configs
 
