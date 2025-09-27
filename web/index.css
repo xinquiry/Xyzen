@@ -1,3 +1,6 @@
-@import "tailwindcss";
+/* @import "tailwindcss"; */
+@layer xyzen-base {
+    @import "tailwindcss";
+}
 
 @custom-variant dark (&:where(.dark, .dark *));

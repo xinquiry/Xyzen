@@ -39,15 +39,11 @@ export const Switch: React.FC<SwitchProps> = ({
     >
       <span className="sr-only">Use setting</span>
       <motion.span
-        layout
+        animate={{
+          x: checked ? 20 : 0, // 20px = 1.25rem
+        }}
         transition={spring}
-        className={clsx(
-          "pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0",
-          {
-            "translate-x-5": checked,
-            "translate-x-0": !checked,
-          },
-        )}
+        className="pointer-events-none inline-block h-5 w-5 rounded-full bg-white shadow ring-0"
       />
     </HeadlessSwitch>
   );

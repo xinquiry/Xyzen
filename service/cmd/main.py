@@ -7,7 +7,6 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastmcp.server.http import create_streamable_http_app
 
 from handler import root_router
-from handler.api.v1 import agents, mcps, sessions, topics
 from handler.mcp import setup_mcp_routes
 from internal import configs
 
@@ -96,11 +95,6 @@ app.add_middleware(
 
 
 app.include_router(root_router)
-app.include_router(mcps.router, prefix="/api/v1", tags=["mcps"])
-app.include_router(sessions.router, prefix="/api/v1/sessions", tags=["sessions"])
-app.include_router(topics.router, prefix="/api/v1/topics", tags=["topics"])
-app.include_router(agents.router, prefix="/api/v1/agents", tags=["agents"])
-
 
 # 自动注册所有 MCP 路由
 mcp_routes = setup_mcp_routes(app.state)
