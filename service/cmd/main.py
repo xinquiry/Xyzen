@@ -86,12 +86,22 @@ app = FastAPI(
 )
 
 # Add CORS middleware
+# NOTE:
+# When allow_credentials=True, CORS spec forbids Access-Control-Allow-Origin: *.
+# Browsers will reject such responses and surface it as if ACAO header is missing.
+# Therefore list explicit origins (or use allow_origin_regex) instead of "*".
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Allows all origins
+    allow_origins=[
+        "https://uni-lab.test.bohrium.com",
+        "https://uni-xyzen.test.bohrium.com",
+        "http://localhost:32233",
+    ],
+    # If you later need to support many dynamic subdomains, switch to
+    # allow_origin_regex=r"https://uni-(lab|xyzen)\.test\.bohrium\.com" OR a broader regex.
     allow_credentials=True,
-    allow_methods=["*"],  # Allows all methods
-    allow_headers=["*"],  # Allows all headers
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 
