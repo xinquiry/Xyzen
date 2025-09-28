@@ -14,7 +14,7 @@ class LlmProviderService {
 
   async getLlmProviders(): Promise<LlmProviderResponse[]> {
     const response = await fetch(
-      `${this.getBackendUrl()}/api/v1/llm-providers/`,
+      `${this.getBackendUrl()}/xyzen-api/v1/llm-providers/`,
     );
     if (!response.ok) {
       throw new Error("Failed to fetch LLM providers");
@@ -26,7 +26,7 @@ class LlmProviderService {
     provider: LlmProviderCreate,
   ): Promise<LlmProviderResponse> {
     const response = await fetch(
-      `${this.getBackendUrl()}/api/v1/llm-providers/`,
+      `${this.getBackendUrl()}/xyzen-api/v1/llm-providers/`,
       {
         method: "POST",
         headers: {
@@ -44,7 +44,7 @@ class LlmProviderService {
 
   async getLlmProvider(id: number): Promise<LlmProviderResponse> {
     const response = await fetch(
-      `${this.getBackendUrl()}/api/v1/llm-providers/${id}`,
+      `${this.getBackendUrl()}/xyzen-api/v1/llm-providers/${id}`,
     );
     if (!response.ok) {
       throw new Error("Failed to fetch LLM provider");
@@ -57,7 +57,7 @@ class LlmProviderService {
     provider: Partial<LlmProviderCreate>,
   ): Promise<LlmProviderResponse> {
     const response = await fetch(
-      `${this.getBackendUrl()}/api/v1/llm-providers/${id}`,
+      `${this.getBackendUrl()}/xyzen-api/v1/llm-providers/${id}`,
       {
         method: "PUT",
         headers: {
@@ -75,7 +75,7 @@ class LlmProviderService {
 
   async deleteLlmProvider(id: number): Promise<void> {
     const response = await fetch(
-      `${this.getBackendUrl()}/api/v1/llm-providers/${id}`,
+      `${this.getBackendUrl()}/xyzen-api/v1/llm-providers/${id}`,
       {
         method: "DELETE",
       },
@@ -90,7 +90,7 @@ class LlmProviderService {
     request: SwitchProviderRequest,
   ): Promise<{ message: string }> {
     const response = await fetch(
-      `${this.getBackendUrl()}/api/v1/llm-providers/switch`,
+      `${this.getBackendUrl()}/xyzen-api/v1/llm-providers/switch`,
       {
         method: "POST",
         headers: {
@@ -108,7 +108,7 @@ class LlmProviderService {
 
   async getSupportedTypes(): Promise<SupportedProviderType[]> {
     const response = await fetch(
-      `${this.getBackendUrl()}/api/v1/llm-providers/supported-types/`,
+      `${this.getBackendUrl()}/xyzen-api/v1/llm-providers/supported-types/`,
     );
     if (!response.ok) {
       throw new Error("Failed to fetch supported provider types");

@@ -80,36 +80,26 @@ app = FastAPI(
     description="Xyzen is AI-powered service with FastAPI and MCP",
     version="0.1.0",
     lifespan=lifespan,
-    docs_url="/api/docs",
-    redoc_url="/api/redoc",
-    openapi_url="/api/openapi.json",
+    docs_url="/xyzen-api/docs",
+    redoc_url="/xyzen-api/redoc",
+    openapi_url="/xyzen-api/openapi.json",
 )
 
 # Add CORS middleware
-# NOTE:
-# When allow_credentials=True, CORS spec forbids Access-Control-Allow-Origin: *.
-# Browsers will reject such responses and surface it as if ACAO header is missing.
-# Therefore list explicit origins (or use allow_origin_regex) instead of "*".
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "https://uni-lab.test.bohrium.com",
-        "https://uni-xyzen.test.bohrium.com",
-        "http://localhost:32233",
-    ],
-    # If you later need to support many dynamic subdomains, switch to
-    # allow_origin_regex=r"https://uni-(lab|xyzen)\.test\.bohrium\.com" OR a broader regex.
+    allow_origins=["*"],  # Allows all origins
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=["*"],  # Allows all methods
+    allow_headers=["*"],  # Allows all headers
 )
 
 
 app.include_router(root_router)
-app.include_router(mcps.router, prefix="/api/v1", tags=["mcps"])
-app.include_router(sessions.router, prefix="/api/v1/sessions", tags=["sessions"])
-app.include_router(topics.router, prefix="/api/v1/topics", tags=["topics"])
-app.include_router(agents.router, prefix="/api/v1/agents", tags=["agents"])
+app.include_router(mcps.router, prefix="/xyzen-api/v1", tags=["mcps"])
+app.include_router(sessions.router, prefix="/xyzen-api/v1/sessions", tags=["sessions"])
+app.include_router(topics.router, prefix="/xyzen-api/v1/topics", tags=["topics"])
+app.include_router(agents.router, prefix="/xyzen-api/v1/agents", tags=["agents"])
 
 
 # 自动注册所有 MCP 路由

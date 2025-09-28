@@ -86,7 +86,9 @@ class AuthService {
   async getAuthStatus(): Promise<AuthStatus> {
     console.log("AuthService: 检查认证服务状态...");
     try {
-      const response = await fetch(`${getBackendUrl()}/api/v1/auth/status`);
+      const response = await fetch(
+        `${getBackendUrl()}/xyzen-api/v1/auth/status`,
+      );
       if (!response.ok) {
         console.error(`AuthService: 认证状态检查失败，HTTP ${response.status}`);
         throw new Error(`HTTP error! status: ${response.status}`);
@@ -122,13 +124,16 @@ class AuthService {
     );
 
     try {
-      const response = await fetch(`${getBackendUrl()}/api/v1/auth/validate`, {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-          "Content-Type": "application/json",
+      const response = await fetch(
+        `${getBackendUrl()}/xyzen-api/v1/auth/validate`,
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+            "Content-Type": "application/json",
+          },
         },
-      });
+      );
 
       console.log(`AuthService: token验证响应状态: ${response.status}`);
 
@@ -164,7 +169,7 @@ class AuthService {
     }
 
     try {
-      const response = await fetch(`${getBackendUrl()}/api/v1/auth/me`, {
+      const response = await fetch(`${getBackendUrl()}/xyzen-api/v1/auth/me`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },

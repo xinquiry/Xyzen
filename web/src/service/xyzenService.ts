@@ -83,7 +83,7 @@ class XyzenService {
     const wsUrl = `${this.backendUrl.replace(
       /^http(s?):\/\//,
       "ws$1://",
-    )}/ws/v1/chat/sessions/${sessionId}/topics/${topicId}?token=${encodeURIComponent(token)}`;
+    )}/xyzen-ws/v1/chat/sessions/${sessionId}/topics/${topicId}?token=${encodeURIComponent(token)}`;
 
     this.ws = new WebSocket(wsUrl);
 

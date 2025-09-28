@@ -7,7 +7,7 @@ Xyzen 是一个现代化、轻量级且可扩展的 React 聊天组件。它提�
 使用 yarn 或 npm 安装 Xyzen：
 
 ```bash
-yarn add @sciol/xyzen
+yarn add @sciol/xyzen@latest
 ```
 
 或者

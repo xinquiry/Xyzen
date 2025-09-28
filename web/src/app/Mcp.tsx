@@ -250,7 +250,7 @@ export function Mcp() {
       fetchMcpServers();
 
       // Connect to WebSocket for real-time updates
-      websocketService.connect("/ws/v1/mcp", (serverUpdate) => {
+      websocketService.connect("/xyzen-ws/v1/mcp", (serverUpdate) => {
         updateMcpServerInList(serverUpdate);
       });
 
