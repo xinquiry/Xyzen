@@ -5,19 +5,11 @@ services:
     ports:
       - '${WEB_PORT:-32233}:32233'
       - '${SERVICE_PORT:-48196}:48196'
-      - '${POSTGRES_PORT:-5432}:5432'
-      # - '${MINIO_PORT:-9000}:9000'
+      # - '${POSTGRES_PORT:-5432}:5432'
       # - '${REDIS_PORT:-6379}:6379'
-      # - '${ELASTICSEARCH_PORT:-9200}:9200'
-      # - '${MINIO_CONSOLE_PORT:-9001}:9001'
-      - '${CASDOOR_PORT:-8000}:8000'
-      # - '${MQTT_PORT:-1883}:1883'
-      # - '${MQTT_TLS_PORT:-8883}:8883'
-      # - '${MQTT_TLS_WEBSOCKET_PORT:-9001}:9001'
-      # - '${MQTT_WEBSOCKET_PORT:-9002}:9002'
     command: tail -f /dev/null
     networks:
-      - bridge-network
+      - xyzen-network
 
   postgresql:
     image: registry.sciol.ac.cn/library/postgres:16.8-alpine
@@ -37,29 +29,29 @@ services:
     volumes:
       - db-data:/var/lib/postgresql/data
 
-  minio:
-    image: registry.sciol.ac.cn/library/minio
-    network_mode: 'service:network-service'
-    attach: false
-    volumes:
-      - 's3_data:/etc/minio/data'
-    environment:
-      - 'MINIO_API_CORS_ALLOW_ORIGIN=*'
-    restart: unless-stopped
-    entrypoint: >
-      /bin/sh -c "
-        minio server /etc/minio/data --address ':9000' --console-address ':9001' &
-        pid=$$!
-        while ! curl -s http://localhost:9000/minio/health/live; do
-          echo 'Waiting for MinIO to start...'
-          sleep 1
-        done
-        sleep 5
-        mc alias set myminio http://localhost:9000 ${MINIO_ROOT_USER:-minioadmin} ${MINIO_ROOT_PASSWORD:-minioadmin}
-        echo 'Creating bucket ${AWS_STORAGE_BUCKET_NAME:-xyzen}...'
-        mc mb myminio/${AWS_STORAGE_BUCKET_NAME:-xyzen}
-        wait $$pid
-      "
+  # minio:
+  #   image: registry.sciol.ac.cn/library/minio
+  #   network_mode: 'service:network-service'
+  #   attach: false
+  #   volumes:
+  #     - 's3_data:/etc/minio/data'
+  #   environment:
+  #     - 'MINIO_API_CORS_ALLOW_ORIGIN=*'
+  #   restart: unless-stopped
+  #   entrypoint: >
+  #     /bin/sh -c "
+  #       minio server /etc/minio/data --address ':9000' --console-address ':9001' &
+  #       pid=$$!
+  #       while ! curl -s http://localhost:9000/minio/health/live; do
+  #         echo 'Waiting for MinIO to start...'
+  #         sleep 1
+  #       done
+  #       sleep 5
+  #       mc alias set myminio http://localhost:9000 ${MINIO_ROOT_USER:-minioadmin} ${MINIO_ROOT_PASSWORD:-minioadmin}
+  #       echo 'Creating bucket ${AWS_STORAGE_BUCKET_NAME:-xyzen}...'
+  #       mc mb myminio/${AWS_STORAGE_BUCKET_NAME:-xyzen}
+  #       wait $$pid
+  #     "
 
   redis:
     image: registry.sciol.ac.cn/library/redis:7.4.2-alpine
@@ -75,31 +67,31 @@ services:
       timeout: 5s
       retries: 5
 
-  casdoor:
-    image: registry.sciol.ac.cn/library/casdoor:v2.43.0
-    entrypoint: /bin/sh -c './server --createDatabase=true'
-    network_mode: 'service:network-service'
-    depends_on:
-      postgresql:
-        condition: service_healthy
-    healthcheck:
-      test:
-        [
-          'CMD-SHELL',
-          'wget -q --spider --proxy=off http://localhost:8000/api/health || exit 1',
-        ]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-      start_period: 10s
-    environment:
-      RUNNING_IN_DOCKER: 'true'
-      driverName: 'postgres'
-      dataSourceName: 'user=${DATABASE_USER:-postgres} password=${DATABASE_PASSWORD:-postgres} host=127.0.0.1 port=5432 sslmode=disable dbname=casdoor'
-      runmode: 'dev'
-    attach: false
-    volumes:
-      - ../infra/casdoor/init_data.json:/init_data.json
+  # casdoor:
+  #   image: registry.sciol.ac.cn/library/casdoor:v2.43.0
+  #   entrypoint: /bin/sh -c './server --createDatabase=true'
+  #   network_mode: 'service:network-service'
+  #   depends_on:
+  #     postgresql:
+  #       condition: service_healthy
+  #   healthcheck:
+  #     test:
+  #       [
+  #         'CMD-SHELL',
+  #         'wget -q --spider --proxy=off http://localhost:8000/api/health || exit 1',
+  #       ]
+  #     interval: 10s
+  #     timeout: 5s
+  #     retries: 5
+  #     start_period: 10s
+  #   environment:
+  #     RUNNING_IN_DOCKER: 'true'
+  #     driverName: 'postgres'
+  #     dataSourceName: 'user=${DATABASE_USER:-postgres} password=${DATABASE_PASSWORD:-postgres} host=127.0.0.1 port=5432 sslmode=disable dbname=casdoor'
+  #     runmode: 'dev'
+  #   attach: false
+  #   volumes:
+  #     - ../infra/casdoor/init_data.json:/init_data.json
 
   service:
     image: registry.sciol.ac.cn/sciol/xyzen-service:latest
@@ -110,8 +102,6 @@ services:
       postgresql:
         condition: service_healthy
       redis:
-        condition: service_healthy
-      casdoor:
         condition: service_healthy
     healthcheck:
       test:
@@ -140,9 +130,7 @@ volumes:
     driver: local
   redis-data:
     driver: local
-  s3_data:
-    driver: local
 
 networks:
-  bridge-network:
+  xyzen-network:
     driver: bridge
