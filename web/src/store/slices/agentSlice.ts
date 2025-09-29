@@ -37,7 +37,7 @@ export const createAgentSlice: StateCreator<
   fetchAgents: async () => {
     set({ agentsLoading: true });
     try {
-      const response = await fetch(`${get().backendUrl}/xyzen-api/v1/agents/`, {
+      const response = await fetch(`${get().backendUrl}/xyzen/api/v1/agents/`, {
         headers: createAuthHeaders(),
       });
       if (!response.ok) {
@@ -53,7 +53,7 @@ export const createAgentSlice: StateCreator<
   },
   createAgent: async (agent) => {
     try {
-      const response = await fetch(`${get().backendUrl}/xyzen-api/v1/agents/`, {
+      const response = await fetch(`${get().backendUrl}/xyzen/api/v1/agents/`, {
         method: "POST",
         headers: createAuthHeaders(),
         body: JSON.stringify(agent),
@@ -71,7 +71,7 @@ export const createAgentSlice: StateCreator<
   updateAgent: async (agent) => {
     try {
       const response = await fetch(
-        `${get().backendUrl}/xyzen-api/v1/agents/${agent.id}`,
+        `${get().backendUrl}/xyzen/api/v1/agents/${agent.id}`,
         {
           method: "PATCH",
           headers: createAuthHeaders(),
@@ -91,7 +91,7 @@ export const createAgentSlice: StateCreator<
   deleteAgent: async (id) => {
     try {
       const response = await fetch(
-        `${get().backendUrl}/xyzen-api/v1/agents/${id}`,
+        `${get().backendUrl}/xyzen/api/v1/agents/${id}`,
         {
           method: "DELETE",
           headers: createAuthHeaders(),

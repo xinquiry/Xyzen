@@ -63,7 +63,7 @@ export const createChatSlice: StateCreator<
 
       console.log("ChatSlice: Making request to sessions API...");
       const response = await fetch(
-        `${get().backendUrl}/xyzen-api/v1/sessions/`,
+        `${get().backendUrl}/xyzen/api/v1/sessions/`,
         {
           headers,
         },
@@ -183,7 +183,7 @@ export const createChatSlice: StateCreator<
           headers.Authorization = `Bearer ${token}`;
         }
 
-        const response = await fetch(`${backendUrl}/xyzen-api/v1/sessions/`, {
+        const response = await fetch(`${backendUrl}/xyzen/api/v1/sessions/`, {
           headers,
         });
         if (!response.ok) throw new Error("Failed to fetch sessions");
@@ -250,7 +250,7 @@ export const createChatSlice: StateCreator<
           }
 
           const response = await fetch(
-            `${backendUrl}/xyzen-api/v1/topics/${topicId}/messages`,
+            `${backendUrl}/xyzen/api/v1/topics/${topicId}/messages`,
             { headers },
           );
           if (response.ok) {
@@ -580,7 +580,7 @@ export const createChatSlice: StateCreator<
       // First, try to find an existing session for this user-agent combination
       try {
         const existingSessionResponse = await fetch(
-          `${get().backendUrl}/xyzen-api/v1/sessions/by-agent/${agentIdParam}`,
+          `${get().backendUrl}/xyzen/api/v1/sessions/by-agent/${agentIdParam}`,
           { headers },
         );
 
@@ -589,7 +589,7 @@ export const createChatSlice: StateCreator<
           const existingSession = await existingSessionResponse.json();
 
           const newTopicResponse = await fetch(
-            `${get().backendUrl}/xyzen-api/v1/topics/`,
+            `${get().backendUrl}/xyzen/api/v1/topics/`,
             {
               method: "POST",
               headers,
@@ -643,7 +643,7 @@ export const createChatSlice: StateCreator<
       // No existing session found, create a new session
       // The backend will automatically extract user_id from the token
       const response = await fetch(
-        `${get().backendUrl}/xyzen-api/v1/sessions/`,
+        `${get().backendUrl}/xyzen/api/v1/sessions/`,
         {
           method: "POST",
           headers,
@@ -710,7 +710,7 @@ export const createChatSlice: StateCreator<
       };
 
       const response = await fetch(
-        `${get().backendUrl}/xyzen-api/v1/topics/${topicId}`,
+        `${get().backendUrl}/xyzen/api/v1/topics/${topicId}`,
         {
           method: "PUT",
           headers,

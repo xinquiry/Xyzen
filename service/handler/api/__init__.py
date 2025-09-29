@@ -3,7 +3,7 @@ from fastapi import APIRouter
 from .v1 import v1_router
 
 # 创建一个统一的 API 路由器
-api_router = APIRouter(prefix="/xyzen-api", tags=["api"])
+api_router = APIRouter(prefix="/api", tags=["api"])
 
 
 api_router.include_router(

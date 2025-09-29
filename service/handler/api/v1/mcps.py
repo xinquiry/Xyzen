@@ -26,7 +26,7 @@ class ToolTestResponse(BaseModel):
     execution_time_ms: Optional[int] = None
 
 
-@router.post("/mcps", response_model=McpServer)
+@router.post("/", response_model=McpServer)
 async def create_mcp_server(
     *,
     session: AsyncSession = Depends(get_session),
@@ -48,7 +48,7 @@ async def create_mcp_server(
     return db_mcp_server
 
 
-@router.get("/mcps", response_model=list[McpServer])
+@router.get("/", response_model=list[McpServer])
 async def read_mcp_servers(
     *,
     session: AsyncSession = Depends(get_session),
@@ -63,7 +63,7 @@ async def read_mcp_servers(
     return list(mcp_servers)
 
 
-@router.get("/mcps/{mcp_server_id}", response_model=McpServer)
+@router.get("/{mcp_server_id}", response_model=McpServer)
 async def read_mcp_server(
     *, session: AsyncSession = Depends(get_session), user: str = Depends(get_current_user), mcp_server_id: UUID
 ) -> McpServer:
@@ -80,7 +80,7 @@ async def read_mcp_server(
     return mcp_server
 
 
-@router.patch("/mcps/{mcp_server_id}", response_model=McpServer)
+@router.patch("/{mcp_server_id}", response_model=McpServer)
 async def update_mcp_server(
     *,
     session: AsyncSession = Depends(get_session),
@@ -111,7 +111,7 @@ async def update_mcp_server(
     return db_mcp_server
 
 
-@router.delete("/mcps/{mcp_server_id}")
+@router.delete("/{mcp_server_id}")
 async def delete_mcp_server(
     *, session: AsyncSession = Depends(get_session), user: str = Depends(get_current_user), mcp_server_id: UUID
 ) -> dict[str, Any]:
@@ -130,7 +130,7 @@ async def delete_mcp_server(
     return {"ok": True}
 
 
-@router.post("/mcps/{mcp_server_id}/tools/{tool_name}/test", response_model=ToolTestResponse)
+@router.post("/{mcp_server_id}/tools/{tool_name}/test", response_model=ToolTestResponse)
 async def test_mcp_tool(
     *,
     session: AsyncSession = Depends(get_session),
@@ -187,7 +187,7 @@ async def test_mcp_tool(
         return ToolTestResponse(success=False, error=str(e), execution_time_ms=execution_time_ms)
 
 
-@router.post("/mcps/refresh", status_code=202)
+@router.post("/refresh", status_code=202)
 async def refresh_all_mcp_servers(
     *,
     session: AsyncSession = Depends(get_session),

@@ -19,7 +19,7 @@ const createAuthHeaders = (): Record<string, string> => {
 
 export const mcpService = {
   async getMcpServers(): Promise<McpServer[]> {
-    const response = await fetch(`${getBackendUrl()}/xyzen-api/v1/mcps`, {
+    const response = await fetch(`${getBackendUrl()}/xyzen/api/v1/mcps`, {
       headers: createAuthHeaders(),
     });
     if (!response.ok) {
@@ -29,7 +29,7 @@ export const mcpService = {
   },
 
   async createMcpServer(server: McpServerCreate): Promise<McpServer> {
-    const response = await fetch(`${getBackendUrl()}/xyzen-api/v1/mcps`, {
+    const response = await fetch(`${getBackendUrl()}/xyzen/api/v1/mcps`, {
       method: "POST",
       headers: createAuthHeaders(),
       body: JSON.stringify(server),
@@ -47,7 +47,7 @@ export const mcpService = {
     id: string,
     server: Partial<McpServerCreate>,
   ): Promise<McpServer> {
-    const response = await fetch(`${getBackendUrl()}/xyzen-api/v1/mcps/${id}`, {
+    const response = await fetch(`${getBackendUrl()}/xyzen/api/v1/mcps/${id}`, {
       method: "PATCH",
       headers: createAuthHeaders(),
       body: JSON.stringify(server),
@@ -62,7 +62,7 @@ export const mcpService = {
   },
 
   async deleteMcpServer(id: string): Promise<void> {
-    const response = await fetch(`${getBackendUrl()}/xyzen-api/v1/mcps/${id}`, {
+    const response = await fetch(`${getBackendUrl()}/xyzen/api/v1/mcps/${id}`, {
       method: "DELETE",
       headers: createAuthHeaders(),
     });
@@ -76,7 +76,7 @@ export const mcpService = {
 
   async refreshMcpServers(): Promise<void> {
     const response = await fetch(
-      `${getBackendUrl()}/xyzen-api/v1/mcps/refresh`,
+      `${getBackendUrl()}/xyzen/api/v1/mcps/refresh`,
       {
         method: "POST",
         headers: createAuthHeaders(),

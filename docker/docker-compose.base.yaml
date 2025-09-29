@@ -119,7 +119,7 @@ services:
           'CMD',
           'python',
           '-c',
-          "import urllib.request; urllib.request.urlopen('http://localhost:48196/api/health', timeout=5)",
+          "import urllib.request; urllib.request.urlopen('http://localhost:48196/xyzen/api/health', timeout=5)",
         ]
       interval: 60s
       timeout: 5s

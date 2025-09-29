@@ -84,7 +84,7 @@ class MCPServerRegistry:
         return {
             "server": server,
             "auth": auth,
-            "mount_path": f"/xyzen-mcp/{module_name}",
+            "mount_path": f"/xyzen/mcp/{module_name}",
             "name": (server.name if hasattr(server, "name") and server.name else f"{module_name.title()} MCP Server"),
             "module_name": module_name,
         }

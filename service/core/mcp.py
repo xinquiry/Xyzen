@@ -8,7 +8,7 @@ import httpx
 from fastmcp import Client
 from fastmcp.client.auth import BearerAuth
 
-from handler.ws.v1.mcp import manager as ws_manager
+from core.websocket import mcp_websocket_manager
 from middleware.database.connection import get_session
 from models import McpServer
 
@@ -58,7 +58,7 @@ async def _async_check_mcp_server_status(server_id: Optional[UUID]) -> None:
             await session.commit()
             await session.refresh(server)
             # Broadcast the update to all connected clients
-            await ws_manager.broadcast(server.model_dump())
+            await mcp_websocket_manager.broadcast(server.model_dump())
 
 
 def check_mcp_server_status(server_id: UUID) -> None:

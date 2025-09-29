@@ -87,7 +87,7 @@ class AuthService {
     console.log("AuthService: 检查认证服务状态...");
     try {
       const response = await fetch(
-        `${getBackendUrl()}/xyzen-api/v1/auth/status`,
+        `${getBackendUrl()}/xyzen/api/v1/auth/status`,
       );
       if (!response.ok) {
         console.error(`AuthService: 认证状态检查失败，HTTP ${response.status}`);
@@ -125,7 +125,7 @@ class AuthService {
 
     try {
       const response = await fetch(
-        `${getBackendUrl()}/xyzen-api/v1/auth/validate`,
+        `${getBackendUrl()}/xyzen/api/v1/auth/validate`,
         {
           method: "POST",
           headers: {
@@ -169,7 +169,7 @@ class AuthService {
     }
 
     try {
-      const response = await fetch(`${getBackendUrl()}/xyzen-api/v1/auth/me`, {
+      const response = await fetch(`${getBackendUrl()}/xyzen/api/v1/auth/me`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },

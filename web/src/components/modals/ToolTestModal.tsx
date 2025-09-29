@@ -71,7 +71,7 @@ export const ToolTestModal: React.FC<ToolTestModalProps> = ({
 
       // Call the actual MCP tool testing API
       const response = await fetch(
-        `${backendUrl}/xyzen-api/v1/mcps/${server.id}/tools/${toolName}/test`,
+        `${backendUrl}/xyzen/api/v1/mcps/${server.id}/tools/${toolName}/test`,
         {
           method: "POST",
           headers: {
