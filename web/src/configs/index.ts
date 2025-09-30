@@ -1,9 +1,11 @@
 const NODE_ENV = import.meta.env.NODE_ENV;
 const isDevelopment = NODE_ENV === "development";
+const isProduction = NODE_ENV === "production";
 
 console.log("=== Environment Debug ===");
 console.log("NODE_ENV:", NODE_ENV);
 console.log("isDevelopment:", isDevelopment);
+console.log("isProduction:", NODE_ENV === "production");
 console.log("VITE_BACKEND_URL:", import.meta.env.VITE_BACKEND_URL);
 console.log("VITE_BACKEND_URL type:", typeof import.meta.env.VITE_BACKEND_URL);
 console.log("All env vars:", import.meta.env);
@@ -17,7 +19,7 @@ const getBackendURL = (): string => {
     return import.meta.env.VITE_BACKEND_URL;
   }
 
-  if (isDevelopment) {
+  if (isDevelopment || !NODE_ENV) {
     return "http://localhost:48196";
   }
 
