@@ -8,7 +8,7 @@ class CasdoorAuthConfig(BaseModel):
         description="Casdoor public key for JWT signature verification",
     )
     Issuer: str = Field(
-        default="http://localhost:8000",
+        default="http://host.docker.internal:8000",
         description="Casdoor service address",
     )
     JwksUri: str | None = Field(
