@@ -1,6 +1,5 @@
 const NODE_ENV = import.meta.env.NODE_ENV;
 const isDevelopment = NODE_ENV === "development";
-const isProduction = NODE_ENV === "production";
 
 console.log("=== Environment Debug ===");
 console.log("NODE_ENV:", NODE_ENV);
