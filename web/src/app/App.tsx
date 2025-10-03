@@ -26,7 +26,7 @@ import {
   SunIcon,
   XMarkIcon,
 } from "@heroicons/react/24/outline";
-import { Fragment, useEffect, useRef, useState } from "react";
+import { Fragment, useCallback, useEffect, useRef, useState } from "react";
 
 import { LlmProviders } from "@/app/LlmProviders";
 import { Mcp } from "@/app/Mcp";
@@ -118,7 +118,6 @@ export function Xyzen({
     activeTabIndex,
     setTabIndex,
     setBackendUrl,
-    fetchUserByToken,
     user,
     fetchAgents,
     fetchMcpServers,
@@ -142,17 +141,23 @@ export function Xyzen({
   useEffect(() => {
     setMounted(true);
     setBackendUrl(backendUrl);
-    fetchUserByToken();
-  }, [backendUrl, setBackendUrl, fetchUserByToken]);
+  }, [backendUrl, setBackendUrl]);
 
   // 初始化加载基础数据
-  useEffect(() => {
+  const loadInitialData = useCallback(async () => {
     if (user && backendUrl) {
       // 加载 agents 和 MCP servers 数据，这些是 ChatToolbar 需要的
-      fetchAgents().catch(console.error);
-      fetchMcpServers().catch(console.error);
+      try {
+        await Promise.all([fetchAgents(), fetchMcpServers()]);
+      } catch (error) {
+        console.error("Failed to load initial data:", error);
+      }
     }
   }, [user, backendUrl, fetchAgents, fetchMcpServers]);
+
+  useEffect(() => {
+    loadInitialData();
+  }, [loadInitialData]);
 
   // 优化 dnd-kit sensor 配置
   const sensors = useSensors(

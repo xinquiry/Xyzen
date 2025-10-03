@@ -178,7 +178,7 @@ const McpServerCard: React.FC<McpServerCardProps> = ({
                   Available Tools
                 </span>
               </div>
-              <div className="max-h-64 overflow-y-auto space-y-2 scrollbar-thin scrollbar-thumb-neutral-300 scrollbar-track-transparent dark:scrollbar-thumb-neutral-600 pr-2">
+              <div className="max-h-64 overflow-y-auto space-y-2 dark:scrollbar-thumb-neutral-600 pr-2 custom-scrollbar">
                 {server.tools?.map((tool, index) => (
                   <motion.button
                     key={`${tool.name}-${index}`}
