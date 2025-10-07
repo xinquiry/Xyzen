@@ -1,5 +1,6 @@
 import hashlib
 import json
+import logging
 from datetime import datetime
 from typing import Any, Dict, List, Optional
 
@@ -9,11 +10,10 @@ from sqlmodel import Session, select
 
 from middleware.database.connection import engine
 from models import Tool, ToolFunction, ToolStatus, ToolVersion
-from utils.logger_config import dynamic_logger
 from utils.requirements_parser import parse_requirements
 from utils.tool_proxy import ContainerToolProxy, ToolProxyManager
 
-logger = dynamic_logger.get_logger("tool-provider")
+logger = logging.getLogger(__name__)
 
 
 class ToolChangeManager:
@@ -211,8 +211,4 @@ class DatabaseToolLoader:
         return self.register_tools_to_mcp(mcp, tools)
 
 
-def get_tool_loader() -> DatabaseToolLoader:
-    return DatabaseToolLoader()
-
-
-tool_loader = get_tool_loader()
+tool_loader = DatabaseToolLoader()

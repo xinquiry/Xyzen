@@ -9,6 +9,7 @@ This server will:
 - Smart caching: Only reload the currently called tool during tool calls (not global reload)
 """
 
+import logging
 import subprocess
 from pathlib import Path
 
@@ -16,56 +17,49 @@ from fastmcp import FastMCP
 from fastmcp.server.middleware.error_handling import ErrorHandlingMiddleware
 from fastmcp.server.middleware.logging import StructuredLoggingMiddleware
 from fastmcp.server.middleware.timing import DetailedTimingMiddleware
-from mcp_claude_code.server import ClaudeCodeServer  # type: ignore
 
+# from mcp_claude_code.server import ClaudeCodeServer  # type: ignore
+from internal import configs
 from middleware.dynamic_mcp_server import DynamicToolMiddleware
 from utils.built_in_tools import register_built_in_tools
 from utils.json_patch import apply_json_patch
-from utils.logger_config import console, dynamic_logger
 from utils.tool_loader import tool_loader
+from utils.tool_management import register_tool_management_tools
+
+dynamic_mcp_config = configs.DynamicMCP
+NAME = dynamic_mcp_config.name
+VERSION = dynamic_mcp_config.version
+HOST = dynamic_mcp_config.host
+PORT = dynamic_mcp_config.port
+TRANSPORT = dynamic_mcp_config.transport
+ALLOWED_PATHS = dynamic_mcp_config.allowed_paths
+PLAYWRIGHT_PORT = dynamic_mcp_config.playwright_port
 
 apply_json_patch()
-logger = dynamic_logger.get_logger("dynamic-mcp-server")
+logger = logging.getLogger(__name__)
 
 
-mcp = FastMCP("DynamicToolsServer", version="1.0.0")
+mcp = FastMCP(NAME, version=VERSION)
 mcp.add_middleware(ErrorHandlingMiddleware(include_traceback=True))
 mcp.add_middleware(DynamicToolMiddleware(mcp))
 mcp.add_middleware(DetailedTimingMiddleware())
 mcp.add_middleware(StructuredLoggingMiddleware(include_payloads=True))
 
 register_built_in_tools(mcp)
+register_tool_management_tools(mcp)
 
-# Start the dynamic MCP server
-dynamic_logger.print_section(
-    "Dynamic MCP Server - Dynamic Tool Server",
-    ["v1.0.0 | 0.0.0.0:3001 | SSE Protocol"],
-)
-console.print()
-dynamic_logger.print_section(
-    "Server Configuration",
-    [
-        f"Server Name: [bold cyan]{'DynamicToolsServer'}[/bold cyan]",
-        f"Version: [bold green]{'1.0.0'}[/bold green]",
-        f"Listen Address: [bold yellow]{'0.0.0.0'}:{3001}[/bold yellow]",
-        "Transport Protocol: [bold magenta]SSE[/bold magenta]",
-        f"Tools Directory: [bold blue]{Path('tools').absolute()}[/bold blue]",
-    ],
-    "cyan",
-)
-console.print()
 
 # Mirror Remote MCP Server Tools
 # proxy = FastMCP.as_proxy("http://127.0.0.1:8931/mcp/")
 subprocess.Popen(
-    ["npx", "@playwright/mcp@latest", "--port", "8931"],
+    ["npx", "@playwright/mcp@latest", "--port", str(PLAYWRIGHT_PORT)],
     stdout=subprocess.PIPE,
     stderr=subprocess.STDOUT,
     text=True,
 )
 # This proxy will reuse the connected session for all requests
 # TODO: Need asycn support
-# connected_client = Client("http://localhost:8931/mcp/")
+# connected_client = Client(f"http://{HOST}:{PLAYWRIGHT_PORT}/mcp/")
 # proxy = FastMCP.as_proxy(connected_client)
 # remote_tools = await proxy.get_tools()
 # tool_info: ProxyTool
@@ -87,23 +81,22 @@ subprocess.Popen(
 # connected_client.close()
 
 # Load Local Tools
-dynamic_logger.info("Loading local tools...")
+logger.info("Loading local tools...")
 if hasattr(tool_loader, "scan_and_load_tools"):
     tools = tool_loader.scan_and_load_tools()
 
 tool_loader.register_tools_to_mcp(mcp, tools)
-dynamic_logger.success(f"Loaded {len(tools)} local tools")
+logger.info(f"Loaded {len(tools)} local tools")
 
-dynamic_logger.print_status("Startup", "Server is starting...", True)
-console.print()
+logger.info("Server is starting...")
 
 # Load Code Tools
-ClaudeCodeServer(
-    mcp_instance=mcp,
-    allowed_paths=[str(Path.cwd())],
-    enable_agent_tool=False,
-    command_timeout=300,
-)
+# ClaudeCodeServer(
+#     mcp_instance=mcp,
+#     allowed_paths=[str(Path.cwd())],
+#     enable_agent_tool=False,
+#     command_timeout=300,
+# )
 mcp.remove_tool("multi_edit")
 mcp.remove_tool("notebook_read")
 mcp.remove_tool("notebook_edit")
