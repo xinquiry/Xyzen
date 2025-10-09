@@ -15,8 +15,8 @@ console.log("All env vars:", import.meta.env);
 // - 开发环境默认使用localhost:48196
 // - 生产环境使用相对路径，自动匹配当前域名
 const getBackendURL = (): string => {
-  if (import.meta.env.VITE_BACKEND_URL) {
-    return import.meta.env.VITE_BACKEND_URL;
+  if (import.meta.env.VITE_XYZEN_BACKEND_URL) {
+    return import.meta.env.VITE_XYZEN_BACKEND_URL;
   }
 
   if (isDevelopment) {
