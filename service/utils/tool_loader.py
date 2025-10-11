@@ -1,8 +1,6 @@
-import hashlib
 import json
 import logging
-from datetime import datetime
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, Optional
 
 from fastmcp import FastMCP
 from fastmcp.tools import FunctionTool
@@ -10,113 +8,10 @@ from sqlmodel import Session, select
 
 from middleware.database.connection import engine
 from models import Tool, ToolFunction, ToolStatus, ToolVersion
-from utils.requirements_parser import parse_requirements
+from utils.parser import parse_requirements
 from utils.tool_proxy import ContainerToolProxy, ToolProxyManager
 
 logger = logging.getLogger(__name__)
-
-
-class ToolChangeManager:
-    """Manage tool change detection and recording"""
-
-    def __init__(self) -> None:
-        self.previous_tools: Dict[str, Dict[str, Any]] = {}
-        self.current_tools: Dict[str, Dict[str, Any]] = {}
-        self.change_history: List[Dict[str, Any]] = []
-        self.file_hashes: Dict[str, str] = {}
-
-    def get_file_hash(self, filepath: str) -> str:
-        """Get MD5 hash of a file"""
-        try:
-            with open(filepath, "rb") as f:
-                return hashlib.md5(f.read()).hexdigest()
-        except Exception:
-            return ""
-
-    def update_tools(
-        self,
-        existing_tools_desc: Dict[str, Dict[str, Any]],
-        new_tools_desc: Dict[str, Dict[str, Any]],
-    ) -> Dict[str, Any]:
-        """Update tool list and detect changes"""
-        self.previous_tools = existing_tools_desc.copy()
-        self.current_tools = new_tools_desc.copy()
-
-        # Detect changes
-        changes = self.detect_changes()
-        if changes and (len(changes["added"]) or len(changes["modified"]) or len(changes["removed"])):
-            change_record = {
-                "timestamp": datetime.now().isoformat(),
-                "changes": changes,
-            }
-            self.change_history.append(change_record)
-
-        return changes
-
-    def detect_changes(self) -> Dict[str, Any]:
-        """Detect tool changes with detailed value comparison"""
-        changes: Dict[str, Any] = {"added": [], "removed": [], "modified": []}
-
-        # Detect newly added tools
-        for tool_name in self.current_tools:
-            if tool_name not in self.previous_tools:
-                changes["added"].append({"name": tool_name, "details": self.current_tools[tool_name]})
-
-        # Detect removed tools
-        for tool_name in self.previous_tools:
-            if tool_name not in self.current_tools:
-                changes["removed"].append({"name": tool_name, "details": self.previous_tools[tool_name]})
-
-        # Detect modified tools
-        for tool_name in self.current_tools:
-            if tool_name in self.previous_tools:
-                if self.current_tools[tool_name] != self.previous_tools[tool_name]:
-                    # Detailed difference comparison
-                    diff_details = self._get_detailed_diff(
-                        self.previous_tools[tool_name], self.current_tools[tool_name]
-                    )
-                    changes["modified"].append(
-                        {
-                            "name": tool_name,
-                            "previous": self.previous_tools[tool_name],
-                            "current": self.current_tools[tool_name],
-                            "differences": diff_details,
-                        }
-                    )
-
-        return changes
-
-    def _get_detailed_diff(self, old_desc: Dict[str, Any], new_desc: Dict[str, Any]) -> Dict[str, Any]:
-        """Get detailed differences between two tool descriptions"""
-        differences: Dict[str, Any] = {}
-
-        # Check all key changes
-        all_keys = set(old_desc.keys()) | set(new_desc.keys())
-
-        for key in all_keys:
-            old_value = old_desc.get(key)
-            new_value = new_desc.get(key)
-
-            if old_value != new_value:
-                differences[key] = {"old": old_value, "new": new_value}
-
-        return differences
-
-    def get_change_summary(self) -> Dict[str, Any]:
-        """Get change summary"""
-        return {
-            "current_tools_count": len(self.current_tools),
-            "previous_tools_count": len(self.previous_tools),
-            "recent_changes": self.change_history[-2:] if self.change_history else [],
-            "tool_details": {
-                "current": list(self.current_tools.keys()),
-                "previous": list(self.previous_tools.keys()),
-            },
-        }
-
-
-# Global change manager
-change_manager = ToolChangeManager()
 
 
 class DatabaseToolLoader:
@@ -147,7 +42,7 @@ class DatabaseToolLoader:
         }
         if tf.output_schema and tf.output_schema.strip() and tf.output_schema.strip() != "{}":
             try:
-                tool_data["returns"] = json.loads(tf.output_schema)
+                tool_data["output_schema"] = json.loads(tf.output_schema)
             except json.JSONDecodeError:
                 logger.warning(f"Invalid JSON in output_schema for {name}, skipping.")
         return tool_data
@@ -192,6 +87,7 @@ class DatabaseToolLoader:
         request_tool_name: Optional[str] = None,
     ) -> Dict[str, Any]:
         existing_tools: Dict[str, FunctionTool] = mcp._tool_manager._tools  # type: ignore
+        logger.info(existing_tools)
         for tool_name, tool_info in tools.items():
             tool_data = tool_info["tool_data"]
             proxy = tool_info["proxy"]
@@ -209,6 +105,58 @@ class DatabaseToolLoader:
 
     def register_tools(self, mcp: FastMCP, tools: Dict[str, Any]) -> Dict[str, Any]:
         return self.register_tools_to_mcp(mcp, tools)
+
+    def refresh_tools(self, mcp: FastMCP) -> Dict[str, Any]:
+        """Refresh database tools only, preserving built-in tools."""
+        logger.info("Refreshing database tools...")
+
+        # Get currently registered tools from MCP server
+        existing_tools: Dict[str, FunctionTool] = mcp._tool_manager._tools  # type: ignore
+        current_tool_names = set(existing_tools.keys())
+
+        # Scan database for current tools
+        new_tools = self.scan_and_load_tools()
+        new_tool_names = set(new_tools.keys())
+
+        # Identify database tools (those with "-" in the name, following our naming convention)
+        # Built-in tools don't have "-" in their names
+        current_db_tools = {name for name in current_tool_names if "-" in name}
+        new_db_tools = new_tool_names  # All tools from database have "-" in name
+
+        # Find database tools to remove (in MCP but not in database)
+        tools_to_remove = current_db_tools - new_db_tools
+
+        # Find database tools to add (in database but not in MCP)
+        tools_to_add = new_db_tools - current_db_tools
+
+        # Find database tools to update (in both but may have changed)
+        tools_to_update = current_db_tools & new_db_tools
+
+        result: Dict[str, Any] = {"removed": [], "added": [], "updated": []}
+
+        # Remove deleted database tools from MCP server
+        for tool_name in tools_to_remove:
+            if tool_name in existing_tools:
+                mcp.remove_tool(tool_name)
+                result["removed"].append(tool_name)
+                logger.info(f"Removed database tool from MCP: {tool_name}")
+
+        # Add new database tools to MCP server
+        if tools_to_add:
+            tools_to_register = {name: new_tools[name] for name in tools_to_add}
+            self.register_tools_to_mcp(mcp, tools_to_register)
+            result["added"] = list(tools_to_add)
+            logger.info(f"Added database tools to MCP: {tools_to_add}")
+
+        # Update existing database tools (remove and re-add to ensure changes are picked up)
+        if tools_to_update:
+            tools_to_reregister = {name: new_tools[name] for name in tools_to_update}
+            self.register_tools_to_mcp(mcp, tools_to_reregister)
+            result["updated"] = list(tools_to_update)
+            logger.info(f"Updated database tools in MCP: {tools_to_update}")
+
+        logger.info(f"Database tool refresh completed: {result}")
+        return result
 
 
 tool_loader = DatabaseToolLoader()

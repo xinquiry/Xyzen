@@ -8,128 +8,45 @@ This module provides functions for managing tools and functions in the MCP serve
 - MCP registration and discovery
 """
 
-import ast
-import json
 import logging
 from datetime import datetime, timedelta
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, Optional
 
 from fastmcp import FastMCP
+from fastmcp.server.dependencies import AccessToken, get_access_token
 from sqlmodel import Session, desc, select, true
 
+from middleware.auth import AuthProvider, UserInfo
 from middleware.database.connection import engine
 from models.tool import Tool, ToolFunction, ToolStatus, ToolVersion
+from utils.code_analyzer import discover_functions_from_code, generate_basic_schema
 from utils.tool_loader import tool_loader
 
 logger = logging.getLogger(__name__)
 
 
-def discover_functions_from_code(code_content: str) -> List[Dict[str, Any]]:
-    """
-    Discover all callable functions in Python code using AST parsing.
-
-    Args:
-        code_content: Python code to analyze
-
-    Returns:
-        List of function metadata dictionaries
-    """
-    try:
-        tree = ast.parse(code_content)
-        functions = []
-
-        for node in ast.walk(tree):
-            if isinstance(node, ast.FunctionDef):
-                if not node.name.startswith("_"):  # Skip private functions
-                    # Extract function signature info
-                    args = []
-                    for arg in node.args.args:
-                        args.append(
-                            {
-                                "name": arg.arg,
-                                "annotation": ast.unparse(arg.annotation) if arg.annotation else None,
-                            }
-                        )
-
-                    functions.append(
-                        {
-                            "name": node.name,
-                            "docstring": ast.get_docstring(node) or f"Function {node.name}",
-                            "args": args,
-                            "line_number": node.lineno,
-                            "return_annotation": ast.unparse(node.returns) if node.returns else None,
-                        }
-                    )
-
-        return functions
-    except SyntaxError as e:
-        raise ValueError(f"Invalid Python syntax: {e}")
-    except Exception as e:
-        raise ValueError(f"Error analyzing code: {e}")
-
-
-def generate_basic_schema(function_info: Dict[str, Any]) -> Dict[str, str]:
-    """
-    Generate basic JSON schemas for a function.
-
-    Args:
-        function_info: Function metadata from discover_functions_from_code
-
-    Returns:
-        Dictionary with 'input_schema' and 'output_schema' keys
-    """
-    # Generate input schema
-    properties = {}
-    required = []
-
-    for arg in function_info["args"]:
-        arg_name = arg["name"]
-        arg_type = arg.get("annotation", "Any")
-
-        # Map Python types to JSON schema types
-        if arg_type == "str" or "str" in str(arg_type):
-            properties[arg_name] = {"type": "string"}
-        elif arg_type == "int" or "int" in str(arg_type):
-            properties[arg_name] = {"type": "integer"}
-        elif arg_type == "float" or "float" in str(arg_type):
-            properties[arg_name] = {"type": "number"}
-        elif arg_type == "bool" or "bool" in str(arg_type):
-            properties[arg_name] = {"type": "boolean"}
-        elif arg_type == "list" or "List" in str(arg_type):
-            properties[arg_name] = {"type": "array"}
-        elif arg_type == "dict" or "Dict" in str(arg_type):
-            properties[arg_name] = {"type": "object"}
-        else:
-            properties[arg_name] = {"type": "string"}  # Default to string
-
-        required.append(arg_name)
-
-    input_schema = {"type": "object", "properties": properties, "required": required}
-
-    # Generate output schema
-    return_type = function_info.get("return_annotation", "Any")
-    if return_type == "str" or "str" in str(return_type):
-        output_schema = {"type": "string"}
-    elif return_type == "int" or "int" in str(return_type):
-        output_schema = {"type": "integer"}
-    elif return_type == "float" or "float" in str(return_type):
-        output_schema = {"type": "number"}
-    elif return_type == "bool" or "bool" in str(return_type):
-        output_schema = {"type": "boolean"}
-    elif return_type == "list" or "List" in str(return_type):
-        output_schema = {"type": "array"}
-    elif return_type == "dict" or "Dict" in str(return_type):
-        output_schema = {"type": "object"}
-    else:
-        output_schema = {"type": "string"}  # Default to string
-
+def error_response(message: str) -> Dict[str, Any]:
     return {
-        "input_schema": json.dumps(input_schema),
-        "output_schema": json.dumps(output_schema),
+        "status": "error",
+        "message": message,
     }
 
 
-def register_tool_management_tools(mcp: FastMCP) -> None:
+def get_current_user() -> UserInfo:
+    """
+    Dependency function to get the current user from the access token.
+    """
+    access_token: AccessToken | None = get_access_token()
+    if not access_token:
+        raise ValueError("Access token is required for this operation.")
+
+    user_info = AuthProvider.parse_user_info(access_token.claims)
+    if not user_info or not user_info.id:
+        raise ValueError(f"Hello, unknown! Your scopes are: {', '.join(access_token.scopes)}")
+    return user_info
+
+
+def register_manage_tools(mcp: FastMCP) -> None:
     """Register all MCP tool management functions with the MCP server."""
 
     @mcp.tool
@@ -138,7 +55,6 @@ def register_tool_management_tools(mcp: FastMCP) -> None:
         description: str,
         code_content: str,
         requirements: str = "",
-        user_id: str = "system",
     ) -> Dict[str, Any]:
         """
         Create a new tool (script/module) with all its functions.
@@ -148,42 +64,36 @@ def register_tool_management_tools(mcp: FastMCP) -> None:
             description: Tool description
             code_content: Python code containing multiple functions
             requirements: Requirements.txt content (default: "")
-            user_id: User ID (default: "system")
 
         Returns:
             Dictionary containing creation result and tool information
         """
+        user_info = get_current_user()
+
         try:
             # Basic validation
             if not name or not description or not code_content:
-                return {
-                    "status": "error",
-                    "message": "Missing required fields: name, description, code_content",
-                }
+                return error_response("Missing required fields: name, description, code_content")
 
             # Discover functions in the code
             try:
                 functions = discover_functions_from_code(code_content)
                 if not functions:
-                    return {
-                        "status": "error",
-                        "message": "No functions found in code. Make sure functions don't start with underscore.",
-                    }
+                    return error_response(
+                        "No functions found in code. Make sure functions don't start with underscore."
+                    )
             except ValueError as e:
-                return {"status": "error", "message": str(e)}
+                return error_response(str(e))
 
             with Session(engine) as session:
                 # Check if tool name already exists
                 existing_tool = session.exec(select(Tool).where(Tool.name == name)).first()
                 if existing_tool:
-                    return {
-                        "status": "error",
-                        "message": f"Tool with name '{name}' already exists",
-                    }
+                    return error_response(f"Tool with name '{name}' already exists")
 
                 # Create Tool record
                 tool = Tool(
-                    user_id=user_id,
+                    user_id=user_info.id,
                     name=name,
                     description=description,
                     tags_json="[]",
@@ -195,7 +105,7 @@ def register_tool_management_tools(mcp: FastMCP) -> None:
 
                 # Create ToolVersion record
                 tool_version = ToolVersion(
-                    user_id=user_id,
+                    user_id=user_info.id,
                     version=1,  # default version
                     requirements=requirements,
                     code_content=code_content,
@@ -212,7 +122,7 @@ def register_tool_management_tools(mcp: FastMCP) -> None:
                     schemas = generate_basic_schema(func_info)
 
                     tool_function = ToolFunction(
-                        user_id=user_id,
+                        user_id=user_info.id,
                         function_name=func_info["name"],
                         docstring=func_info["docstring"],
                         input_schema=schemas["input_schema"],
@@ -242,75 +152,47 @@ def register_tool_management_tools(mcp: FastMCP) -> None:
 
         except Exception as e:
             logger.error(f"Error creating tool '{name}': {e}")
-            return {"status": "error", "message": f"Error creating tool: {str(e)}"}
+            return error_response(f"Error creating tool: {str(e)}")
 
     @mcp.tool
-    def create_function(
-        tool_id: int,
-        function_name: str,
-        code_content: str,
-        input_schema: str = "{}",
-        output_schema: str = "{}",
-        user_id: str = "system",
-    ) -> Dict[str, Any]:
+    def create_function(tool_id: int, code_content: str) -> Dict[str, Any]:
         """
-        Add a new function to an existing tool.
+        Add new function(s) to an existing tool by providing code content.
+        The new code will be appended to the existing tool's code content.
+        All functions discovered in the new code will be added to the tool.
 
         Args:
             tool_id: ID of the tool to add function to
-            function_name: Name of the function to add
-            code_content: Python code containing the function
-            input_schema: JSON schema for input parameters (default: "{}")
-            output_schema: JSON schema for output (default: "{}")
-            user_id: User ID (default: "system")
+            code_content: Python code containing one or more functions to add
 
         Returns:
             Dictionary containing creation result
         """
+        user_info = get_current_user()
         try:
             # Basic validation
-            if not function_name or not code_content:
-                return {
-                    "status": "error",
-                    "message": "Missing required fields: function_name, code_content",
-                }
+            if not code_content:
+                return error_response("Missing required field: code_content")
 
-            # Validate JSON schemas
-            try:
-                json.loads(input_schema)
-                json.loads(output_schema)
-            except json.JSONDecodeError as e:
-                return {"status": "error", "message": f"Invalid JSON schema: {str(e)}"}
-
-            # Check if function exists in code
+            # Discover functions in the code
             try:
                 functions = discover_functions_from_code(code_content)
-                function_names = [f["name"] for f in functions]
-                if function_name not in function_names:
-                    return {
-                        "status": "error",
-                        "message": (
-                            f"Function '{function_name}' not found in code. " f"Available functions: {function_names}"
-                        ),
-                    }
+                if not functions:
+                    return error_response(
+                        "No functions found in code. Make sure functions don't start with underscore."
+                    )
             except ValueError as e:
-                return {"status": "error", "message": str(e)}
+                return error_response(str(e))
 
             with Session(engine) as session:
                 # Get the tool
                 tool = session.get(Tool, tool_id)
                 if not tool:
-                    return {
-                        "status": "error",
-                        "message": f"Tool with ID {tool_id} not found",
-                    }
+                    return error_response(f"Tool with ID {tool_id} not found")
 
                 # Check if user has permission
-                if tool.user_id != user_id and user_id != "system":
-                    return {
-                        "status": "error",
-                        "message": "Permission denied: You don't have permission to modify this tool",
-                    }
+                if tool.user_id != user_info.id:
+                    return error_response("Permission denied: You don't have permission to modify this tool")
 
                 # Get the latest version
                 latest_version = session.exec(
@@ -318,31 +200,34 @@ def register_tool_management_tools(mcp: FastMCP) -> None:
                 ).first()
 
                 if not latest_version:
-                    return {
-                        "status": "error",
-                        "message": f"No versions found for tool {tool_id}",
-                    }
+                    return error_response(f"No versions found for tool {tool_id}")
 
-                # Check if function already exists
-                existing_function = session.exec(
+                # Check if any of the functions already exist
+                existing_functions = session.exec(
                     select(ToolFunction).where(
                         ToolFunction.tool_version_id == latest_version.id,
-                        ToolFunction.function_name == function_name,
+                        ToolFunction.function_name.in_([f["name"] for f in functions]),  # type: ignore
                     )
-                ).first()
+                ).all()
 
-                if existing_function:
-                    return {
-                        "status": "error",
-                        "message": f"Function '{function_name}' already exists in tool '{tool.name}'",
-                    }
+                if existing_functions:
+                    existing_names = [f.function_name for f in existing_functions]
+                    return error_response(f"Function(s) already exist in tool '{tool.name}': {existing_names}")
 
-                # Create new version with updated code
+                # Combine existing code with new code content
+                combined_code_content = latest_version.code_content + "\n\n" + code_content
+
+                try:
+                    discover_functions_from_code(combined_code_content)
+                except ValueError as e:
+                    return error_response(f"Invalid syntax when combining code: {str(e)}")
+
+                # Create new version with combined code
                 new_version = ToolVersion(
-                    user_id=user_id,
+                    user_id=user_info.id,
                     version=latest_version.version + 1,
                     requirements=latest_version.requirements,
-                    code_content=code_content,  # Updated code
+                    code_content=combined_code_content,  # Combined code
                     status=ToolStatus.READY,
                     tool_id=tool_id,
                 )
@@ -350,37 +235,43 @@ def register_tool_management_tools(mcp: FastMCP) -> None:
                 session.commit()
                 session.refresh(new_version)
 
-                # Create ToolFunction record
-                tool_function = ToolFunction(
-                    user_id=user_id,
-                    function_name=function_name,
-                    docstring=f"Function {function_name}",
-                    input_schema=input_schema,
-                    output_schema=output_schema,
-                    tool_version_id=new_version.id,
-                )
-                session.add(tool_function)
+                # Create ToolFunction records for each discovered function
+                created_functions = []
+                for func_info in functions:
+                    schemas = generate_basic_schema(func_info)
+
+                    tool_function = ToolFunction(
+                        user_id=user_info.id,
+                        function_name=func_info["name"],
+                        docstring=func_info["docstring"],
+                        input_schema=schemas["input_schema"],
+                        output_schema=schemas["output_schema"],
+                        tool_version_id=new_version.id,
+                    )
+                    session.add(tool_function)
+                    created_functions.append(func_info["name"])
+
                 session.commit()
 
                 # Refresh tools in the loader
                 try:
                     tools = tool_loader.scan_and_load_tools()
                     tool_loader.register_tools_to_mcp(mcp, tools)
-                    logger.info(f"Refreshed tools after adding function {function_name} to {tool.name}")
+                    logger.info(f"Refreshed tools after adding functions {created_functions} to {tool.name}")
                 except Exception as e:
                     logger.warning(f"Failed to refresh tools after adding function: {e}")
 
                 return {
                     "status": "success",
-                    "message": f"Function '{function_name}' added to tool '{tool.name}' successfully",
+                    "message": f"Function(s) added to tool '{tool.name}' successfully",
                     "tool_id": tool_id,
-                    "function_name": function_name,
+                    "functions": created_functions,
                     "version": new_version.version,
                 }
 
         except Exception as e:
-            logger.error(f"Error adding function '{function_name}' to tool {tool_id}: {e}")
-            return {"status": "error", "message": f"Error adding function: {str(e)}"}
+            logger.error(f"Error adding function(s) to tool {tool_id}: {e}")
+            return error_response(f"Error adding function(s): {str(e)}")
 
     @mcp.tool
     def update_tool(
@@ -389,7 +280,6 @@ def register_tool_management_tools(mcp: FastMCP) -> None:
         description: Optional[str] = None,
         code_content: Optional[str] = None,
         requirements: Optional[str] = None,
-        user_id: str = "system",
     ) -> Dict[str, Any]:
         """
         Update an existing tool.
@@ -400,37 +290,29 @@ def register_tool_management_tools(mcp: FastMCP) -> None:
             description: New description (optional)
             code_content: New Python code (optional)
             requirements: New requirements (optional)
-            user_id: User ID (default: "system")
 
         Returns:
             Dictionary containing update result
         """
+        user_info = get_current_user()
+
         try:
             with Session(engine) as session:
                 # Get the tool
                 tool = session.get(Tool, tool_id)
                 if not tool:
-                    return {
-                        "status": "error",
-                        "message": f"Tool with ID {tool_id} not found",
-                    }
+                    return error_response(f"Tool with ID {tool_id} not found")
 
                 # Check if user has permission
-                if tool.user_id != user_id and user_id != "system":
-                    return {
-                        "status": "error",
-                        "message": "Permission denied: You don't have permission to update this tool",
-                    }
+                if tool.user_id != user_info.id:
+                    return error_response("Permission denied: You don't have permission to update this tool")
 
                 # Update tool fields if provided
                 if name is not None:
                     # Check if new name conflicts with existing tools
                     existing_tool = session.exec(select(Tool).where(Tool.name == name, Tool.id != tool_id)).first()
                     if existing_tool:
-                        return {
-                            "status": "error",
-                            "message": f"Tool with name '{name}' already exists",
-                        }
+                        return error_response(f"Tool with name '{name}' already exists")
                     tool.name = name
 
                 if description is not None:
@@ -444,10 +326,7 @@ def register_tool_management_tools(mcp: FastMCP) -> None:
                 ).first()
 
                 if not latest_version:
-                    return {
-                        "status": "error",
-                        "message": f"No versions found for tool {tool_id}",
-                    }
+                    return error_response(f"No versions found for tool {tool_id}")
 
                 # Create new version if code or requirements are updated
                 if code_content is not None or requirements is not None:
@@ -456,13 +335,13 @@ def register_tool_management_tools(mcp: FastMCP) -> None:
                         try:
                             discover_functions_from_code(code_content)
                         except ValueError as e:
-                            return {"status": "error", "message": str(e)}
+                            return error_response(str(e))
 
                     next_version = latest_version.version + 1
 
                     # Create new ToolVersion
                     new_version = ToolVersion(
-                        user_id=user_id,
+                        user_id=user_info.id,
                         version=next_version,
                         requirements=requirements if requirements is not None else latest_version.requirements,
                         code_content=code_content if code_content is not None else latest_version.code_content,
@@ -481,7 +360,7 @@ def register_tool_management_tools(mcp: FastMCP) -> None:
                                 schemas = generate_basic_schema(func_info)
 
                                 tool_function = ToolFunction(
-                                    user_id=user_id,
+                                    user_id=user_info.id,
                                     function_name=func_info["name"],
                                     docstring=func_info["docstring"],
                                     input_schema=schemas["input_schema"],
@@ -490,7 +369,7 @@ def register_tool_management_tools(mcp: FastMCP) -> None:
                                 )
                                 session.add(tool_function)
                         except ValueError as e:
-                            return {"status": "error", "message": str(e)}
+                            return error_response(str(e))
 
                 session.commit()
 
@@ -515,45 +394,56 @@ def register_tool_management_tools(mcp: FastMCP) -> None:
 
         except Exception as e:
             logger.error(f"Error updating tool {tool_id}: {e}")
-            return {"status": "error", "message": f"Error updating tool: {str(e)}"}
+            return error_response(f"Error updating tool: {str(e)}")
 
     @mcp.tool
-    def update_function(
-        tool_id: int,
-        function_name: str,
-        input_schema: Optional[str] = None,
-        output_schema: Optional[str] = None,
-        user_id: str = "system",
-    ) -> Dict[str, Any]:
+    def update_function(tool_id: int, function_name: str, code_content: str) -> Dict[str, Any]:
         """
-        Update a function's schema in an existing tool.
+        Update a function in an existing tool by providing new code content.
+        The new code will be appended to the existing tool's code content.
+        The specified function will be updated with new implementation and schema.
 
         Args:
             tool_id: ID of the tool containing the function
             function_name: Name of the function to update
-            input_schema: New input schema (optional)
-            output_schema: New output schema (optional)
-            user_id: User ID (default: "system")
+            code_content: Python code containing the updated function
 
         Returns:
             Dictionary containing update result
         """
+        user_info = get_current_user()
+
         try:
+            # Basic validation
+            if not code_content:
+                return error_response("Missing required field: code_content")
+
+            # Discover functions in the code
+            try:
+                functions = discover_functions_from_code(code_content)
+                if not functions:
+                    return error_response(
+                        "No functions found in code. Make sure functions don't start with underscore."
+                    )
+            except ValueError as e:
+                return error_response(str(e))
+
+            # Check if the specified function exists in the new code
+            function_names = [f["name"] for f in functions]
+            if function_name not in function_names:
+                return error_response(
+                    f"Function '{function_name}' not found in provided code. " f"Available functions: {function_names}"
+                )
+
             with Session(engine) as session:
                 # Get the tool
                 tool = session.get(Tool, tool_id)
                 if not tool:
-                    return {
-                        "status": "error",
-                        "message": f"Tool with ID {tool_id} not found",
-                    }
+                    return error_response(f"Tool with ID {tool_id} not found")
 
                 # Check if user has permission
-                if tool.user_id != user_id and user_id != "system":
-                    return {
-                        "status": "error",
-                        "message": "Permission denied: You don't have permission to update this tool",
-                    }
+                if tool.user_id != user_info.id:
+                    return error_response("Permission denied: You don't have permission to update this tool")
 
                 # Get the latest version
                 latest_version = session.exec(
@@ -561,104 +451,130 @@ def register_tool_management_tools(mcp: FastMCP) -> None:
                 ).first()
 
                 if not latest_version:
-                    return {
-                        "status": "error",
-                        "message": f"No versions found for tool {tool_id}",
-                    }
+                    return error_response(f"No versions found for tool {tool_id}")
 
-                # Find the function
-                tool_function = session.exec(
+                # Check if function exists in the current tool
+                existing_function = session.exec(
                     select(ToolFunction).where(
                         ToolFunction.tool_version_id == latest_version.id,
                         ToolFunction.function_name == function_name,
                     )
                 ).first()
 
-                if not tool_function:
-                    return {
-                        "status": "error",
-                        "message": f"Function '{function_name}' not found in tool '{tool.name}'",
-                    }
+                if not existing_function:
+                    return error_response(f"Function '{function_name}' not found in tool '{tool.name}'")
 
-                # Validate schemas if provided
-                if input_schema:
-                    try:
-                        json.loads(input_schema)
-                    except json.JSONDecodeError as e:
-                        return {
-                            "status": "error",
-                            "message": f"Invalid input schema JSON: {str(e)}",
-                        }
+                # Combine existing code with new code content
+                combined_code_content = latest_version.code_content + "\n\n" + code_content
 
-                if output_schema:
-                    try:
-                        json.loads(output_schema)
-                    except json.JSONDecodeError as e:
-                        return {
-                            "status": "error",
-                            "message": f"Invalid output schema JSON: {str(e)}",
-                        }
+                # Validate the combined code for syntax errors
+                try:
+                    discover_functions_from_code(combined_code_content)
+                except ValueError as e:
+                    return error_response(f"Invalid syntax when combining code: {str(e)}")
 
-                # Update function schemas
-                if input_schema is not None:
-                    tool_function.input_schema = input_schema
-                if output_schema is not None:
-                    tool_function.output_schema = output_schema
-
-                session.add(tool_function)
+                # Create new version with combined code
+                new_version = ToolVersion(
+                    user_id=user_info.id,
+                    version=latest_version.version + 1,
+                    requirements=latest_version.requirements,
+                    code_content=combined_code_content,  # Combined code
+                    status=ToolStatus.READY,
+                    tool_id=tool_id,
+                )
+                session.add(new_version)
                 session.commit()
+                session.refresh(new_version)
 
-                return {
-                    "status": "success",
-                    "message": f"Function '{function_name}' updated successfully",
-                    "tool_id": tool_id,
-                    "function_name": function_name,
-                }
+                # Get the updated function info from the new code
+                updated_function_info = None
+                for func_info in functions:
+                    if func_info["name"] == function_name:
+                        updated_function_info = func_info
+                        break
 
-        except Exception as e:
-            logger.error(f"Error updating function '{function_name}' in tool {tool_id}: {e}")
-            return {"status": "error", "message": f"Error updating function: {str(e)}"}
+                if not updated_function_info:
+                    return error_response(f"Function '{function_name}' not found in provided code")
 
-    @mcp.tool
-    def delete_tool(tool_id: int, user_id: str = "system") -> Dict[str, Any]:
-        """
-        Delete an entire tool and all its functions.
+                # Generate new schemas for the updated function
+                schemas = generate_basic_schema(updated_function_info)
 
-        Args:
-            tool_id: ID of the tool to delete
-            user_id: User ID (default: "system")
-
-        Returns:
-            Dictionary containing deletion result
-        """
-        try:
-            with Session(engine) as session:
-                # Get the tool
-                tool = session.get(Tool, tool_id)
-                if not tool:
-                    return {
-                        "status": "error",
-                        "message": f"Tool with ID {tool_id} not found",
-                    }
-
-                # Check if user has permission
-                if tool.user_id != user_id and user_id != "system":
-                    return {
-                        "status": "error",
-                        "message": "Permission denied: You don't have permission to delete this tool",
-                    }
-
-                tool_name = tool.name
-
-                # Delete the tool (cascading deletes will handle versions and functions)
-                session.delete(tool)
+                # Create updated ToolFunction record
+                updated_tool_function = ToolFunction(
+                    user_id=user_info.id,
+                    function_name=updated_function_info["name"],
+                    docstring=updated_function_info["docstring"],
+                    input_schema=schemas["input_schema"],
+                    output_schema=schemas["output_schema"],
+                    tool_version_id=new_version.id,
+                )
+                session.add(updated_tool_function)
                 session.commit()
 
                 # Refresh tools in the loader
                 try:
                     tools = tool_loader.scan_and_load_tools()
                     tool_loader.register_tools_to_mcp(mcp, tools)
-                    logger.info(f"Refreshed tools after deleting {tool_name}")
+                    logger.info(f"Refreshed tools after updating function {function_name} in {tool.name}")
+                except Exception as e:
+                    logger.warning(f"Failed to refresh tools after updating function: {e}")
+
+                return {
+                    "status": "success",
+                    "message": f"Function '{function_name}' updated successfully",
+                    "tool_id": tool_id,
+                    "function_name": function_name,
+                    "version": new_version.version,
+                }
+
+        except Exception as e:
+            logger.error(f"Error updating function '{function_name}' in tool {tool_id}: {e}")
+            return error_response(f"Error updating function: {str(e)}")
+
+    @mcp.tool
+    def delete_tool(tool_id: int) -> Dict[str, Any]:
+        """
+        Delete an entire tool and all its functions.
+
+        Args:
+            tool_id: ID of the tool to delete
+
+        Returns:
+            Dictionary containing deletion result
+        """
+        user_info = get_current_user()
+
+        try:
+            with Session(engine) as session:
+                # Get the tool
+                tool = session.get(Tool, tool_id)
+                if not tool:
+                    return error_response(f"Tool with ID {tool_id} not found")
+
+                # Check if user has permission
+                if tool.user_id != user_info.id:
+                    return error_response("Permission denied: You don't have permission to delete this tool")
+
+                tool_name = tool.name
+
+                # Manually delete related records in correct order due to missing CASCADE DELETE
+                # First delete all functions for all versions
+                for version in tool.versions:
+                    for function in version.functions:
+                        session.delete(function)
+
+                # Then delete all versions
+                for version in tool.versions:
+                    session.delete(version)
+
+                # Finally delete the tool itself
+                session.delete(tool)
+                session.commit()
+
+                # Refresh tools in the loader using the new refresh method
+                try:
+                    result = tool_loader.refresh_tools(mcp)
+                    logger.info(f"Refreshed tools after deleting {tool_name}: {result}")
                 except Exception as e:
                     logger.warning(f"Failed to refresh tools after deleting {tool_name}: {e}")
 
@@ -670,37 +586,32 @@ def register_tool_management_tools(mcp: FastMCP) -> None:
 
         except Exception as e:
             logger.error(f"Error deleting tool {tool_id}: {e}")
-            return {"status": "error", "message": f"Error deleting tool: {str(e)}"}
+            return error_response(f"Error deleting tool: {str(e)}")
 
     @mcp.tool
-    def delete_function(tool_id: int, function_name: str, user_id: str = "system") -> Dict[str, Any]:
+    def delete_function(tool_id: int, function_name: str) -> Dict[str, Any]:
         """
         Delete a specific function from a tool.
 
         Args:
             tool_id: ID of the tool containing the function
             function_name: Name of the function to delete
-            user_id: User ID (default: "system")
 
         Returns:
             Dictionary containing deletion result
         """
+        user_info = get_current_user()
+
         try:
             with Session(engine) as session:
                 # Get the tool
                 tool = session.get(Tool, tool_id)
                 if not tool:
-                    return {
-                        "status": "error",
-                        "message": f"Tool with ID {tool_id} not found",
-                    }
+                    return error_response(f"Tool with ID {tool_id} not found")
 
                 # Check if user has permission
-                if tool.user_id != user_id and user_id != "system":
-                    return {
-                        "status": "error",
-                        "message": "Permission denied: You don't have permission to modify this tool",
-                    }
+                if tool.user_id != user_info.id:
+                    return error_response("Permission denied: You don't have permission to modify this tool")
 
                 # Get the latest version
                 latest_version = session.exec(
@@ -708,10 +619,7 @@ def register_tool_management_tools(mcp: FastMCP) -> None:
                 ).first()
 
                 if not latest_version:
-                    return {
-                        "status": "error",
-                        "message": f"No versions found for tool {tool_id}",
-                    }
+                    return error_response(f"No versions found for tool {tool_id}")
 
                 # Find the function
                 tool_function = session.exec(
@@ -722,10 +630,7 @@ def register_tool_management_tools(mcp: FastMCP) -> None:
                 ).first()
 
                 if not tool_function:
-                    return {
-                        "status": "error",
-                        "message": f"Function '{function_name}' not found in tool '{tool.name}'",
-                    }
+                    return error_response(f"Function '{function_name}' not found in tool '{tool.name}'")
 
                 # Delete the function
                 session.delete(tool_function)
@@ -748,36 +653,31 @@ def register_tool_management_tools(mcp: FastMCP) -> None:
 
         except Exception as e:
             logger.error(f"Error deleting function '{function_name}' from tool {tool_id}: {e}")
-            return {"status": "error", "message": f"Error deleting function: {str(e)}"}
+            return error_response(f"Error deleting function: {str(e)}")
 
     @mcp.tool
-    def list_tool_functions(tool_id: int, user_id: str = "system") -> Dict[str, Any]:
+    def list_tool_functions(tool_id: int) -> Dict[str, Any]:
         """
         List all functions in a specific tool.
 
         Args:
             tool_id: ID of the tool
-            user_id: User ID (default: "system")
 
         Returns:
             Dictionary containing tool functions information
         """
+        user_info = get_current_user()
+
         try:
             with Session(engine) as session:
                 # Get the tool
                 tool = session.get(Tool, tool_id)
                 if not tool:
-                    return {
-                        "status": "error",
-                        "message": f"Tool with ID {tool_id} not found",
-                    }
+                    return error_response(f"Tool with ID {tool_id} not found")
 
                 # Check if user has permission
-                if tool.user_id != user_id and user_id != "system":
-                    return {
-                        "status": "error",
-                        "message": "Permission denied: You don't have permission to view this tool",
-                    }
+                if tool.user_id != user_info.id:
+                    return error_response("Permission denied: You don't have permission to view this tool")
 
                 # Get the latest version
                 latest_version = session.exec(
@@ -785,10 +685,7 @@ def register_tool_management_tools(mcp: FastMCP) -> None:
                 ).first()
 
                 if not latest_version:
-                    return {
-                        "status": "error",
-                        "message": f"No versions found for tool {tool_id}",
-                    }
+                    return error_response(f"No versions found for tool {tool_id}")
 
                 # Get all functions for this version
                 functions = session.exec(
@@ -817,36 +714,31 @@ def register_tool_management_tools(mcp: FastMCP) -> None:
 
         except Exception as e:
             logger.error(f"Error listing functions for tool {tool_id}: {e}")
-            return {"status": "error", "message": f"Error listing functions: {str(e)}"}
+            return error_response(f"Error listing functions: {str(e)}")
 
     @mcp.tool
-    def get_tool_info(tool_id: int, user_id: str = "system") -> Dict[str, Any]:
+    def get_tool_info(tool_id: int) -> Dict[str, Any]:
         """
         Get complete information about a tool and its functions.
 
         Args:
             tool_id: ID of the tool
-            user_id: User ID (default: "system")
 
         Returns:
             Dictionary containing complete tool information
         """
+        user_info = get_current_user()
+
         try:
             with Session(engine) as session:
                 # Get the tool
                 tool = session.get(Tool, tool_id)
                 if not tool:
-                    return {
-                        "status": "error",
-                        "message": f"Tool with ID {tool_id} not found",
-                    }
+                    return error_response(f"Tool with ID {tool_id} not found")
 
                 # Check if user has permission
-                if tool.user_id != user_id and user_id != "system":
-                    return {
-                        "status": "error",
-                        "message": "Permission denied: You don't have permission to view this tool",
-                    }
+                if tool.user_id != user_info.id:
+                    return error_response("Permission denied: You don't have permission to view this tool")
 
                 # Get the latest version
                 latest_version = session.exec(
@@ -854,10 +746,7 @@ def register_tool_management_tools(mcp: FastMCP) -> None:
                 ).first()
 
                 if not latest_version:
-                    return {
-                        "status": "error",
-                        "message": f"No versions found for tool {tool_id}",
-                    }
+                    return error_response(f"No versions found for tool {tool_id}")
 
                 # Get all functions for this version
                 functions = session.exec(
@@ -893,20 +782,21 @@ def register_tool_management_tools(mcp: FastMCP) -> None:
 
         except Exception as e:
             logger.error(f"Error getting tool info for {tool_id}: {e}")
-            return {"status": "error", "message": f"Error getting tool info: {str(e)}"}
+            return error_response(f"Error getting tool info: {str(e)}")
 
     @mcp.tool
-    def get_tool_changes(hours: int = 24, user_id: str = "system") -> Dict[str, Any]:
+    def get_tool_changes(hours: int = 24) -> Dict[str, Any]:
         """
         Get recent tool changes from the database.
 
         Args:
             hours: Number of hours to look back for changes (default: 24)
-            user_id: User ID (default: "system")
 
         Returns:
             Dictionary containing recent tool changes
         """
+        user_info = get_current_user()
+
         try:
             with Session(engine) as session:
                 # Calculate time threshold
@@ -917,7 +807,7 @@ def register_tool_management_tools(mcp: FastMCP) -> None:
                     select(Tool)
                     .where(
                         Tool.updated_at >= time_threshold,
-                        Tool.user_id == user_id if user_id != "system" else True,
+                        Tool.user_id == user_info.id,
                     )
                     .order_by(desc(Tool.updated_at))
                     .limit(50)
@@ -929,7 +819,7 @@ def register_tool_management_tools(mcp: FastMCP) -> None:
                     .join(Tool)
                     .where(
                         ToolVersion.created_at >= time_threshold,
-                        Tool.user_id == user_id if user_id != "system" else True,
+                        Tool.user_id == user_info.id,
                     )
                     .order_by(desc(ToolVersion.created_at))
                     .limit(50)
@@ -995,48 +885,37 @@ def register_tool_management_tools(mcp: FastMCP) -> None:
 
         except Exception as e:
             logger.error(f"Error getting tool changes: {e}")
-            return {
-                "status": "error",
-                "message": f"Error getting tool changes: {str(e)}",
-            }
+            return error_response(f"Error getting tool changes: {str(e)}")
 
     @mcp.tool
-    def get_tool_statistics(user_id: str = "system") -> Dict[str, Any]:
+    def get_tool_statistics() -> Dict[str, Any]:
         """
         Get comprehensive tool statistics from the database.
-
-        Args:
-            user_id: User ID (default: "system")
 
         Returns:
             Dictionary containing tool statistics
         """
+        user_info = get_current_user()
+
         try:
             with Session(engine) as session:
                 # Get total tools count
-                total_tools = session.exec(
-                    select(Tool).where(Tool.user_id == user_id if user_id != "system" else True)
-                ).all()
+                total_tools = session.exec(select(Tool).where(Tool.user_id == user_info.id)).all()
 
                 # Get active tools count
                 active_tools = session.exec(
                     select(Tool).where(
                         Tool.is_active == true(),
-                        Tool.user_id == user_id if user_id != "system" else True,
+                        Tool.user_id == user_info.id,
                     )
                 ).all()
 
                 # Get total versions count
-                total_versions = session.exec(
-                    select(ToolVersion).join(Tool).where(Tool.user_id == user_id if user_id != "system" else True)
-                ).all()
+                total_versions = session.exec(select(ToolVersion).join(Tool).where(Tool.user_id == user_info.id)).all()
 
                 # Get total functions count
                 total_functions = session.exec(
-                    select(ToolFunction)
-                    .join(ToolVersion)
-                    .join(Tool)
-                    .where(Tool.user_id == user_id if user_id != "system" else True)
+                    select(ToolFunction).join(ToolVersion).join(Tool).where(Tool.user_id == user_info.id)
                 ).all()
 
                 # Get tools by status
@@ -1055,7 +934,7 @@ def register_tool_management_tools(mcp: FastMCP) -> None:
                 recent_activity = session.exec(
                     select(Tool).where(
                         Tool.updated_at >= week_ago,
-                        Tool.user_id == user_id if user_id != "system" else True,
+                        Tool.user_id == user_info.id,
                     )
                 ).all()
 
@@ -1085,7 +964,4 @@ def register_tool_management_tools(mcp: FastMCP) -> None:
 
         except Exception as e:
             logger.error(f"Error getting tool statistics: {e}")
-            return {
-                "status": "error",
-                "message": f"Error getting tool statistics: {str(e)}",
-            }
+            return error_response(f"Error getting tool statistics: {str(e)}")
