@@ -26,7 +26,7 @@ class ToolTestResponse(BaseModel):
     execution_time_ms: Optional[int] = None
 
 
-@router.post("/", response_model=McpServer)
+@router.post("", response_model=McpServer)
 async def create_mcp_server(
     *,
     session: AsyncSession = Depends(get_session),
@@ -40,6 +40,7 @@ async def create_mcp_server(
     db_mcp_server = McpServer.model_validate(mcp_server)
     session.add(db_mcp_server)
     await session.commit()
+
     await session.refresh(db_mcp_server)
 
     if db_mcp_server.id:
@@ -48,7 +49,7 @@ async def create_mcp_server(
     return db_mcp_server
 
 
-@router.get("/", response_model=list[McpServer])
+@router.get("", response_model=list[McpServer])
 async def read_mcp_servers(
     *,
     session: AsyncSession = Depends(get_session),

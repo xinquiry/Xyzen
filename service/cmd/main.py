@@ -82,6 +82,8 @@ app = FastAPI(
     docs_url="/xyzen/api/docs",
     redoc_url="/xyzen/api/redoc",
     openapi_url="/xyzen/api/openapi.json",
+    # 🔥 修复：禁用 FastAPI 默认的尾部斜杠重定向
+    redirect_slashes=False,
 )
 
 # Add CORS middleware
