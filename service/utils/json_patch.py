@@ -64,7 +64,6 @@ def apply_json_patch() -> None:
     """
     # 替换 json.dumps 函数
     json.dumps = pydantic_aware_json_dumps
-    print("✓ JSON monkey patch 已应用，现在支持 pydantic 类型序列化")
 
 
 def remove_json_patch() -> None:
@@ -72,7 +71,6 @@ def remove_json_patch() -> None:
     移除 JSON monkey patch，恢复原始函数
     """
     json.dumps = _original_json_dumps
-    print("✓ JSON monkey patch 已移除，恢复原始 json.dumps")
 
 
 if __name__ == "__main__":
