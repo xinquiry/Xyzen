@@ -9,6 +9,12 @@ import type {
 class LlmProviderService {
   private getBackendUrl(): string {
     const { backendUrl } = useXyzen.getState();
+    // 🔥 修复：如果 backendUrl 为空，使用当前页面的协议和域名
+    if (!backendUrl || backendUrl === "") {
+      if (typeof window !== "undefined") {
+        return `${window.location.protocol}//${window.location.host}`;
+      }
+    }
     return backendUrl;
   }
 

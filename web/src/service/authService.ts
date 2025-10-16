@@ -1,6 +1,15 @@
 import { useXyzen } from "@/store";
 
-const getBackendUrl = () => useXyzen.getState().backendUrl;
+const getBackendUrl = () => {
+  const url = useXyzen.getState().backendUrl;
+  // 🔥 修复：如果 backendUrl 为空，使用当前页面的协议和域名
+  if (!url || url === "") {
+    if (typeof window !== "undefined") {
+      return `${window.location.protocol}//${window.location.host}`;
+    }
+  }
+  return url;
+};
 
 export interface AuthStatus {
   is_configured: boolean;

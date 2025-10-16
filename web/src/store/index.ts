@@ -34,6 +34,7 @@ export const useXyzen = create<XyzenState>()(
         theme: state.theme,
         token: state.token,
         user: state.user, // 持久化用户数据
+        backendUrl: state.backendUrl, // 🔥 修复：持久化 backendUrl 避免使用空字符串
       }),
     },
   ),

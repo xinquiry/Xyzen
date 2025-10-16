@@ -2,7 +2,16 @@ import { authService } from "@/service/authService";
 import { useXyzen } from "@/store";
 import type { McpServer, McpServerCreate } from "@/types/mcp";
 
-const getBackendUrl = () => useXyzen.getState().backendUrl;
+const getBackendUrl = () => {
+  const url = useXyzen.getState().backendUrl;
+  // 🔥 修复：如果 backendUrl 为空或只有 http（不安全），使用当前页面的协议和域名
+  if (!url || url === "" || url === "http://") {
+    if (typeof window !== "undefined") {
+      return `${window.location.protocol}//${window.location.host}`;
+    }
+  }
+  return url;
+};
 
 const createAuthHeaders = (): Record<string, string> => {
   const headers: Record<string, string> = {

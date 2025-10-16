@@ -26,7 +26,8 @@ COPY . .
 # Set build-time environment variables
 ARG VITE_XYZEN_BACKEND_URL
 ENV NODE_ENV=production
-ENV VITE_BACKEND_URL=${VITE_XYZEN_BACKEND_URL}
+# 🔥 修复：ENV 名称要和 ARG 保持一致
+ENV VITE_XYZEN_BACKEND_URL=${VITE_XYZEN_BACKEND_URL}
 
 # Build the application
 # The build script in package.json is "rimraf site && tsc -b && vite build"
