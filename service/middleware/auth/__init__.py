@@ -41,6 +41,7 @@ class BaseAuthProvider(ABC):
 
     def __init__(self, config: Dict[str, Any]) -> None:
         self.config = config
+        self.public_key = config.get("PublicKey")
         self.issuer = config.get("Issuer")
         self.jwks_uri = config.get("JwksUri")
         self.algorithm = config.get("Algorithm", "RS256")
