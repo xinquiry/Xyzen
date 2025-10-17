@@ -6,18 +6,13 @@ from typing import Callable, Dict
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, WebSocket, WebSocketDisconnect
-from sqlalchemy.orm import selectinload
-from sqlmodel import select
-from sqlmodel.ext.asyncio.session import AsyncSession
 
 from core.chat import get_ai_response_stream
 from middleware.auth import get_current_user_websocket
-from middleware.database import get_session
-from models.agent import Agent as AgentModel
+from middleware.database.connection import AsyncSessionLocal
 from models.message import Message as MessageModel
 from models.message import MessageCreate
-from models.sessions import Session as SessionModel
-from models.topic import Topic as TopicModel
+from repository import MessageRepository, SessionRepository, TopicRepository
 
 # --- Logger Setup ---
 logger = logging.getLogger(__name__)
@@ -74,10 +69,30 @@ class ConnectionManager:
 manager = ConnectionManager()
 
 
+class ConnectionInfo:
+    """Parses and validates the connection_id string."""
+
+    def __init__(self, connection_id: str):
+        parts = connection_id.split(":")
+        if len(parts) != 2:
+            raise ValueError("Invalid connection_id format. Expected 'session_id:topic_id'.")
+        try:
+            self.session_id = UUID(parts[0])
+            self.topic_id = UUID(parts[1])
+        except ValueError:
+            raise ValueError("Invalid UUID in connection_id parts.")
+
+
 async def handle_tool_call_confirmation(
-    websocket: WebSocket, connection_id: str, tool_call_id: str, confirmed: bool
+    message_repo: MessageRepository, connection_id: str, tool_call_id: str, confirmed: bool
 ) -> None:
     """Handle tool call confirmation or cancellation from the user"""
+    try:
+        conn_info = ConnectionInfo(connection_id)
+    except ValueError as e:
+        logger.error(f"Could not handle tool confirmation due to invalid connection_id: {e}")
+        return
+
     try:
         logger.info(f"Handling tool call confirmation: {tool_call_id}, confirmed: {confirmed}")
 
@@ -94,6 +109,23 @@ async def handle_tool_call_confirmation(
                 "data": {"toolCallId": tool_call_id, "status": "failed", "error": "用户取消执行"},
             }
             await manager.send_personal_message(json.dumps(response), connection_id)
+            # Persist a tool message for cancellation (failed)
+            try:
+                tool_message = MessageCreate(
+                    role="tool",
+                    content=json.dumps(
+                        {
+                            "event": "tool_call_response",
+                            "toolCallId": tool_call_id,
+                            "status": "failed",
+                            "error": "用户取消执行",
+                        }
+                    ),
+                    topic_id=conn_info.topic_id,
+                )
+                await message_repo.create_message_in_isolated_transaction(tool_message)
+            except Exception as e:
+                logger.warning(f"Failed to persist cancelled tool call message: {e}")
             # Remove from pending
             del manager.pending_tool_calls[tool_call_id]
             return
@@ -118,7 +150,7 @@ async def handle_tool_call_confirmation(
 
         try:
             # Execute the tools using the same logic as immediate execution
-            tool_results = await _execute_tool_calls(tool_calls, topic)
+            tool_results = await _execute_tool_calls(message_repo.db, tool_calls, topic)
 
             # Send tool completion events for each tool call
             for tool_call in tool_calls:
@@ -134,6 +166,24 @@ async def handle_tool_call_confirmation(
                         },
                     }
                     await manager.send_personal_message(json.dumps(completion_event), connection_id)
+
+                    # Persist tool completion as a Message row for history
+                    try:
+                        tool_message = MessageCreate(
+                            role="tool",
+                            content=json.dumps(
+                                {
+                                    "event": "tool_call_response",
+                                    "toolCallId": tc_id,
+                                    "status": "completed",
+                                    "result": result,
+                                }
+                            ),
+                            topic_id=conn_info.topic_id,
+                        )
+                        await message_repo.create_message_in_isolated_transaction(tool_message)
+                    except Exception as e:
+                        logger.warning(f"Failed to persist tool completion message: {e}")
 
             # Continue with AI response generation using the same logic as immediate execution
             assistant_tool_message = ChatMessage(
@@ -218,6 +268,14 @@ async def handle_tool_call_confirmation(
                         },
                     }
                     await manager.send_personal_message(json.dumps(stream_end), connection_id)
+
+                    # Save the final AI message to the database
+                    final_ai_message = MessageCreate(
+                        role="assistant",
+                        content=final_full_content,
+                        topic_id=conn_info.topic_id,
+                    )
+                    await message_repo.create_message(final_ai_message)
                 else:
                     logger.warning("Final AI streaming response after tool execution was empty")
             else:
@@ -245,6 +303,24 @@ async def handle_tool_call_confirmation(
             }
             await manager.send_personal_message(json.dumps(error_response), connection_id)
 
+            # Persist error tool message
+            try:
+                tool_message = MessageCreate(
+                    role="tool",
+                    content=json.dumps(
+                        {
+                            "event": "tool_call_response",
+                            "toolCallId": tool_call_id,
+                            "status": "failed",
+                            "error": str(e),
+                        }
+                    ),
+                    topic_id=conn_info.topic_id,
+                )
+                await message_repo.create_message_in_isolated_transaction(tool_message)
+            except Exception as pe:
+                logger.warning(f"Failed to persist tool error message: {pe}")
+
         finally:
             # Remove from pending
             if tool_call_id in manager.pending_tool_calls:
@@ -263,179 +339,186 @@ async def chat_websocket(
     session_id: UUID,
     topic_id: UUID,
     user: str = Depends(get_current_user_websocket),
-    db: AsyncSession = Depends(get_session),
 ) -> None:
     connection_id = f"{session_id}:{topic_id}"
     await manager.connect(websocket, connection_id)
 
-    # Verify topic and session exist and are linked.
-    # Eagerly load all relationships needed for the chat.
-    statement = (
-        select(TopicModel)
-        .where(TopicModel.id == topic_id)
-        .options(
-            selectinload(getattr(TopicModel, "messages")),
-            selectinload(getattr(TopicModel, "session")).options(
-                selectinload(getattr(SessionModel, "agent")).options(selectinload(getattr(AgentModel, "mcp_servers")))
-            ),
-        )
-    )
-    result = await db.exec(statement)
-    topic = result.one_or_none()
+    async with AsyncSessionLocal() as db:
+        topic_repo = TopicRepository(db)
+        session_repo = SessionRepository(db)
+        topic = await topic_repo.get_topic_with_details(topic_id)
+        if not topic or topic.session_id != session_id:
+            await websocket.close(code=4004, reason="Topic not found or does not belong to the session")
+            return
 
-    if not topic or topic.session_id != session_id:
-        await websocket.close(code=4004, reason="Topic not found or does not belong to the session")
-        return
-
-    # Optional: Verify session belongs to user
-    session = await db.get(SessionModel, session_id)
-    if not session or session.user_id != user:
-        await websocket.close(code=4003, reason="Session not found or access denied")
-        return
+        session = await session_repo.get_session_by_id(session_id)
+        if not session or session.user_id != user:
+            await websocket.close(code=4003, reason="Session not found or access denied")
+            return
 
     try:
         while True:
             data = await websocket.receive_json()
-            message_type = data.get("type", "message")
+            async with AsyncSessionLocal() as db:
+                message_repo = MessageRepository(db)
+                session_repo = SessionRepository(db)
+                topic_repo = TopicRepository(db)
+                message_type = data.get("type", "message")
 
-            # Handle tool call confirmation/cancellation
-            if message_type == "tool_call_confirm":
-                tool_call_id = data.get("data", {}).get("toolCallId")
-                if tool_call_id:
-                    await handle_tool_call_confirmation(websocket, connection_id, tool_call_id, True)
-                continue
-
-            elif message_type == "tool_call_cancel":
-                tool_call_id = data.get("data", {}).get("toolCallId")
-                if tool_call_id:
-                    await handle_tool_call_confirmation(websocket, connection_id, tool_call_id, False)
-                continue
-
-            # Handle regular chat messages
-            message_text = data.get("message")
-
-            if not message_text:
-                continue
-
-            # 1. Save user message to the topic
-            user_message_create = MessageCreate(role="user", content=message_text, topic_id=topic_id)
-            user_message = MessageModel.model_validate(user_message_create)
-            db.add(user_message)
-
-            # Update topic's updated_at timestamp
-            topic.updated_at = datetime.now(timezone.utc)
-            db.add(topic)
-
-            await db.commit()
-            await db.refresh(user_message)
-
-            # Send user message to client first
-            await manager.send_personal_message(
-                user_message.model_dump_json(),
-                connection_id,
-            )
-
-            # Send loading status
-            loading_event = {"type": "loading", "data": {"message": "AI is thinking..."}}
-            await manager.send_personal_message(
-                json.dumps(loading_event),
-                connection_id,
-            )
-
-            # Re-query the topic to get the updated messages list
-            # This ensures we have a fresh, complete view of all messages
-            statement_refresh = (
-                select(TopicModel)
-                .where(TopicModel.id == topic_id)
-                .options(
-                    selectinload(getattr(TopicModel, "messages")),
-                    selectinload(getattr(TopicModel, "session")).options(
-                        selectinload(getattr(SessionModel, "agent")).options(
-                            selectinload(getattr(AgentModel, "mcp_servers"))
-                        )
-                    ),
-                )
-            )
-            result_refresh = await db.exec(statement_refresh)
-            topic_refreshed = result_refresh.one()
-
-            # Stream AI response
-            ai_message_id = None
-            full_content = ""
-
-            async for stream_event in get_ai_response_stream(message_text, topic_refreshed, manager, connection_id):
-                logger.info(f"Received stream event: {stream_event['type']}")
-
-                # Track message ID and content for database saving
-                if stream_event["type"] == "streaming_start":
-                    ai_message_id = stream_event["data"]["id"]
-                    logger.info(f"Forwarding streaming_start event with ID: {ai_message_id}")
-                    # Forward streaming_start to frontend
-                    await manager.send_personal_message(json.dumps(stream_event), connection_id)
-                elif stream_event["type"] == "streaming_chunk" and ai_message_id:
-                    chunk_content = stream_event["data"]["content"]
-                    full_content += chunk_content
-                    logger.info(f"Forwarding streaming_chunk: '{chunk_content}' (full so far: '{full_content}')")
-                    # Forward streaming_chunk to frontend
-                    await manager.send_personal_message(json.dumps(stream_event), connection_id)
-                elif stream_event["type"] == "streaming_end":
-                    full_content = stream_event["data"].get("content", full_content)
-                    logger.info(f"Forwarding streaming_end event with final content: '{full_content}'")
-                    # Forward streaming_end to frontend
-                    await manager.send_personal_message(json.dumps(stream_event), connection_id)
-                elif stream_event["type"] == "tool_call_request":
-                    # Handle tool call request - don't save to database yet
-                    logger.info(f"Tool call request received: {stream_event['data']['name']}")
-                    # Forward tool call request to frontend
-                    await manager.send_personal_message(json.dumps(stream_event), connection_id)
-                    # Tool call events should not end the stream - they need user confirmation
+                # Handle tool call confirmation/cancellation
+                if message_type == "tool_call_confirm":
+                    tool_call_id = data.get("data", {}).get("toolCallId")
+                    if tool_call_id:
+                        await handle_tool_call_confirmation(message_repo, connection_id, tool_call_id, True)
                     continue
-                elif stream_event["type"] == "tool_call_response":
-                    # Handle tool call response
-                    logger.info(f"Forwarding tool_call_response event")
-                    await manager.send_personal_message(json.dumps(stream_event), connection_id)
+
+                elif message_type == "tool_call_cancel":
+                    tool_call_id = data.get("data", {}).get("toolCallId")
+                    if tool_call_id:
+                        await handle_tool_call_confirmation(message_repo, connection_id, tool_call_id, False)
                     continue
-                elif stream_event["type"] == "message":
-                    # Handle non-streaming response
-                    ai_message_id = stream_event["data"]["id"]
-                    full_content = stream_event["data"]["content"]
-                    # Forward message to frontend
-                    await manager.send_personal_message(json.dumps(stream_event), connection_id)
-                elif stream_event["type"] == "error":
-                    full_content = stream_event["data"]["error"]
-                    # Forward error to frontend
-                    await manager.send_personal_message(json.dumps(stream_event), connection_id)
-                    break
-                else:
-                    # Forward any other event types
-                    await manager.send_personal_message(json.dumps(stream_event), connection_id)
 
-            # Save AI message to database
-            if ai_message_id and full_content:
-                ai_message_create = MessageCreate(role="assistant", content=full_content, topic_id=topic_id)
-                ai_message = MessageModel.model_validate(ai_message_create)
-                db.add(ai_message)
+                # Handle regular chat messages
+                message_text = data.get("message")
 
-                # Update topic's updated_at timestamp again after AI response
-                topic_refreshed.updated_at = datetime.now(timezone.utc)
-                db.add(topic_refreshed)
+                if not message_text:
+                    continue
 
-                await db.commit()
-                await db.refresh(ai_message)
+                # 1. Save user message to the topic
+                user_message_create = MessageCreate(role="user", content=message_text, topic_id=topic_id)
+                user_message = await message_repo.create_message(user_message_create)
 
-                # Send final message confirmation with real database ID
-                final_message_event = {
-                    "type": "message_saved",
-                    "data": {
-                        "stream_id": ai_message_id,
-                        "db_id": str(ai_message.id),
-                        "created_at": ai_message.created_at.isoformat(),
-                    },
-                }
+                # Update topic's updated_at timestamp
+                # topic.updated_at = datetime.now(timezone.utc)
+                # await topic_repo.update_topic_timestamp(topic)
+
+                # Send user message to client first
                 await manager.send_personal_message(
-                    json.dumps(final_message_event),
+                    user_message.model_dump_json(),
                     connection_id,
                 )
+
+                # Send loading status
+                loading_event = {"type": "loading", "data": {"message": "AI is thinking..."}}
+                await manager.send_personal_message(
+                    json.dumps(loading_event),
+                    connection_id,
+                )
+
+                topic_refreshed = await topic_repo.get_topic_with_details(topic_id)
+                if not topic_refreshed:
+                    logger.error(f"Topic {topic_id} not found after user message creation")
+                    continue
+
+                # Stream AI response
+                ai_message_id = None
+                full_content = ""
+
+                async for stream_event in get_ai_response_stream(
+                    db, message_text, topic_refreshed, manager, connection_id
+                ):
+                    logger.info(f"Received stream event: {stream_event['type']}")
+
+                    # Track message ID and content for database saving
+                    if stream_event["type"] == "streaming_start":
+                        ai_message_id = stream_event["data"]["id"]
+                        # Forward streaming_start to frontend
+                        await manager.send_personal_message(json.dumps(stream_event), connection_id)
+                    elif stream_event["type"] == "streaming_chunk" and ai_message_id:
+                        chunk_content = stream_event["data"]["content"]
+                        full_content += chunk_content
+                        # Forward streaming_chunk to frontend
+                        await manager.send_personal_message(json.dumps(stream_event), connection_id)
+                    elif stream_event["type"] == "streaming_end":
+                        full_content = stream_event["data"].get("content", full_content)
+                        # Forward streaming_end to frontend
+                        await manager.send_personal_message(json.dumps(stream_event), connection_id)
+                    elif stream_event["type"] == "tool_call_request":
+                        # Forward tool call request to frontend
+                        try:
+                            req = stream_event["data"]
+                            tool_message = MessageCreate(
+                                role="tool",
+                                content=json.dumps(
+                                    {
+                                        "event": "tool_call_request",
+                                        "id": req.get("id"),
+                                        "name": req.get("name"),
+                                        "description": req.get("description"),
+                                        "arguments": req.get("arguments"),
+                                        "status": req.get("status"),
+                                        "timestamp": req.get("timestamp"),
+                                    }
+                                ),
+                                topic_id=topic_id,
+                            )
+                            await message_repo.create_message_in_isolated_transaction(tool_message)
+                        except Exception as e:
+                            logger.warning(f"Failed to persist tool call request message: {e}")
+                        await manager.send_personal_message(json.dumps(stream_event), connection_id)
+
+                        continue
+                    elif stream_event["type"] == "tool_call_response":
+                        # Handle tool call response
+                        try:
+                            resp = stream_event["data"]
+                            tool_message = MessageCreate(
+                                role="tool",
+                                content=json.dumps(
+                                    {
+                                        "event": "tool_call_response",
+                                        "toolCallId": resp.get("toolCallId"),
+                                        "status": resp.get("status"),
+                                        "result": resp.get("result"),
+                                        "error": resp.get("error"),
+                                    }
+                                ),
+                                topic_id=topic_id,
+                            )
+                            await message_repo.create_message_in_isolated_transaction(tool_message)
+                        except Exception as e:
+                            logger.warning(f"Failed to persist tool call response message: {e}")
+                        await manager.send_personal_message(json.dumps(stream_event), connection_id)
+                        continue
+                    elif stream_event["type"] == "message":
+                        # Handle non-streaming response
+                        ai_message_id = stream_event["data"]["id"]
+                        full_content = stream_event["data"]["content"]
+                        # Forward message to frontend
+                        await manager.send_personal_message(json.dumps(stream_event), connection_id)
+                    elif stream_event["type"] == "error":
+                        full_content = stream_event["data"]["error"]
+                        # Forward error to frontend
+                        await manager.send_personal_message(json.dumps(stream_event), connection_id)
+                        break
+                    else:
+                        # Forward any other event types
+                        await manager.send_personal_message(json.dumps(stream_event), connection_id)
+
+                # Save AI message to database
+                if ai_message_id and full_content:
+                    ai_message_create = MessageCreate(role="assistant", content=full_content, topic_id=topic_id)
+                    ai_message = MessageModel.model_validate(ai_message_create)
+                    ai_message = await message_repo.create_message(ai_message_create)
+
+                    # Update topic's updated_at timestamp again after AI response
+                    await topic_repo.update_topic_timestamp(topic_refreshed)
+
+                    # Send final message confirmation with real database ID
+                    final_message_event = {
+                        "type": "message_saved",
+                        "data": {
+                            "stream_id": ai_message_id,
+                            "db_id": str(ai_message.id),
+                            "created_at": ai_message.created_at.isoformat(),
+                        },
+                    }
+                    await manager.send_personal_message(
+                        json.dumps(final_message_event),
+                        connection_id,
+                    )
+
+                await db.commit()
 
     except WebSocketDisconnect:
         logger.info(f"WebSocket disconnected for topic {connection_id}")
