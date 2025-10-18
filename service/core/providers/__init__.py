@@ -6,6 +6,8 @@ Provides abstract base classes and concrete implementations for different LLM pr
 import logging
 from typing import Any, Dict, List, Optional, Type, Union
 
+from sqlmodel.ext.asyncio.session import AsyncSession
+
 from internal import configs
 from schemas.providers import ProviderType
 
@@ -16,11 +18,81 @@ from .openai import OpenAIProvider
 
 logger = logging.getLogger(__name__)
 
+# System user ID for system-wide provider
+SYSTEM_USER_ID = "system"
+
+
+async def initialize_system_provider(db: AsyncSession) -> Optional[Any]:
+    """
+    Ensure system default provider exists in database.
+    Creates or updates from environment configuration on startup.
+
+    The system provider:
+    - Is available to all users as a fallback
+    - Cannot be edited or deleted by users
+    - Is configured via environment variables
+
+    Args:
+        db: Database session
+
+    Returns:
+        The system provider if configs.LLM is enabled, None otherwise
+    """
+    from models.provider import Provider, ProviderCreate
+    from repository.provider_repository import ProviderRepository
+
+    llm_config = configs.LLM
+
+    if not llm_config.is_enabled:
+        logger.info("LLM config not enabled, skipping system provider initialization")
+        return None
+
+    repo = ProviderRepository(db)
+    system_provider = await repo.get_system_provider()
+
+    # Prepare system provider data
+    provider_type_value = (
+        llm_config.provider.value if hasattr(llm_config.provider, "value") else str(llm_config.provider)
+    )
+    system_data = {
+        "user_id": SYSTEM_USER_ID,
+        "name": "System Default",
+        "provider_type": provider_type_value,
+        "api": llm_config.endpoint,
+        "key": llm_config.key,
+        "model": llm_config.deployment,
+        "timeout": 60,
+        "max_tokens": 4096,
+        "temperature": 0.7,
+        "is_system": True,
+        "is_default": False,  # System provider is not a user default
+    }
+
+    if system_provider:
+        # Update existing system provider
+        logger.info(f"Updating existing system provider: {system_provider.id}")
+        for key, value in system_data.items():
+            if key != "user_id" and key != "is_system":  # Don't change these
+                setattr(system_provider, key, value)
+        updated_provider = await repo.update_provider(system_provider)
+        logger.info(f"System provider updated: {updated_provider.name}")
+        return updated_provider
+    else:
+        # Create new system provider
+        logger.info("Creating new system provider from config")
+        new_provider = Provider(**system_data)
+        created_provider = await repo.create_provider(new_provider)
+        logger.info(f"System provider created: {created_provider.name} (ID: {created_provider.id})")
+        return created_provider
+
 
 async def initialize_providers() -> None:
     """
     Initialize LLM providers from database and default configuration.
     This should be called once during application startup.
+
+    NOTE: This initializes a global provider for development convenience.
+    Production code should use get_user_provider_manager() for per-user providers.
     """
     # First, initialize default Azure OpenAI provider from config
     llm_config = configs.LLM
@@ -259,6 +331,97 @@ class LLMProviderManager:
 # Global provider manager instance
 provider_manager = LLMProviderManager()
 
+
+async def get_user_provider_manager(user_id: str, db: AsyncSession) -> LLMProviderManager:
+    """
+    Create a provider manager with all providers for a specific user.
+
+    This function loads providers from the database (user's own + system provider)
+    and creates a fresh LLMProviderManager instance.
+
+    Args:
+        user_id: The user ID to load providers for
+        db: Database session
+
+    Returns:
+        LLMProviderManager configured with user's providers and system fallback
+
+    Raises:
+        ValueError: If no providers available (neither user's nor system)
+    """
+    from repository.provider_repository import ProviderRepository
+
+    provider_repo = ProviderRepository(db)
+
+    # Get user's providers (include_system=True to get both user and system providers)
+    all_providers = await provider_repo.get_providers_by_user(user_id, include_system=True)
+
+    if not all_providers:
+        raise ValueError(f"No providers available for user {user_id}")
+
+    # Create a new provider manager for this user
+    user_manager = LLMProviderManager()
+
+    has_user_default = False
+
+    # Add all providers to the manager
+    for db_provider in all_providers:
+        try:
+            provider_type = db_provider.provider_type
+
+            # Build provider kwargs
+            provider_kwargs = {
+                "default_model": db_provider.model or "gpt-4o",
+                "max_tokens": db_provider.max_tokens,
+                "temperature": db_provider.temperature,
+                "timeout": db_provider.timeout,
+            }
+
+            # Add Azure-specific configuration if needed
+            if provider_type == "azure_openai":
+                provider_kwargs["azure_endpoint"] = db_provider.api
+                provider_kwargs["api_version"] = "2024-10-21"
+
+            # Use "system" as name for system provider, provider ID for user providers
+            provider_name = "system" if db_provider.is_system else str(db_provider.id)
+
+            # Add provider with unique name
+            user_manager.add_provider(
+                name=provider_name,
+                provider_type=provider_type,
+                api_key=db_provider.key,
+                base_url=db_provider.api,
+                **provider_kwargs,
+            )
+
+            # Set as active if it's the user's default provider
+            if db_provider.is_default and not db_provider.is_system:
+                user_manager.set_active_provider(provider_name)
+                has_user_default = True
+
+            logger.debug(
+                f"Loaded provider {db_provider.name} (ID: {db_provider.id}) "
+                f"for user {user_id}, system: {db_provider.is_system}, default: {db_provider.is_default}"
+            )
+
+        except Exception as e:
+            logger.error(f"Failed to load provider {db_provider.name} for user {user_id}: {e}")
+            continue
+
+    # If user has no default set, use system provider or first available
+    if not user_manager.get_active_provider():
+        if "system" in [p["name"] for p in user_manager.list_providers()]:
+            user_manager.set_active_provider("system")
+            logger.info(f"Using system provider as default for user {user_id}")
+        elif user_manager.list_providers():
+            first_provider_name = user_manager.list_providers()[0]["name"]
+            user_manager.set_active_provider(first_provider_name)
+            logger.info(f"No default provider set for user {user_id}, using first available")
+
+    logger.info(f"Loaded {len(all_providers)} provider(s) for user {user_id}")
+    return user_manager
+
+
 __all__ = [
     "BaseLLMProvider",
     "ChatMessage",
@@ -271,4 +434,7 @@ __all__ = [
     "LLMProviderManager",
     "ProviderType",
     "provider_manager",
+    "get_user_provider_manager",
+    "initialize_system_provider",
+    "SYSTEM_USER_ID",
 ]

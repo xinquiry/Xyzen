@@ -15,9 +15,9 @@ from core.mcp import _async_check_mcp_server_status
 from core.providers import (
     ChatCompletionRequest,
     ChatMessage,
+    get_user_provider_manager,
     provider_manager,
 )
-from internal import configs
 from middleware.database.connection import AsyncSessionLocal
 from models import McpServer
 from models.topic import Topic as TopicModel
@@ -38,20 +38,33 @@ async def _load_providers_from_database() -> None:
 
             for db_provider in providers:
                 try:
-                    # Map database provider to our provider system
-                    provider_type = _map_provider_type(db_provider.name)
+                    # Use provider_type from database instead of guessing from name
+                    provider_type = db_provider.provider_type
+
+                    # Build provider kwargs
+                    provider_kwargs = {
+                        "default_model": db_provider.model or "gpt-4o",
+                        "max_tokens": db_provider.max_tokens,
+                        "temperature": db_provider.temperature,
+                        "timeout": db_provider.timeout,
+                    }
+
+                    # Add Azure-specific configuration if needed
+                    if provider_type == "azure_openai":
+                        provider_kwargs["azure_endpoint"] = db_provider.api
+                        # You can add api_version if it's stored in the database
 
                     provider_manager.add_provider(
-                        name=f"db_{db_provider.name.lower()}_{db_provider.id}",
+                        name=f"db_{db_provider.provider_type}_{db_provider.id}",
                         provider_type=provider_type,
                         api_key=db_provider.key,
                         base_url=db_provider.api,
-                        default_model=db_provider.model or "gpt-4o",
-                        max_tokens=db_provider.max_tokens,
-                        temperature=db_provider.temperature,
-                        timeout=db_provider.timeout,
+                        **provider_kwargs,
                     )
-                    logger.info(f"Loaded provider from database: {db_provider.name}")
+                    logger.info(
+                        f"Loaded provider from database: {db_provider.name} "
+                        f"(type: {db_provider.provider_type}, default: {db_provider.is_default})"
+                    )
 
                 except Exception as e:
                     logger.error(f"Failed to load provider {db_provider.name} from database: {e}")
@@ -60,23 +73,11 @@ async def _load_providers_from_database() -> None:
         logger.error(f"Failed to load providers from database: {e}")
 
 
-def _map_provider_type(provider_name: str) -> str:
-    """
-    Map provider name to provider type.
-    """
-    name_lower = provider_name.lower()
-    if "azure" in name_lower:
-        return "azure_openai"
-    elif "anthropic" in name_lower or "claude" in name_lower:
-        return "anthropic"
-    else:
-        return "openai"
-
-
 async def get_ai_response_stream(
     db: AsyncSession,
     message_text: str,
     topic: TopicModel,
+    user_id: str,
     connection_manager: Optional[Any] = None,
     connection_id: Optional[str] = None,
 ) -> AsyncGenerator[Dict[str, Any], None]:
@@ -87,14 +88,40 @@ async def get_ai_response_stream(
         db: The database session.
         message_text: The user's message.
         topic: The current chat topic containing the history.
+        user_id: The user ID to load providers for.
+        connection_manager: Optional connection manager for WebSocket.
+        connection_id: Optional connection ID for WebSocket.
 
     Yields:
         Dict containing stream events with type and data.
     """
-    # Get active provider
-    provider = provider_manager.get_active_provider()
+    # Get user's provider manager and select appropriate provider
+    try:
+        user_provider_manager = await get_user_provider_manager(user_id, db)
+    except ValueError as e:
+        logger.error(f"Failed to get provider manager for user {user_id}: {e}")
+        yield {"type": "error", "data": {"error": "No LLM providers configured. Please configure a provider first."}}
+        return
+
+    # Check if agent has a specific provider configured
+    provider = None
+    if topic.session.agent and topic.session.agent.provider_id:
+        provider = user_provider_manager.get_provider(str(topic.session.agent.provider_id))
+        if provider:
+            logger.info(f"Using agent-specific provider: {topic.session.agent.provider_id}")
+        else:
+            logger.warning(
+                f"Agent {topic.session.agent.id} has provider_id {topic.session.agent.provider_id} "
+                f"but it's not available for user {user_id}. Falling back to default."
+            )
+
+    # Fallback to user's default provider
     if not provider:
-        logger.error("No LLM provider configured")
+        provider = user_provider_manager.get_active_provider()
+        logger.info(f"Using user's default provider for user {user_id}")
+
+    if not provider:
+        logger.error(f"No LLM provider available for user {user_id}")
         yield {"type": "error", "data": {"error": "No AI provider is currently available."}}
         return
 
@@ -116,8 +143,9 @@ async def get_ai_response_stream(
     logger.info(f"Sending {len(messages)} messages to AI provider {provider.provider_name} for topic {topic.id}")
 
     try:
-        # Use default model from config or provider
-        model = configs.LLM.deployment
+        # Use model from the selected provider
+        model = provider.default_model
+        logger.info(f"Using model: {model} with temperature: {provider.temperature}")
 
         # Prepare tools if MCP servers are available
         tools = await _prepare_mcp_tools(db, topic)
@@ -126,7 +154,8 @@ async def get_ai_response_stream(
         request = ChatCompletionRequest(
             messages=messages,
             model=model,
-            temperature=0.7,
+            temperature=provider.temperature,
+            max_tokens=provider.max_tokens,
             tools=tools if tools else None,
             tool_choice="auto" if tools else None,
         )
@@ -329,7 +358,8 @@ async def get_ai_response_stream(
                     final_request = ChatCompletionRequest(
                         messages=final_messages,
                         model=model,
-                        temperature=0.7,
+                        temperature=provider.temperature,
+                        max_tokens=provider.max_tokens,
                     )
 
                     # Use streaming for the final response if supported
@@ -411,7 +441,7 @@ async def get_ai_response_stream(
         yield {"type": "error", "data": {"error": f"Sorry, the AI service is currently unavailable. Error: {e}"}}
 
 
-async def get_ai_response(db: AsyncSession, message_text: str, topic: TopicModel) -> str:
+async def get_ai_response(db: AsyncSession, message_text: str, topic: TopicModel, user_id: str) -> str:
     """
     Gets a response from the AI model based on the message and chat history.
 
@@ -419,14 +449,37 @@ async def get_ai_response(db: AsyncSession, message_text: str, topic: TopicModel
         db: The database session.
         message_text: The user's message.
         topic: The current chat topic containing the history.
+        user_id: The user ID to load providers for.
 
     Returns:
         The AI's response as a string.
     """
-    # Get active provider
-    provider = provider_manager.get_active_provider()
+    # Get user's provider manager and select appropriate provider
+    try:
+        user_provider_manager = await get_user_provider_manager(user_id, db)
+    except ValueError as e:
+        logger.error(f"Failed to get provider manager for user {user_id}: {e}")
+        return "Sorry, no LLM providers configured. Please configure a provider first."
+
+    # Check if agent has a specific provider configured
+    provider = None
+    if topic.session.agent and topic.session.agent.provider_id:
+        provider = user_provider_manager.get_provider(str(topic.session.agent.provider_id))
+        if provider:
+            logger.info(f"Using agent-specific provider: {topic.session.agent.provider_id}")
+        else:
+            logger.warning(
+                f"Agent {topic.session.agent.id} has provider_id {topic.session.agent.provider_id} "
+                f"but it's not available for user {user_id}. Falling back to default."
+            )
+
+    # Fallback to user's default provider
     if not provider:
-        logger.error("No LLM provider configured")
+        provider = user_provider_manager.get_active_provider()
+        logger.info(f"Using user's default provider for user {user_id}")
+
+    if not provider:
+        logger.error(f"No LLM provider available for user {user_id}")
         return "Sorry, no AI provider is currently available."
 
     # Prepare system prompt
@@ -447,8 +500,9 @@ async def get_ai_response(db: AsyncSession, message_text: str, topic: TopicModel
     logger.info(f"Sending {len(messages)} messages to AI provider {provider.provider_name} for topic {topic.id}")
 
     try:
-        # Use default model from config or provider
-        model = configs.LLM.deployment
+        # Use model from the selected provider
+        model = provider.default_model
+        logger.info(f"Using model: {model} with temperature: {provider.temperature}")
 
         # Prepare tools if MCP servers are available
         tools = await _prepare_mcp_tools(db, topic)
@@ -457,7 +511,8 @@ async def get_ai_response(db: AsyncSession, message_text: str, topic: TopicModel
         request = ChatCompletionRequest(
             messages=messages,
             model=model,
-            temperature=0.7,
+            temperature=provider.temperature,
+            max_tokens=provider.max_tokens,
             tools=tools if tools else None,
             tool_choice="auto" if tools else None,
         )
@@ -515,7 +570,8 @@ async def get_ai_response(db: AsyncSession, message_text: str, topic: TopicModel
                 final_request = ChatCompletionRequest(
                     messages=messages,
                     model=model,
-                    temperature=0.7,
+                    temperature=provider.temperature,
+                    max_tokens=provider.max_tokens,
                     tools=None,  # No tools for final response
                     tool_choice=None,
                 )

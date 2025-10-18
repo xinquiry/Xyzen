@@ -15,8 +15,11 @@ import {
   ClockIcon,
   PlusIcon,
   ShieldCheckIcon,
+  CpuChipIcon,
+  CheckIcon,
 } from "@heroicons/react/24/outline";
-import { useMemo, useRef, useState } from "react";
+import { useMemo, useRef, useState, useEffect, useCallback } from "react";
+import { getProviderColor } from "@/utils/providerColors";
 
 interface ChatToolbarProps {
   onShowHistory: () => void;
@@ -51,6 +54,8 @@ export default function ChatToolbar({
     agents,
     mcpServers,
     updateAgent,
+    updateAgentProvider,
+    llmProviders,
   } = useXyzen();
 
   // State for managing input height
@@ -88,9 +93,88 @@ export default function ChatToolbar({
     return agent?.require_tool_confirmation || false;
   }, [activeChatChannel, channels, agents]);
 
+  // Get current agent
+  const currentAgent = useMemo(() => {
+    if (!activeChatChannel) return null;
+    const channel = channels[activeChatChannel];
+    if (!channel?.agentId) return null;
+    return agents.find((a) => a.id === channel.agentId) || null;
+  }, [activeChatChannel, channels, agents]);
+
+  // Get current agent's provider (explicit or default/system fallback)
+  const currentProvider = useMemo(() => {
+    if (!currentAgent) return null;
+
+    // If agent has explicit provider_id, use it
+    if (currentAgent.provider_id) {
+      return (
+        llmProviders.find((p) => p.id === currentAgent.provider_id) || null
+      );
+    }
+
+    // Otherwise fallback to: user default > system provider > first available
+    const defaultProvider = llmProviders.find(
+      (p) => p.is_default && !p.is_system,
+    );
+    if (defaultProvider) return defaultProvider;
+
+    const systemProvider = llmProviders.find((p) => p.is_system);
+    if (systemProvider) return systemProvider;
+
+    return llmProviders[0] || null;
+  }, [currentAgent, llmProviders]);
+
+  // Check if using agent-specific provider or fallback
+  const isUsingAgentProvider = useMemo(() => {
+    return currentAgent?.provider_id != null;
+  }, [currentAgent]);
+
   // Refs for drag handling
   const initialHeightRef = useRef(inputHeight);
   const dragDeltaRef = useRef(0);
+
+  // Provider change handler
+  const handleProviderChange = useCallback(
+    async (providerId: string | null) => {
+      if (!currentAgent) return;
+
+      try {
+        await updateAgentProvider(currentAgent.id, providerId);
+        console.log(
+          `Updated agent ${currentAgent.name} provider to ${providerId || "default"}`,
+        );
+      } catch (error) {
+        console.error("Failed to update agent provider:", error);
+      }
+    },
+    [currentAgent, updateAgentProvider],
+  );
+
+  // Auto-select system provider if agent has no provider and only system provider exists
+  useEffect(() => {
+    if (!currentAgent || currentAgent.provider_id) return;
+
+    // If there are providers but agent doesn't have one set
+    if (llmProviders.length > 0) {
+      // Check if only system provider exists (no user providers)
+      const userProviders = llmProviders.filter((p) => !p.is_system);
+      const systemProvider = llmProviders.find((p) => p.is_system);
+
+      // Auto-select system provider only if there are no user providers
+      if (userProviders.length === 0 && systemProvider) {
+        handleProviderChange(systemProvider.id);
+      }
+      // If there's a user default provider, auto-select it
+      else {
+        const defaultProvider = llmProviders.find(
+          (p) => p.is_default && !p.is_system,
+        );
+        if (defaultProvider) {
+          handleProviderChange(defaultProvider.id);
+        }
+      }
+    }
+  }, [currentAgent, llmProviders, handleProviderChange]);
 
   // Setup dnd sensors
   const sensors = useSensors(
@@ -198,6 +282,111 @@ export default function ChatToolbar({
               >
                 <ShieldCheckIcon className="h-4 w-4" />
               </button>
+            )}
+
+            {/* Provider Selector */}
+            {activeChatChannel && currentAgent && (
+              <div className="relative group/provider">
+                {llmProviders.length > 0 ? (
+                  <>
+                    <button
+                      className={`flex items-center gap-1.5 rounded-md px-2 py-1.5 text-xs font-medium transition-colors ${
+                        currentProvider
+                          ? `${getProviderColor(true).bg} ${getProviderColor(true).text}`
+                          : `${getProviderColor(false).bg} ${getProviderColor(false).text}`
+                      } hover:opacity-80`}
+                      title={
+                        currentProvider
+                          ? `${currentProvider.name} (${currentProvider.model})`
+                          : "选择提供商"
+                      }
+                    >
+                      <CpuChipIcon
+                        className={`h-4 w-4 ${currentProvider ? getProviderColor(true).icon : getProviderColor(false).icon}`}
+                      />
+                      <span>{currentProvider?.name || "选择提供商"}</span>
+                      {currentProvider?.is_system && (
+                        <span className="text-[10px] opacity-70">(系统)</span>
+                      )}
+                      {!isUsingAgentProvider &&
+                        currentProvider &&
+                        !currentProvider.is_system && (
+                          <span className="text-[10px] opacity-70">(默认)</span>
+                        )}
+                    </button>
+
+                    {/* Provider Dropdown */}
+                    <div className="hidden group-hover/provider:block absolute bottom-full left-0 mb-2 w-64 rounded-lg border border-neutral-200 bg-white p-2 shadow-lg dark:border-neutral-700 dark:bg-neutral-800 z-50">
+                      <div className="mb-2 px-2 py-1 border-b border-neutral-200 dark:border-neutral-700 pb-2">
+                        <div className="text-xs font-medium text-neutral-900 dark:text-neutral-100">
+                          选择LLM提供商
+                        </div>
+                        <div className="text-xs text-neutral-500 dark:text-neutral-400">
+                          当前助手: {currentAgent.name}
+                        </div>
+                      </div>
+
+                      <div className="space-y-1 max-h-80 overflow-y-auto">
+                        {/* Show all providers (system + user-added) */}
+                        {llmProviders.map((provider) => {
+                          const isSelected =
+                            currentAgent.provider_id === provider.id;
+
+                          return (
+                            <button
+                              key={provider.id}
+                              onClick={() => handleProviderChange(provider.id)}
+                              className={`w-full rounded-md px-2 py-2 text-left text-sm transition-colors relative ${
+                                isSelected
+                                  ? `${getProviderColor(true).bg} ${getProviderColor(true).text}`
+                                  : `${getProviderColor(false).text} hover:bg-neutral-100 dark:hover:bg-neutral-700/50`
+                              }`}
+                            >
+                              <div className="flex items-center justify-between">
+                                <div className="flex-1">
+                                  <div className="font-medium flex items-center gap-2">
+                                    {provider.name}
+                                    {provider.is_system && (
+                                      <span className="text-[10px] px-1.5 py-0.5 rounded bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-400">
+                                        系统
+                                      </span>
+                                    )}
+                                    {provider.is_default &&
+                                      !provider.is_system && (
+                                        <span className="text-[10px] px-1.5 py-0.5 rounded bg-neutral-200 dark:bg-neutral-700 text-neutral-600 dark:text-neutral-400">
+                                          默认
+                                        </span>
+                                      )}
+                                  </div>
+                                  <div className="text-xs text-neutral-500 dark:text-neutral-400">
+                                    {provider.provider_type} • {provider.model}
+                                  </div>
+                                </div>
+                                {isSelected && (
+                                  <CheckIcon
+                                    className={`h-4 w-4 ${getProviderColor(true).icon}`}
+                                  />
+                                )}
+                              </div>
+                            </button>
+                          );
+                        })}
+                      </div>
+
+                      {/* Arrow */}
+                      <div className="absolute top-full left-4 border-4 border-transparent border-t-white dark:border-t-neutral-800"></div>
+                    </div>
+                  </>
+                ) : (
+                  <button
+                    className="flex items-center gap-1.5 rounded-md px-2 py-1.5 text-xs font-medium text-neutral-600 transition-colors hover:bg-neutral-200/60 hover:text-neutral-700 dark:text-neutral-400 dark:hover:bg-neutral-800/60 dark:hover:text-neutral-300"
+                    title="请先添加LLM提供商"
+                  >
+                    <CpuChipIcon className="h-4 w-4" />
+                    <span>未设置提供商</span>
+                  </button>
+                )}
+              </div>
             )}
 
             {/* MCP Tool Button */}
