@@ -16,6 +16,7 @@ from repository import MessageRepository, SessionRepository, TopicRepository
 
 # --- Logger Setup ---
 logger = logging.getLogger(__name__)
+
 router = APIRouter()
 
 
@@ -417,7 +418,7 @@ async def chat_websocket(
                 async for stream_event in get_ai_response_stream(
                     db, message_text, topic_refreshed, manager, connection_id
                 ):
-                    logger.info(f"Received stream event: {stream_event['type']}")
+                    logger.debug(f"Received stream event: {stream_event['type']}")
 
                     # Track message ID and content for database saving
                     if stream_event["type"] == "streaming_start":
