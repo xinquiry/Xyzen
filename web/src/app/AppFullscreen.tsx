@@ -3,6 +3,7 @@ import type { DragEndEvent } from "@dnd-kit/core";
 import { DndContext } from "@dnd-kit/core";
 import { restrictToVerticalAxis } from "@dnd-kit/modifiers";
 import { Fragment, useCallback, useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import { CogIcon } from "@heroicons/react/24/outline";
 import { Dialog, Transition, TransitionChild } from "@headlessui/react";
 
@@ -78,80 +79,120 @@ export function AppFullscreen({
     return null;
   }
 
-  return (
-    <DndContext
-      onDragEnd={handleFloaterDragEnd}
-      modifiers={[restrictToVerticalAxis]}
-    >
-      <div className="fixed inset-0 flex flex-col bg-white dark:bg-black">
-        {/* Header Bar */}
-        <header className="flex h-14 flex-shrink-0 items-center justify-between border-b border-neutral-200 bg-white px-4 dark:border-neutral-800 dark:bg-black">
-          <div className="flex items-center gap-4">
-            <h1 className="text-lg font-bold text-indigo-600 dark:text-indigo-400">
-              Xyzen
-            </h1>
-            {/* Breadcrumbs or current context could go here */}
-          </div>
+  const fullscreenContent = (
+    <>
+      <DndContext
+        onDragEnd={handleFloaterDragEnd}
+        modifiers={[restrictToVerticalAxis]}
+      >
+        <div className="fixed inset-0 z-[9999] flex flex-col bg-white dark:bg-black">
+          {/* Header Bar */}
+          <header className="flex h-14 flex-shrink-0 items-center justify-between border-b border-neutral-200 bg-white px-4 dark:border-neutral-800 dark:bg-black">
+            <div className="flex items-center gap-4">
+              <h1 className="text-lg font-bold text-indigo-600 dark:text-indigo-400">
+                Xyzen
+              </h1>
+              {/* Breadcrumbs or current context could go here */}
+            </div>
 
-          <div className="flex items-center space-x-1">
-            <SettingsButton />
-            <button
-              className="rounded-md p-1.5 text-neutral-500 hover:bg-neutral-100 dark:text-neutral-400 dark:hover:bg-neutral-800"
-              title="MCP Management"
-              onClick={() => setIsMcpOpen(true)}
-            >
-              <McpIcon className="h-5 w-5" />
-            </button>
-            {showLlmProvider && (
+            <div className="flex items-center space-x-1">
+              <SettingsButton />
               <button
                 className="rounded-md p-1.5 text-neutral-500 hover:bg-neutral-100 dark:text-neutral-400 dark:hover:bg-neutral-800"
-                title="LLM Providers"
-                onClick={() => setIsLlmProvidersOpen(true)}
+                title="MCP Management"
+                onClick={() => setIsMcpOpen(true)}
               >
-                <CogIcon className="h-5 w-5" />
+                <McpIcon className="h-5 w-5" />
               </button>
-            )}
-            <div className="mx-2 h-6 w-px bg-neutral-200 dark:bg-neutral-700"></div>
-            <AuthStatus className="ml-2" />
-          </div>
-        </header>
-
-        {/* Main Content: 3-Column Layout */}
-        <main className="flex flex-1 overflow-hidden">
-          {/* Left Column: Agents */}
-          <aside className="w-80 flex-shrink-0 border-r border-neutral-200 bg-white dark:border-neutral-800 dark:bg-neutral-950">
-            <div className="flex h-full flex-col">
-              <div className="border-b border-neutral-200 p-4 dark:border-neutral-800">
-                <h2 className="text-sm font-semibold text-neutral-900 dark:text-white">
-                  Assistants
-                </h2>
-                <p className="mt-1 text-xs text-neutral-500 dark:text-neutral-400">
-                  Choose an agent to start
-                </p>
-              </div>
-              <div className="flex-1 overflow-y-auto py-4">
-                <XyzenAgent />
-              </div>
+              {showLlmProvider && (
+                <button
+                  className="rounded-md p-1.5 text-neutral-500 hover:bg-neutral-100 dark:text-neutral-400 dark:hover:bg-neutral-800"
+                  title="LLM Providers"
+                  onClick={() => setIsLlmProvidersOpen(true)}
+                >
+                  <CogIcon className="h-5 w-5" />
+                </button>
+              )}
+              <div className="mx-2 h-6 w-px bg-neutral-200 dark:bg-neutral-700"></div>
+              <AuthStatus className="ml-2" />
             </div>
-          </aside>
+          </header>
 
-          {/* Center Column: Chat */}
-          <section className="flex flex-1 flex-col overflow-hidden bg-white dark:bg-black">
-            <XyzenChat />
-          </section>
+          {/* Main Content: 3-Column Layout */}
+          <main className="flex flex-1 overflow-hidden">
+            {/* Left Column: Agents */}
+            <aside className="w-80 flex-shrink-0 border-r border-neutral-200 bg-white dark:border-neutral-800 dark:bg-neutral-950">
+              <div className="flex h-full flex-col">
+                <div className="border-b border-neutral-200 p-4 dark:border-neutral-800">
+                  <h2 className="text-sm font-semibold text-neutral-900 dark:text-white">
+                    Assistants
+                  </h2>
+                  <p className="mt-1 text-xs text-neutral-500 dark:text-neutral-400">
+                    Choose an agent to start
+                  </p>
+                </div>
+                <div className="flex-1 overflow-y-auto py-4">
+                  <XyzenAgent key="fullscreen-agent" />
+                </div>
+              </div>
+            </aside>
 
-          {/* Right Column: Topics */}
-          <aside className="w-80 flex-shrink-0 border-l border-neutral-200 bg-white dark:border-neutral-800 dark:bg-neutral-950">
-            <XyzenTopics />
-          </aside>
-        </main>
+            {/* Center Column: Chat */}
+            <section className="flex flex-1 flex-col overflow-hidden bg-white dark:bg-black">
+              <XyzenChat key="fullscreen-chat" />
+            </section>
 
-        {/* MCP Dialog */}
-        <Transition appear show={isMcpOpen} as={Fragment}>
+            {/* Right Column: Topics */}
+            <aside className="w-80 flex-shrink-0 border-l border-neutral-200 bg-white dark:border-neutral-800 dark:bg-neutral-950">
+              <XyzenTopics key="fullscreen-topics" />
+            </aside>
+          </main>
+        </div>
+      </DndContext>
+
+      {/* MCP Dialog - Outside main container to avoid aria-hidden conflicts */}
+      <Transition appear show={isMcpOpen} as={Fragment}>
+        <Dialog
+          open={isMcpOpen}
+          onClose={() => setIsMcpOpen(false)}
+          className="relative z-[10000]"
+        >
+          <TransitionChild
+            as={Fragment}
+            enter="ease-out duration-300"
+            enterFrom="opacity-0"
+            enterTo="opacity-100"
+            leave="ease-in duration-200"
+            leaveFrom="opacity-100"
+            leaveTo="opacity-0"
+          >
+            <div className="fixed inset-0 bg-black/30" aria-hidden="true" />
+          </TransitionChild>
+          <div className="fixed inset-0 flex w-screen items-center justify-center p-4">
+            <TransitionChild
+              as={Fragment}
+              enter="ease-out duration-300"
+              enterFrom="opacity-0 scale-95"
+              enterTo="opacity-100 scale-100"
+              leave="ease-in duration-200"
+              leaveFrom="opacity-100 scale-100"
+              leaveTo="opacity-0 scale-95"
+            >
+              <Dialog.Panel className="w-full max-w-4xl rounded-lg bg-white p-6 dark:bg-neutral-900">
+                <Mcp />
+              </Dialog.Panel>
+            </TransitionChild>
+          </div>
+        </Dialog>
+      </Transition>
+
+      {/* LLM Providers Dialog - Outside main container to avoid aria-hidden conflicts */}
+      {showLlmProvider && (
+        <Transition appear show={isLlmProvidersOpen} as={Fragment}>
           <Dialog
-            open={isMcpOpen}
-            onClose={() => setIsMcpOpen(false)}
-            className="relative z-50"
+            open={isLlmProvidersOpen}
+            onClose={() => setIsLlmProvidersOpen(false)}
+            className="relative z-[10000]"
           >
             <TransitionChild
               as={Fragment}
@@ -175,54 +216,19 @@ export function AppFullscreen({
                 leaveTo="opacity-0 scale-95"
               >
                 <Dialog.Panel className="w-full max-w-2xl rounded-lg bg-white p-6 dark:bg-neutral-900">
-                  <Mcp />
+                  <LlmProviders />
                 </Dialog.Panel>
               </TransitionChild>
             </div>
           </Dialog>
         </Transition>
+      )}
 
-        {/* LLM Providers Dialog */}
-        {showLlmProvider && (
-          <Transition appear show={isLlmProvidersOpen} as={Fragment}>
-            <Dialog
-              open={isLlmProvidersOpen}
-              onClose={() => setIsLlmProvidersOpen(false)}
-              className="relative z-50"
-            >
-              <TransitionChild
-                as={Fragment}
-                enter="ease-out duration-300"
-                enterFrom="opacity-0"
-                enterTo="opacity-100"
-                leave="ease-in duration-200"
-                leaveFrom="opacity-100"
-                leaveTo="opacity-0"
-              >
-                <div className="fixed inset-0 bg-black/30" aria-hidden="true" />
-              </TransitionChild>
-              <div className="fixed inset-0 flex w-screen items-center justify-center p-4">
-                <TransitionChild
-                  as={Fragment}
-                  enter="ease-out duration-300"
-                  enterFrom="opacity-0 scale-95"
-                  enterTo="opacity-100 scale-100"
-                  leave="ease-in duration-200"
-                  leaveFrom="opacity-100 scale-100"
-                  leaveTo="opacity-0 scale-95"
-                >
-                  <Dialog.Panel className="w-full max-w-2xl rounded-lg bg-white p-6 dark:bg-neutral-900">
-                    <LlmProviders />
-                  </Dialog.Panel>
-                </TransitionChild>
-              </div>
-            </Dialog>
-          </Transition>
-        )}
-      </div>
+      {/* Modals - Outside main container */}
       <AddMcpServerModal />
       {showLlmProvider && <AddLlmProviderModal />}
       <SettingsModal />
-    </DndContext>
+    </>
   );
+  return createPortal(fullscreenContent, document.body);
 }
