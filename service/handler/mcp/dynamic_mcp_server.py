@@ -11,7 +11,6 @@ This server will:
 
 import logging
 import subprocess
-from pathlib import Path
 
 from fastmcp import FastMCP
 from fastmcp.server.auth import JWTVerifier
@@ -38,17 +37,6 @@ match AuthProvider.get_provider_name():
         )
     case _:
         raise ValueError(f"Unsupported authentication provider: {AuthProvider.get_provider_name()}")
-
-
-def create_claude_code_server() -> None:
-    from mcp_claude_code.server import ClaudeCodeServer  # type: ignore
-
-    ClaudeCodeServer(
-        mcp_instance=mcp,
-        allowed_paths=[str(Path.cwd())],
-        enable_agent_tool=False,
-        command_timeout=300,
-    )
 
 
 # TODO: Need asycn support
