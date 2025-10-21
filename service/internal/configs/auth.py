@@ -1,3 +1,5 @@
+from enum import Enum
+
 from pydantic import BaseModel, Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
@@ -59,6 +61,42 @@ lQIDAQAB
     )
 
 
+class BohrAppAuthConfig(BaseModel):
+
+    PublicKey: str = Field(
+        default="this is a placeholder public key",
+        description="Bohr App public key for JWT signature verification",
+    )
+
+    Issuer: str = Field(
+        default="https://openapi.dp.tech/openapi/v1/ak/user",
+        description="Bohr App user info endpoint",
+    )
+
+    JwksUri: str | None = Field(
+        default=None,
+        description="Bohr App does not provide JWKS endpoint",
+    )
+
+    Algorithm: str = Field(
+        default="RS256",
+        description="Encryption algorithm used for authentication, typically RS256",
+    )
+
+    Audience: str = Field(
+        default="your-bohrapp-client-id",
+        description="Bohr App application Client ID",
+    )
+
+
+class AuthProvider(str, Enum):
+    """Authentication provider types"""
+
+    CASDOOR = "casdoor"
+    BOHRIUM = "bohrium"
+    BOHRAPP = "bohrApp"
+
+
 class AuthConfig(BaseSettings):
     model_config = SettingsConfigDict(
         env_nested_delimiter="_",
@@ -66,7 +104,7 @@ class AuthConfig(BaseSettings):
         extra="forbid",
     )
 
-    Provider: str = Field(default="casdoor", description="Authentication provider")
+    Provider: AuthProvider = Field(default=AuthProvider.CASDOOR, description="Authentication provider")
 
     Casdoor: CasdoorAuthConfig = Field(
         default_factory=lambda: CasdoorAuthConfig(),
@@ -76,4 +114,9 @@ class AuthConfig(BaseSettings):
     Bohrium: BohriumAuthConfig = Field(
         default_factory=lambda: BohriumAuthConfig(),
         description="Bohrium authentication configuration",
+    )
+
+    BohrApp: BohrAppAuthConfig = Field(
+        default_factory=lambda: BohrAppAuthConfig(),
+        description="Bohr App authentication configuration",
     )

@@ -180,6 +180,13 @@ def _get_auth_provider() -> BaseAuthProvider:
             provider_config = auth_config.Bohrium.model_dump()
             logger.info(f"Bohrium configuration: {provider_config}")
             provider = BohriumAuthProvider(provider_config)
+        case "bohrApp":
+            from .bohr_app import BohrAppAuthProvider
+
+            logger.info("Initializing Bohr App authentication provider")
+            provider_config = auth_config.BohrApp.model_dump()
+            logger.info(f"Bohr App configuration: {provider_config}")
+            provider = BohrAppAuthProvider(provider_config)
         case _:
             error_msg = f"Unsupported authentication provider type: {provider_name}"
             logger.error(error_msg)

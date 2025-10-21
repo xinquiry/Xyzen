@@ -1,4 +1,4 @@
-import { authService } from "@/service/authService";
+import { authService, AuthState } from "@/service/authService";
 import type { StateCreator } from "zustand";
 import type { User, XyzenState } from "../types";
 
@@ -31,7 +31,7 @@ export const createAuthSlice: StateCreator<
 > = (set, _) => {
   // 设置authService监听器，当认证状态变化时同步到Zustand store
   authService.addAuthStateListener((authResult) => {
-    if (authResult.state === "authenticated" && authResult.user) {
+    if (authResult.state === AuthState.AUTHENTICATED && authResult.user) {
       const token = authService.getToken();
       set({
         token,
@@ -39,15 +39,15 @@ export const createAuthSlice: StateCreator<
         status: "succeeded",
       });
     } else if (
-      authResult.state === "not_authenticated" ||
-      authResult.state === "error"
+      authResult.state === AuthState.NOT_AUTHENTICATED ||
+      authResult.state === AuthState.ERROR
     ) {
       set({ user: null, token: null, status: "failed" });
     }
   });
 
   return {
-    user: null, // 移除mock用户，初始为null
+    user: null,
     token: null,
     status: "idle",
     login: async (token: string) => {
