@@ -180,7 +180,7 @@ def _get_auth_provider() -> BaseAuthProvider:
             provider_config = auth_config.Bohrium.model_dump()
             logger.info(f"Bohrium configuration: {provider_config}")
             provider = BohriumAuthProvider(provider_config)
-        case "bohrApp":
+        case "bohr_app":
             from .bohr_app import BohrAppAuthProvider
 
             logger.info("Initializing Bohr App authentication provider")

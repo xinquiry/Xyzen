@@ -17,7 +17,7 @@ class BohrAppAuthProvider(BaseAuthProvider):
     """BohrApp 认证提供商 - 使用 x-app-key 和 accessKey 进行鉴权"""
 
     def get_provider_name(self) -> str:
-        return "bohrApp"
+        return "bohr_app"
 
     def is_configured(self) -> bool:
         """检查提供商是否已正确配置 - BohrApp 只需要 issuer"""

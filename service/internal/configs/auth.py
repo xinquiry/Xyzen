@@ -94,7 +94,7 @@ class AuthProvider(str, Enum):
 
     CASDOOR = "casdoor"
     BOHRIUM = "bohrium"
-    BOHRAPP = "bohrApp"
+    BOHRAPP = "bohr_app"
 
 
 class AuthConfig(BaseSettings):
