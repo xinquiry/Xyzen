@@ -8,6 +8,7 @@ import requests
 from fastapi import Header, HTTPException, Query, status
 
 from internal import configs
+from internal.configs.auth import AuthProviderConfigBase
 
 # Set up logger
 logger = logging.getLogger(__name__)
@@ -39,13 +40,13 @@ class AuthResult:
 class BaseAuthProvider(ABC):
     """Abstract base class for authentication providers"""
 
-    def __init__(self, config: Dict[str, Any]) -> None:
+    def __init__(self, config: AuthProviderConfigBase) -> None:
         self.config = config
-        self.public_key = config.get("PublicKey")
-        self.issuer = config.get("Issuer")
-        self.jwks_uri = config.get("JwksUri")
-        self.algorithm = config.get("Algorithm", "RS256")
-        self.audience = config.get("Audience")
+        self.public_key: str | None = config.PublicKey
+        self.issuer: str = config.Issuer
+        self.jwks_uri: str | None = config.JwksUri
+        self.algorithm: str = config.Algorithm
+        self.audience: str = config.Audience
 
     @abstractmethod
     def get_provider_name(self) -> str:
@@ -164,29 +165,31 @@ def _get_auth_provider() -> BaseAuthProvider:
     provider_name = auth_config.Provider.lower()
     logger.info(f"Configured authentication provider: {provider_name}")
 
+    provider: BaseAuthProvider
+
     # First, check if the authentication provider type is supported
     match provider_name:
         case "casdoor":
             from .casdoor import CasdoorAuthProvider
 
             logger.info("Initializing Casdoor authentication provider")
-            provider_config = auth_config.Casdoor.model_dump()
-            logger.info(f"Casdoor configuration: {provider_config}")
-            provider: BaseAuthProvider = CasdoorAuthProvider(provider_config)
+            casdoor_config = auth_config.Casdoor
+            logger.info(f"Casdoor configuration: {casdoor_config.model_dump()}")
+            provider = CasdoorAuthProvider(casdoor_config)
         case "bohrium":
             from .bohrium import BohriumAuthProvider
 
             logger.info("Initializing Bohrium authentication provider")
-            provider_config = auth_config.Bohrium.model_dump()
-            logger.info(f"Bohrium configuration: {provider_config}")
-            provider = BohriumAuthProvider(provider_config)
+            bohrium_config = auth_config.Bohrium
+            logger.info(f"Bohrium configuration: {bohrium_config.model_dump()}")
+            provider = BohriumAuthProvider(bohrium_config)
         case "bohr_app":
             from .bohr_app import BohrAppAuthProvider
 
             logger.info("Initializing Bohr App authentication provider")
-            provider_config = auth_config.BohrApp.model_dump()
-            logger.info(f"Bohr App configuration: {provider_config}")
-            provider = BohrAppAuthProvider(provider_config)
+            bohrapp_config = auth_config.BohrApp
+            logger.info(f"Bohr App configuration: {bohrapp_config.model_dump()}")
+            provider = BohrAppAuthProvider(bohrapp_config)
         case _:
             error_msg = f"Unsupported authentication provider type: {provider_name}"
             logger.error(error_msg)

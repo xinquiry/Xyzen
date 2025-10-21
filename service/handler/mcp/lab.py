@@ -4,25 +4,33 @@ from typing import Any, Dict, Iterable, List, Mapping, Optional, Union
 
 import requests
 from fastmcp import FastMCP
-from fastmcp.server.auth import JWTVerifier
+from fastmcp.server.auth import JWTVerifier, TokenVerifier
 from fastmcp.server.dependencies import AccessToken, get_access_token
 
 from internal import configs
 from middleware.auth import AuthProvider
+from middleware.auth.token_verifier.bohr_app_token_verifier import BohrAppTokenVerifier
 
 logger = logging.getLogger(__name__)
 
 lab_mcp: FastMCP = FastMCP(name="Lab 🚀")
 
+# 认证配置
+auth: TokenVerifier
 
 match AuthProvider.get_provider_name():
     case "bohrium":
-        lab_auth = JWTVerifier(
+        auth = JWTVerifier(
             public_key=AuthProvider.public_key,
         )
     case "casdoor":
-        lab_auth = JWTVerifier(
+        auth = JWTVerifier(
             jwks_uri=AuthProvider.jwks_uri,
+        )
+    case "bohr_app":
+        auth = BohrAppTokenVerifier(
+            api_url=AuthProvider.issuer,
+            x_app_key="xyzen-uuid1760783737",
         )
     case _:
         raise ValueError(f"Unsupported authentication provider: {AuthProvider.get_provider_name()}")

@@ -13,27 +13,35 @@ import logging
 import subprocess
 
 from fastmcp import FastMCP
-from fastmcp.server.auth import JWTVerifier
+from fastmcp.server.auth import JWTVerifier, TokenVerifier
 from fastmcp.server.middleware.error_handling import ErrorHandlingMiddleware
 from fastmcp.server.middleware.logging import StructuredLoggingMiddleware
 from fastmcp.server.middleware.timing import DetailedTimingMiddleware
 
 from internal import configs
 from middleware.auth import AuthProvider
+from middleware.auth.token_verifier.bohr_app_token_verifier import BohrAppTokenVerifier
 from middleware.dynamic_mcp_server import DynamicToolMiddleware
 from utils.built_in_tools import register_built_in_tools
 from utils.json_patch import apply_json_patch
 from utils.manage_tools import register_manage_tools
 from utils.tool_loader import tool_loader
 
+auth: TokenVerifier
+
 match AuthProvider.get_provider_name():
     case "bohrium":
-        dynamic_mcp_auth = JWTVerifier(
+        auth = JWTVerifier(
             public_key=AuthProvider.public_key,
         )
     case "casdoor":
-        dynamic_mcp_auth = JWTVerifier(
+        auth = JWTVerifier(
             jwks_uri=AuthProvider.jwks_uri,
+        )
+    case "bohr_app":
+        auth = BohrAppTokenVerifier(
+            api_url=AuthProvider.issuer,
+            x_app_key="xyzen-uuid1760783737",
         )
     case _:
         raise ValueError(f"Unsupported authentication provider: {AuthProvider.get_provider_name()}")

@@ -45,14 +45,9 @@ export const createUiSlice: StateCreator<
   isXyzenOpen: false,
   panelWidth: 380,
   activeTabIndex: 0,
-  theme:
-    typeof window !== "undefined"
-      ? (localStorage.getItem("theme") as Theme) || "system"
-      : "system",
+  theme: (localStorage.getItem("theme") as Theme) || "system",
   layoutStyle:
-    typeof window !== "undefined"
-      ? (localStorage.getItem("layoutStyle") as LayoutStyle) || "sidebar"
-      : "sidebar",
+    (localStorage.getItem("layoutStyle") as LayoutStyle) || "fullscreen",
   isAddMcpServerModalOpen: false,
   isAddLlmProviderModalOpen: false,
   isSettingsModalOpen: false,
