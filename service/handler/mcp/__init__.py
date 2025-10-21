@@ -9,7 +9,7 @@ from typing import Any, Callable, Dict, List, Optional, Tuple
 
 from fastapi.responses import JSONResponse
 from fastmcp import FastMCP
-from fastmcp.server.auth import AuthProvider
+from fastmcp.server.auth import TokenVerifier
 from starlette.routing import Mount
 from starlette.types import Receive, Scope, Send
 
@@ -56,7 +56,7 @@ class MCPServerRegistry:
 
     def _extract_mcp_components(
         self, module: Any, module_name: str
-    ) -> Tuple[Optional[FastMCP], Optional[AuthProvider]]:
+    ) -> Tuple[Optional[FastMCP], Optional[TokenVerifier]]:
         """从模块中提取 FastMCP 实例和认证处理器"""
         mcp_server = None
         auth_handler = None
@@ -71,14 +71,14 @@ class MCPServerRegistry:
                 logger.debug(f"Found FastMCP instance: {attr_name} in {module_name}")
 
             # 查找认证处理器
-            elif isinstance(attr_value, AuthProvider):
+            elif isinstance(attr_value, TokenVerifier):
                 auth_handler = attr_value
                 logger.debug(f"Found auth handler: {attr_name} in {module_name}")
 
         return mcp_server, auth_handler
 
     def _generate_server_config(
-        self, module_name: str, server: FastMCP, auth: Optional[AuthProvider] = None
+        self, module_name: str, server: FastMCP, auth: Optional[TokenVerifier] = None
     ) -> Dict[str, Any]:
         """为服务器生成配置"""
         return {
@@ -106,7 +106,7 @@ class MCPServerRegistry:
         name: str,
         server: FastMCP,
         mount_path: Optional[str] = None,
-        auth: Optional[AuthProvider] = None,
+        auth: Optional[TokenVerifier] = None,
         display_name: Optional[str] = None,
     ) -> None:
         """手动注册服务器"""

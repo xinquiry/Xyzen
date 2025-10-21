@@ -19,7 +19,7 @@ from fastmcp.server.middleware.logging import StructuredLoggingMiddleware
 from fastmcp.server.middleware.timing import DetailedTimingMiddleware
 
 from internal import configs
-from middleware.auth import AuthProvider
+from middleware.auth import AuthProvider as InternalAuthProvider
 from middleware.auth.token_verifier.bohr_app_token_verifier import BohrAppTokenVerifier
 from middleware.dynamic_mcp_server import DynamicToolMiddleware
 from utils.built_in_tools import register_built_in_tools
@@ -27,24 +27,26 @@ from utils.json_patch import apply_json_patch
 from utils.manage_tools import register_manage_tools
 from utils.tool_loader import tool_loader
 
+# 创建认证提供者 - 使用 TokenVerifier 类型但赋值给变量名 auth
+# 这个变量会被 MCP 自动发现机制识别为 AuthProvider（因为 TokenVerifier 继承自 AuthProvider）
 auth: TokenVerifier
 
-match AuthProvider.get_provider_name():
+match InternalAuthProvider.get_provider_name():
     case "bohrium":
         auth = JWTVerifier(
-            public_key=AuthProvider.public_key,
+            public_key=InternalAuthProvider.public_key,
         )
     case "casdoor":
         auth = JWTVerifier(
-            jwks_uri=AuthProvider.jwks_uri,
+            jwks_uri=InternalAuthProvider.jwks_uri,
         )
     case "bohr_app":
         auth = BohrAppTokenVerifier(
-            api_url=AuthProvider.issuer,
+            api_url=InternalAuthProvider.issuer,
             x_app_key="xyzen-uuid1760783737",
         )
     case _:
-        raise ValueError(f"Unsupported authentication provider: {AuthProvider.get_provider_name()}")
+        raise ValueError(f"Unsupported authentication provider: {InternalAuthProvider.get_provider_name()}")
 
 
 # TODO: Need asycn support
