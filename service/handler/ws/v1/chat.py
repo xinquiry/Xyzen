@@ -13,7 +13,7 @@ from middleware.auth import AuthContext, get_auth_context_websocket
 from middleware.database.connection import AsyncSessionLocal
 from models.message import Message as MessageModel
 from models.message import MessageCreate
-from repository import MessageRepository, SessionRepository, TopicRepository
+from repo import MessageRepository, SessionRepository, TopicRepository
 
 # --- Logger Setup ---
 logger = logging.getLogger(__name__)

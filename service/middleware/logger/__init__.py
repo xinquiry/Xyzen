@@ -34,7 +34,7 @@ LOGGING_CONFIG = {
             "level": configs.Logger.Level.upper(),
             "handlers": ["default"],
         },
-        "cmd.main": {
+        "app.main": {
             "level": "DEBUG",
             "handlers": ["default"],
             "propagate": False,

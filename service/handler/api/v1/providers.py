@@ -7,7 +7,7 @@ from sqlmodel.ext.asyncio.session import AsyncSession
 from middleware.auth import get_current_user
 from middleware.database.connection import get_session
 from models.provider import Provider, ProviderCreate, ProviderUpdate
-from repository.provider_repository import ProviderRepository
+from repo.provider import ProviderRepository
 from schemas.providers import PROVIDER_TEMPLATES, ProviderTemplate, ProviderType
 
 router = APIRouter()

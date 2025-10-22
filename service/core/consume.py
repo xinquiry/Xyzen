@@ -11,7 +11,7 @@ import requests
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 from models.consume import ConsumeRecord, UserConsumeSummary
-from repository.consume_repository import ConsumeRepository
+from repo.consume import ConsumeRepository
 
 logger = logging.getLogger(__name__)
 

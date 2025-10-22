@@ -22,22 +22,9 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     await create_db_and_tables()
 
     # Initialize system provider from environment config
-    from core.providers import initialize_system_provider
-    from middleware.database.connection import AsyncSessionLocal
+    from core.providers import initialize_providers_on_startup
 
-    async with AsyncSessionLocal() as db:
-        try:
-            await initialize_system_provider(db)
-        except Exception as e:
-            import logging
-
-            logger = logging.getLogger(__name__)
-            logger.error(f"Failed to initialize system provider: {e}")
-
-    # Initialize LLM providers
-    from core.providers import initialize_providers
-
-    await initialize_providers()
+    await initialize_providers_on_startup()
 
     # 自动创建和管理所有 MCP 服务器
     from handler.mcp import registry
@@ -63,8 +50,6 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
 
             except Exception as e:
                 import logging
-
-                from middleware.logger import LOGGING_CONFIG
 
                 logger = logging.getLogger(__name__)
                 logger.warning(f"Failed to create MCP app for {server_name}: {e}")
@@ -95,7 +80,6 @@ app = FastAPI(
     docs_url="/xyzen/api/docs",
     redoc_url="/xyzen/api/redoc",
     openapi_url="/xyzen/api/openapi.json",
-    # 🔥 修复：禁用 FastAPI 默认的尾部斜杠重定向
     redirect_slashes=False,
 )
 
@@ -118,7 +102,7 @@ app.router.routes.extend(mcp_routes)
 
 if __name__ == "__main__":
     uvicorn.run(
-        "cmd.main:app",
+        "app.main:app",
         host=configs.Host,
         port=configs.Port,
         log_config=LOGGING_CONFIG,

@@ -18,4 +18,4 @@ RUN uv sync --locked
 
 EXPOSE 48196
 
-CMD ["uv", "run", "python", "-m", "cmd.main"]
+CMD ["uv", "run", "python", "-m", "app.main"]

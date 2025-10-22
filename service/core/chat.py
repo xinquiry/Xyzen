@@ -16,61 +16,12 @@ from core.providers import (
     ChatCompletionRequest,
     ChatMessage,
     get_user_provider_manager,
-    provider_manager,
 )
-from middleware.database.connection import AsyncSessionLocal
 from models import McpServer
 from models.topic import Topic as TopicModel
-from repository import ProviderRepository
 
 # --- Logger Setup ---
 logger = logging.getLogger(__name__)
-
-
-async def _load_providers_from_database() -> None:
-    """
-    Load LLM providers from the database providers table using the async repository.
-    """
-    try:
-        async with AsyncSessionLocal() as db:
-            provider_repo = ProviderRepository(db)
-            providers = await provider_repo.get_all_providers()
-
-            for db_provider in providers:
-                try:
-                    # Use provider_type from database instead of guessing from name
-                    provider_type = db_provider.provider_type
-
-                    # Build provider kwargs
-                    provider_kwargs = {
-                        "default_model": db_provider.model or "gpt-4o",
-                        "max_tokens": db_provider.max_tokens,
-                        "temperature": db_provider.temperature,
-                        "timeout": db_provider.timeout,
-                    }
-
-                    # Add Azure-specific configuration if needed
-                    if provider_type == "azure_openai":
-                        provider_kwargs["azure_endpoint"] = db_provider.api
-                        # You can add api_version if it's stored in the database
-
-                    provider_manager.add_provider(
-                        name=f"db_{db_provider.provider_type}_{db_provider.id}",
-                        provider_type=provider_type,
-                        api_key=db_provider.key,
-                        base_url=db_provider.api,
-                        **provider_kwargs,
-                    )
-                    logger.info(
-                        f"Loaded provider from database: {db_provider.name} "
-                        f"(type: {db_provider.provider_type}, default: {db_provider.is_default})"
-                    )
-
-                except Exception as e:
-                    logger.error(f"Failed to load provider {db_provider.name} from database: {e}")
-
-    except Exception as e:
-        logger.error(f"Failed to load providers from database: {e}")
 
 
 async def get_ai_response_stream(
@@ -144,7 +95,7 @@ async def get_ai_response_stream(
 
     try:
         # Use model from the selected provider
-        model = provider.default_model
+        model = provider.model
         logger.info(f"Using model: {model} with temperature: {provider.temperature}")
 
         # Prepare tools if MCP servers are available
@@ -501,7 +452,7 @@ async def get_ai_response(db: AsyncSession, message_text: str, topic: TopicModel
 
     try:
         # Use model from the selected provider
-        model = provider.default_model
+        model = provider.model
         logger.info(f"Using model: {model} with temperature: {provider.temperature}")
 
         # Prepare tools if MCP servers are available

@@ -12,6 +12,7 @@ from internal import configs
 from schemas.providers import ProviderType
 
 from .anthropic import AnthropicProvider
+from .azure_openai import AzureOpenAIProvider
 from .base import BaseLLMProvider, ChatCompletionRequest, ChatCompletionResponse, ChatMessage
 from .google import GoogleProvider
 from .openai import OpenAIProvider
@@ -39,7 +40,7 @@ async def initialize_system_provider(db: AsyncSession) -> Optional[Any]:
         The system provider if configs.LLM is enabled, None otherwise
     """
     from models.provider import Provider, ProviderCreate
-    from repository.provider_repository import ProviderRepository
+    from repo.provider import ProviderRepository
 
     llm_config = configs.LLM
 
@@ -48,7 +49,7 @@ async def initialize_system_provider(db: AsyncSession) -> Optional[Any]:
         return None
 
     repo = ProviderRepository(db)
-    system_provider = await repo.get_system_provider()
+    system_provider: Provider | None = await repo.get_system_provider()
 
     # Prepare system provider data
     provider_type_value = (
@@ -86,35 +87,23 @@ async def initialize_system_provider(db: AsyncSession) -> Optional[Any]:
         return created_provider
 
 
-async def initialize_providers() -> None:
+async def initialize_providers_on_startup() -> None:
     """
-    Initialize LLM providers from database and default configuration.
-    This should be called once during application startup.
+    Initialize LLM providers on application startup.
+    This function ensures the system provider is created/updated in the database.
 
-    NOTE: This initializes a global provider for development convenience.
-    Production code should use get_user_provider_manager() for per-user providers.
+    Should be called once during FastAPI lifespan startup.
+    All user requests should use get_user_provider_manager() to load providers dynamically.
     """
-    # First, initialize default Azure OpenAI provider from config
-    llm_config = configs.LLM
-    if llm_config.is_enabled:
+    from middleware.database.connection import AsyncSessionLocal
+
+    async with AsyncSessionLocal() as db:
         try:
-            provider_manager.add_provider(
-                name="default",
-                provider_type=llm_config.provider,
-                api_key=llm_config.key,
-                base_url=llm_config.endpoint,
-                azure_endpoint=llm_config.endpoint,
-                api_version=llm_config.version,
-                default_model=llm_config.deployment,
-            )
-            logger.info(f"Initialized default {llm_config.provider} provider from config")
+            await initialize_system_provider(db)
+            logger.info("System provider initialized successfully")
         except Exception as e:
-            logger.error(f"Failed to initialize default {llm_config.provider} provider: {e}")
-
-    # Set a default active provider if none exists
-    if not provider_manager.get_active_provider() and provider_manager.list_providers():
-        first_provider = provider_manager.list_providers()[0]["name"]
-        provider_manager.set_active_provider(first_provider)
+            logger.error(f"Failed to initialize system provider: {e}")
+            # Don't raise - allow app to start even if provider init fails
 
 
 class LLMProviderFactory:
@@ -124,14 +113,22 @@ class LLMProviderFactory:
 
     _provider_registry: Dict[ProviderType, Type[BaseLLMProvider]] = {
         ProviderType.OPENAI: OpenAIProvider,
-        ProviderType.AZURE_OPENAI: OpenAIProvider,
+        ProviderType.AZURE_OPENAI: AzureOpenAIProvider,
         ProviderType.ANTHROPIC: AnthropicProvider,
         ProviderType.GOOGLE: GoogleProvider,
     }
 
     @classmethod
     def create_provider(
-        cls, provider_type: Union[ProviderType, str], api_key: str, base_url: Optional[str] = None, **kwargs: Any
+        cls,
+        provider_type: Union[ProviderType, str],
+        api_key: str,
+        api_endpoint: str,
+        model: Optional[str] = None,
+        max_tokens: int = 4096,
+        temperature: float = 0.7,
+        timeout: int = 60,
+        **kwargs: Any,
     ) -> BaseLLMProvider:
         """
         Create a provider instance based on the provider type.
@@ -139,7 +136,11 @@ class LLMProviderFactory:
         Args:
             provider_type: The type of provider to create
             api_key: The API key for authentication
-            base_url: Optional base URL for the API
+            api_endpoint: The API endpoint URL
+            model: The default model name
+            max_tokens: Maximum tokens for responses
+            temperature: Sampling temperature
+            timeout: Request timeout in seconds
             **kwargs: Additional provider-specific configuration
 
         Returns:
@@ -148,6 +149,7 @@ class LLMProviderFactory:
         Raises:
             ValueError: If the provider type is not supported
         """
+        # Convert string to enum if needed
         if isinstance(provider_type, str):
             try:
                 provider_type = ProviderType(provider_type.lower())
@@ -159,24 +161,16 @@ class LLMProviderFactory:
 
         provider_class = cls._provider_registry[provider_type]
 
-        # Handle provider-specific configuration
-        if provider_type == ProviderType.AZURE_OPENAI:
-            # Extract azure-specific parameters to avoid duplicate keyword arguments
-            azure_endpoint = kwargs.pop("azure_endpoint", base_url)
-            api_version = kwargs.pop("api_version", "2024-10-21")
-            return provider_class(
-                api_key=api_key,
-                base_url=base_url,
-                is_azure=True,
-                azure_endpoint=azure_endpoint,
-                api_version=api_version,
-                **kwargs,
-            )
-        elif provider_type == ProviderType.OPENAI:
-            logger.info("Creating OpenAI provider")
-            return provider_class(api_key=api_key, base_url=base_url, is_azure=False, **kwargs)
-        else:
-            return provider_class(api_key=api_key, base_url=base_url, **kwargs)
+        # Create provider with unified parameters
+        return provider_class(
+            api_key=api_key,
+            api_endpoint=api_endpoint,
+            model=model,
+            max_tokens=max_tokens,
+            temperature=temperature,
+            timeout=timeout,
+            **kwargs,
+        )
 
     @classmethod
     def get_supported_providers(cls) -> List[str]:
@@ -215,7 +209,11 @@ class LLMProviderManager:
         name: str,
         provider_type: Union[ProviderType, str],
         api_key: str,
-        base_url: Optional[str] = None,
+        api_endpoint: str,
+        model: Optional[str] = None,
+        max_tokens: int = 4096,
+        temperature: float = 0.7,
+        timeout: int = 60,
         **kwargs: Any,
     ) -> None:
         """
@@ -225,12 +223,23 @@ class LLMProviderManager:
             name: A unique name for the provider instance
             provider_type: The type of provider to create
             api_key: The API key for authentication
-            base_url: Optional base URL for the API
+            api_endpoint: The API endpoint URL
+            model: The default model name
+            max_tokens: Maximum tokens for responses
+            temperature: Sampling temperature
+            timeout: Request timeout in seconds
             **kwargs: Additional provider-specific configuration
         """
         try:
             provider = LLMProviderFactory.create_provider(
-                provider_type=provider_type, api_key=api_key, base_url=base_url, **kwargs
+                provider_type=provider_type,
+                api_key=api_key,
+                api_endpoint=api_endpoint,
+                model=model,
+                max_tokens=max_tokens,
+                temperature=temperature,
+                timeout=timeout,
+                **kwargs,
             )
             self._providers[name] = provider
 
@@ -328,10 +337,6 @@ class LLMProviderManager:
         logger.info(f"Removed provider '{name}'")
 
 
-# Global provider manager instance
-provider_manager = LLMProviderManager()
-
-
 async def get_user_provider_manager(user_id: str, db: AsyncSession) -> LLMProviderManager:
     """
     Create a provider manager with all providers for a specific user.
@@ -349,7 +354,7 @@ async def get_user_provider_manager(user_id: str, db: AsyncSession) -> LLMProvid
     Raises:
         ValueError: If no providers available (neither user's nor system)
     """
-    from repository.provider_repository import ProviderRepository
+    from repo.provider import ProviderRepository
 
     provider_repo = ProviderRepository(db)
 
@@ -367,31 +372,19 @@ async def get_user_provider_manager(user_id: str, db: AsyncSession) -> LLMProvid
     # Add all providers to the manager
     for db_provider in all_providers:
         try:
-            provider_type = db_provider.provider_type
-
-            # Build provider kwargs
-            provider_kwargs = {
-                "default_model": db_provider.model or "gpt-4o",
-                "max_tokens": db_provider.max_tokens,
-                "temperature": db_provider.temperature,
-                "timeout": db_provider.timeout,
-            }
-
-            # Add Azure-specific configuration if needed
-            if provider_type == "azure_openai":
-                provider_kwargs["azure_endpoint"] = db_provider.api
-                provider_kwargs["api_version"] = "2024-10-21"
-
             # Use "system" as name for system provider, provider ID for user providers
             provider_name = "system" if db_provider.is_system else str(db_provider.id)
 
-            # Add provider with unique name
+            # Add provider with unified parameters matching SQLModel schema
             user_manager.add_provider(
                 name=provider_name,
-                provider_type=provider_type,
+                provider_type=db_provider.provider_type,
                 api_key=db_provider.key,
-                base_url=db_provider.api,
-                **provider_kwargs,
+                api_endpoint=db_provider.api,
+                model=db_provider.model,
+                max_tokens=db_provider.max_tokens,
+                temperature=db_provider.temperature,
+                timeout=db_provider.timeout,
             )
 
             # Set as active if it's the user's default provider
@@ -428,13 +421,14 @@ __all__ = [
     "ChatCompletionRequest",
     "ChatCompletionResponse",
     "OpenAIProvider",
+    "AzureOpenAIProvider",
     "AnthropicProvider",
     "GoogleProvider",
     "LLMProviderFactory",
     "LLMProviderManager",
     "ProviderType",
-    "provider_manager",
     "get_user_provider_manager",
     "initialize_system_provider",
+    "initialize_providers_on_startup",
     "SYSTEM_USER_ID",
 ]

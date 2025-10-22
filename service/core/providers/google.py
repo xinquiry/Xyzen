@@ -24,7 +24,11 @@ class GoogleProvider(BaseLLMProvider):
     def __init__(
         self,
         api_key: str,
-        base_url: Optional[str] = None,
+        api_endpoint: Optional[str] = None,
+        model: Optional[str] = None,
+        max_tokens: int = 4096,
+        temperature: float = 0.7,
+        timeout: int = 60,
         vertexai: bool = False,
         project: Optional[str] = None,
         location: Optional[str] = None,
@@ -35,13 +39,25 @@ class GoogleProvider(BaseLLMProvider):
 
         Args:
             api_key: The API key for authentication
-            base_url: Optional base URL for the API (not used by Google GenAI)
+            api_endpoint: Optional API endpoint URL (not used by Google GenAI)
+            model: The default model name
+            max_tokens: Maximum tokens for responses
+            temperature: Sampling temperature
+            timeout: Request timeout in seconds
             vertexai: Whether to use Vertex AI endpoints
             project: Google Cloud project ID (for Vertex AI)
             location: Google Cloud location (for Vertex AI)
             **kwargs: Additional configuration
         """
-        super().__init__(api_key, base_url, **kwargs)
+        super().__init__(
+            api_key=api_key,
+            api_endpoint=api_endpoint,
+            model=model,
+            max_tokens=max_tokens,
+            temperature=temperature,
+            timeout=timeout,
+            **kwargs,
+        )
         self.vertexai = vertexai
         self.project = project
         self.location = location

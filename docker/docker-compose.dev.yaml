@@ -13,7 +13,7 @@ services:
       - ../service:/app
       - /app/.venv
       - /var/run/docker.sock:/var/run/docker.sock
-    command: sh -c "uv sync && uv run python -m cmd.main"
+    command: sh -c "uv sync && uv run python -m app.main"
 
   web:
     image: registry.sciol.ac.cn/sciol/xyzen-web:latest

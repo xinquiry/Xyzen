@@ -10,7 +10,7 @@ from middleware.auth import get_current_user
 from middleware.database import get_session
 from models.agent import Agent, AgentCreate, AgentRead, AgentUpdate
 from models.mcp import McpServer
-from repository.provider_repository import ProviderRepository
+from repo.provider import ProviderRepository
 
 router = APIRouter()
 

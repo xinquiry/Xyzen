@@ -21,7 +21,7 @@ class ChatCompletionRequest(BaseModel):
 
     messages: List[ChatMessage]
     model: str
-    temperature: float = 0.7
+    temperature: float = 1.0
     max_tokens: Optional[int] = None
     tools: Optional[List[Dict[str, Any]]] = None
     tool_choice: Optional[str] = None
@@ -52,25 +52,34 @@ class BaseLLMProvider(ABC):
     to ensure consistent behavior across different providers.
     """
 
-    def __init__(self, api_key: str, base_url: Optional[str] = None, **kwargs: Any) -> None:
+    def __init__(
+        self,
+        api_key: str,
+        api_endpoint: Optional[str] = None,
+        model: Optional[str] = None,
+        max_tokens: int = 4096,
+        temperature: float = 0.7,
+        timeout: int = 60,
+        **kwargs: Any,
+    ) -> None:
         """
-        Initialize the provider with basic configuration.
+        Initialize the provider with configuration matching SQLModel schema.
 
         Args:
-            api_key: The API key for authentication
-            base_url: Optional base URL for the API endpoint
+            api_key: The API key for authentication (maps to 'key' in DB)
+            api_endpoint: The API endpoint URL (maps to 'api' in DB)
+            model: The default model name
+            max_tokens: Maximum tokens for responses
+            temperature: Sampling temperature
+            timeout: Request timeout in seconds
             **kwargs: Additional provider-specific configuration
-                - default_model: The default model to use for this provider
-                - max_tokens: Maximum tokens for responses
-                - temperature: Sampling temperature
-                - timeout: Request timeout in seconds
         """
         self.api_key = api_key
-        self.base_url = base_url
-        self.default_model = kwargs.get("default_model", "gpt-4o")
-        self.max_tokens = kwargs.get("max_tokens", 4096)
-        self.temperature = kwargs.get("temperature", 0.7)
-        self.timeout = kwargs.get("timeout", 60)
+        self.api_endpoint = api_endpoint
+        self.model = model or "gpt-4o"
+        self.max_tokens = max_tokens
+        self.temperature = temperature
+        self.timeout = timeout
         self.config = kwargs
 
     @abstractmethod
@@ -110,7 +119,8 @@ class BaseLLMProvider(ABC):
         Returns:
             True if streaming is supported, False otherwise
         """
-        return hasattr(self, "_streaming_supported") and getattr(self, "_streaming_supported", False)
+        # Subclasses should override this if they support streaming
+        return False
 
     @abstractmethod
     def is_available(self) -> bool:
