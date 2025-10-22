@@ -1,4 +1,4 @@
-FROM registry.sciol.ac.cn/library/node:24-alpine AS base
+FROM node:24-alpine AS base
 
 FROM base AS deps
 WORKDIR /app
