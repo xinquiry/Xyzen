@@ -81,7 +81,7 @@ export const ProviderList = () => {
                   : "hover:bg-neutral-100 dark:hover:bg-neutral-800"
               }`}
             >
-              <div className="flex-shrink-0">
+              <div className="flex-shrink-0 dark:text-white">
                 {getProviderIcon(template.type)}
               </div>
               <div className="flex-1 overflow-hidden">

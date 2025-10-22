@@ -149,6 +149,7 @@ export interface ChatSlice {
   createDefaultChannel: (agentId?: string) => Promise<void>;
   updateTopicName: (topicId: string, newName: string) => Promise<void>;
   deleteTopic: (topicId: string) => Promise<void>;
+  clearSessionTopics: (sessionId: string) => Promise<void>;
 
   // Tool call confirmation methods
   confirmToolCall: (channelId: string, toolCallId: string) => void;
@@ -316,12 +317,14 @@ export const createChatSlice: StateCreator<
         const sessions: SessionResponse[] = await response.json();
         let sessionId = null;
         let topicName = null;
+        let sessionAgentId = undefined;
 
         for (const session of sessions) {
           const topic = session.topics.find((t) => t.id === topicId);
           if (topic) {
             sessionId = session.id;
             topicName = topic.name;
+            sessionAgentId = session.agent_id; // 获取 session 的 agent_id
             break;
           }
         }
@@ -332,7 +335,7 @@ export const createChatSlice: StateCreator<
             sessionId: sessionId,
             title: topicName,
             messages: [],
-            agentId: undefined, // 这里需要从session数据中获取，但目前先设为undefined
+            agentId: sessionAgentId, // 使用从 session 获取的 agentId
             connected: false,
             error: null,
           };
@@ -510,7 +513,6 @@ export const createChatSlice: StateCreator<
                 (m) => m.id === eventData.id,
               );
               if (endingIndex !== -1) {
-                // eslint-disable-next-line @typescript-eslint/no-unused-vars
                 const {
                   isLoading: _,
                   isStreaming: __,
@@ -912,6 +914,41 @@ export const createChatSlice: StateCreator<
       console.log(`Topic ${topicId} deleted`);
     } catch (error) {
       console.error("Failed to delete topic:", error);
+      throw error;
+    }
+  },
+
+  clearSessionTopics: async (sessionId: string) => {
+    try {
+      const token = authService.getToken();
+      if (!token) {
+        console.error("No authentication token available");
+        return;
+      }
+
+      const headers: Record<string, string> = {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      };
+
+      const response = await fetch(
+        `${get().backendUrl}/xyzen/api/v1/sessions/${sessionId}/topics`,
+        {
+          method: "DELETE",
+          headers,
+        },
+      );
+
+      if (!response.ok) {
+        throw new Error("Failed to clear session topics");
+      }
+
+      // Refresh chat history to get the new default topic
+      await get().fetchChatHistory();
+
+      console.log(`Session ${sessionId} topics cleared`);
+    } catch (error) {
+      console.error("Failed to clear session topics:", error);
       throw error;
     }
   },

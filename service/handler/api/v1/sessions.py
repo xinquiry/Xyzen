@@ -1,6 +1,6 @@
 from datetime import datetime
 from typing import List
-from uuid import uuid4
+from uuid import UUID, uuid4
 
 from fastapi import APIRouter, Depends, HTTPException
 from sqlmodel import select
@@ -8,6 +8,7 @@ from sqlmodel.ext.asyncio.session import AsyncSession
 
 from middleware.auth import get_current_user
 from middleware.database import get_session
+from models.message import Message
 from models.sessions import Session, SessionCreate, SessionRead
 from models.topic import Topic, TopicCreate
 
@@ -68,8 +69,6 @@ async def get_session_by_agent(
     Returns 404 if no session is found for this user-agent combination.
     """
     # Convert agent_id to UUID if it's a valid UUID string, otherwise treat as None for default agent
-    from uuid import UUID
-
     try:
         agent_uuid = UUID(agent_id) if agent_id != "default" else None
     except ValueError:
@@ -104,3 +103,50 @@ async def get_sessions(
     )
 
     return sessions
+
+
+@router.delete("/{session_id}/topics", status_code=204)
+async def clear_session_topics(
+    session_id: UUID, user: str = Depends(get_current_user), db: AsyncSession = Depends(get_session)
+) -> None:
+    """
+    Clear all topics in a session (keeping only one new empty topic).
+    Only allows clearing if the current user owns the session.
+    """
+    # Get the session
+    session = await db.get(Session, session_id)
+    if not session:
+        raise HTTPException(status_code=404, detail="Session not found")
+
+    # Verify that the current user owns this session
+    if session.user_id != user:
+        raise HTTPException(status_code=403, detail="Access denied: You don't have permission to clear this session")
+
+    # Get all topics for this session
+    statement = select(Topic).where(Topic.session_id == session_id)
+    result = await db.exec(statement)
+    topics = list(result.all())
+
+    # Delete all messages for each topic
+    for topic in topics:
+        message_statement = select(Message).where(Message.topic_id == topic.id)
+        message_result = await db.exec(message_statement)
+        messages = list(message_result.all())
+        for message in messages:
+            await db.delete(message)
+
+        # Delete the topic
+        await db.delete(topic)
+
+    # Create a new default topic
+    default_topic = Topic.model_validate(
+        TopicCreate(
+            name="新的聊天",
+            session_id=session_id,
+        )
+    )
+    default_topic.id = uuid4()
+    db.add(default_topic)
+
+    await db.commit()
+    return

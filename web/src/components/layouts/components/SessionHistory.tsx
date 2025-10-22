@@ -14,6 +14,8 @@ import {
   TrashIcon,
   UserIcon,
   XMarkIcon,
+  MagnifyingGlassIcon,
+  ArchiveBoxXMarkIcon,
 } from "@heroicons/react/24/outline";
 import { Fragment, useEffect, useMemo, useState } from "react";
 
@@ -32,6 +34,9 @@ export default function SessionHistory({
   const [topicToDelete, setTopicToDelete] = useState<ChatHistoryItem | null>(
     null,
   );
+  const [searchQuery, setSearchQuery] = useState("");
+  const [isClearConfirmOpen, setIsClearConfirmOpen] = useState(false);
+
   const {
     chatHistory,
     chatHistoryLoading,
@@ -43,6 +48,7 @@ export default function SessionHistory({
     fetchChatHistory,
     updateTopicName,
     deleteTopic,
+    clearSessionTopics,
   } = useXyzen();
 
   // 当组件打开时获取历史记录
@@ -91,8 +97,22 @@ export default function SessionHistory({
     return topics;
   }, [activeChatChannel, channels, chatHistory]);
 
+  // 过滤搜索结果
+  const filteredTopics = useMemo(() => {
+    if (!searchQuery.trim()) {
+      return currentSessionTopics;
+    }
+
+    const query = searchQuery.toLowerCase();
+    return currentSessionTopics.filter(
+      (topic) =>
+        topic.title.toLowerCase().includes(query) ||
+        topic.lastMessage?.toLowerCase().includes(query),
+    );
+  }, [currentSessionTopics, searchQuery]);
+
   // 根据置顶状态对聊天记录进行排序
-  const sortedHistory = [...currentSessionTopics].sort((a, b) => {
+  const sortedHistory = [...filteredTopics].sort((a, b) => {
     if (a.isPinned && !b.isPinned) return -1;
     if (!a.isPinned && b.isPinned) return 1;
     const dateA = new Date(a.updatedAt);
@@ -101,6 +121,19 @@ export default function SessionHistory({
   });
 
   console.log("SessionHistory: Final sorted history:", sortedHistory.length);
+
+  // 清空所有对话
+  const handleClearAllTopics = () => {
+    setIsClearConfirmOpen(true);
+  };
+
+  const confirmClearAll = async () => {
+    if (activeChatChannel && channels[activeChatChannel]) {
+      const sessionId = channels[activeChatChannel].sessionId;
+      await clearSessionTopics(sessionId);
+      setIsClearConfirmOpen(false);
+    }
+  };
 
   // 选择并激活聊天频道
   const handleViewChat = async (chatId: string) => {
@@ -172,8 +205,9 @@ export default function SessionHistory({
 
   // 历史记录列表UI
   const renderHistoryList = () => (
-    <div className="h-full overflow-y-auto">
-      <div className="sticky top-0 z-10 bg-white px-4 py-3 border-b border-neutral-200 dark:bg-neutral-900 dark:border-neutral-800">
+    <div className="flex h-full flex-col">
+      {/* Header with title and close button */}
+      <div className="border-b border-neutral-200 px-4 py-3 dark:border-neutral-800">
         <div className="flex items-center justify-between">
           <h2 className="text-lg font-semibold text-neutral-800 dark:text-white">
             会话历史
@@ -186,91 +220,145 @@ export default function SessionHistory({
             <XMarkIcon className="h-5 w-5" />
           </button>
         </div>
-        <p className="mt-1 text-sm text-neutral-500 dark:text-neutral-400">
+        <p className="mt-1 text-xs text-neutral-500 dark:text-neutral-400">
           当前会话的对话主题
         </p>
       </div>
 
-      <div className="p-4">
-        <div className="space-y-2">
-          {sortedHistory.map((chat: ChatHistoryItem) => (
-            <div
-              key={chat.id}
-              className={`group relative flex cursor-pointer items-center justify-between rounded-lg border p-3 transition-colors hover:bg-neutral-50 dark:hover:bg-neutral-900 ${
-                chat.id === activeChatChannel
-                  ? "border-indigo-200 bg-indigo-50 dark:border-indigo-800 dark:bg-indigo-950"
-                  : "border-neutral-200 dark:border-neutral-800"
-              }`}
-            >
-              <div
-                className="flex-1 overflow-hidden"
-                onClick={() => handleViewChat(chat.id)}
+      {/* Toolbar: Search and Clear */}
+      <div className="border-b border-neutral-200 px-4 py-3 dark:border-neutral-800">
+        <div className="flex items-center gap-2">
+          {/* Search Input */}
+          <div className="relative flex-1">
+            <MagnifyingGlassIcon className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-neutral-400" />
+            <input
+              type="text"
+              placeholder="搜索对话..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full rounded-lg border border-neutral-200 bg-white py-2 pl-9 pr-3 text-sm text-neutral-800 placeholder-neutral-400 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 dark:border-neutral-700 dark:bg-neutral-800 dark:text-white dark:placeholder-neutral-500"
+            />
+            {searchQuery && (
+              <button
+                onClick={() => setSearchQuery("")}
+                className="absolute right-2 top-1/2 -translate-y-1/2 rounded p-1 text-neutral-400 hover:bg-neutral-100 hover:text-neutral-600 dark:hover:bg-neutral-700 dark:hover:text-neutral-300"
               >
-                <div className="flex items-center">
-                  {chat.isPinned && (
-                    <MapPinIcon className="mr-2 h-3.5 w-3.5 rotate-45 text-indigo-500 dark:text-indigo-400" />
+                <XMarkIcon className="h-4 w-4" />
+              </button>
+            )}
+          </div>
+
+          {/* Clear All Button */}
+          <button
+            onClick={handleClearAllTopics}
+            className="flex items-center gap-1.5 rounded-lg border border-neutral-200 bg-white px-3 py-2 text-sm font-medium text-neutral-700 transition-colors hover:bg-red-50 hover:border-red-200 hover:text-red-700 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-300 dark:hover:bg-red-950/30 dark:hover:border-red-800 dark:hover:text-red-400"
+            title="清空所有对话"
+          >
+            <ArchiveBoxXMarkIcon className="h-4 w-4" />
+            <span>清空</span>
+          </button>
+        </div>
+
+        {/* Search Results Count */}
+        {searchQuery && (
+          <div className="mt-2 text-xs text-neutral-500 dark:text-neutral-400">
+            找到 {sortedHistory.length} 个结果
+          </div>
+        )}
+      </div>
+
+      {/* Topics List */}
+      <div className="flex-1 overflow-y-auto p-4">
+        {sortedHistory.length === 0 ? (
+          <div className="flex h-full flex-col items-center justify-center px-6 text-center">
+            <MagnifyingGlassIcon className="h-12 w-12 text-neutral-300 dark:text-neutral-600" />
+            <p className="mt-4 text-sm text-neutral-500 dark:text-neutral-400">
+              {searchQuery ? "没有找到匹配的对话" : "当前会话暂无历史记录"}
+            </p>
+          </div>
+        ) : (
+          <div className="space-y-2">
+            {sortedHistory.map((chat: ChatHistoryItem) => (
+              <div
+                key={chat.id}
+                className={`group relative flex cursor-pointer items-center justify-between rounded-lg border p-3 transition-colors hover:bg-neutral-50 dark:hover:bg-neutral-900 ${
+                  chat.id === activeChatChannel
+                    ? "border-indigo-200 bg-indigo-50 dark:border-indigo-800 dark:bg-indigo-950"
+                    : "border-neutral-200 dark:border-neutral-800"
+                }`}
+              >
+                <div
+                  className="flex-1 overflow-hidden"
+                  onClick={() => handleViewChat(chat.id)}
+                >
+                  <div className="flex items-center">
+                    {chat.isPinned && (
+                      <MapPinIcon className="mr-2 h-3.5 w-3.5 rotate-45 text-indigo-500 dark:text-indigo-400" />
+                    )}
+                    <div className="flex-1">
+                      <EditableTitle
+                        title={chat.title}
+                        onSave={(newTitle) =>
+                          updateTopicName(chat.id, newTitle)
+                        }
+                        className="w-full"
+                        textClassName={`truncate text-sm font-medium ${
+                          chat.id === activeChatChannel
+                            ? "text-indigo-700 dark:text-indigo-300"
+                            : chat.isPinned
+                              ? "text-indigo-700 dark:text-indigo-400"
+                              : "text-neutral-800 dark:text-white"
+                        }`}
+                      />
+                    </div>
+                  </div>
+                  <div className="mt-1 flex items-center text-xs text-neutral-500 dark:text-neutral-400">
+                    <span className="truncate">{chat.assistantTitle}</span>
+                    <span className="mx-1.5">·</span>
+                    <span className="whitespace-nowrap">
+                      {formatTime(chat.updatedAt)}
+                    </span>
+                  </div>
+                  {chat.lastMessage && (
+                    <p className="mt-1 truncate text-xs text-neutral-500 dark:text-neutral-400">
+                      {chat.lastMessage}
+                    </p>
                   )}
-                  <div className="flex-1">
-                    <EditableTitle
-                      title={chat.title}
-                      onSave={(newTitle) => updateTopicName(chat.id, newTitle)}
-                      className="w-full"
-                      textClassName={`truncate text-sm font-medium ${
-                        chat.id === activeChatChannel
-                          ? "text-indigo-700 dark:text-indigo-300"
-                          : chat.isPinned
-                            ? "text-indigo-700 dark:text-indigo-400"
-                            : "text-neutral-800 dark:text-white"
-                      }`}
+                </div>
+                <div className="ml-3 flex items-center gap-1">
+                  <button
+                    className={`invisible rounded p-1 text-neutral-400 transition-colors hover:bg-neutral-200 hover:text-red-700 group-hover:visible dark:hover:bg-neutral-800 dark:hover:text-red-400 ${
+                      sortedHistory.length <= 1
+                        ? "opacity-50 cursor-not-allowed"
+                        : ""
+                    }`}
+                    title={
+                      sortedHistory.length <= 1
+                        ? "不能删除最后一个会话"
+                        : "删除会话"
+                    }
+                    onClick={(e) => handleDeleteTopic(e, chat)}
+                    disabled={sortedHistory.length <= 1}
+                  >
+                    <TrashIcon className={`h-3.5 w-3.5`} />
+                  </button>
+                  <button
+                    className="invisible rounded p-1 text-neutral-400 transition-colors hover:bg-neutral-200 hover:text-neutral-700 group-hover:visible dark:hover:bg-neutral-800 dark:hover:text-neutral-300"
+                    title={chat.isPinned ? "取消置顶" : "置顶会话"}
+                    onClick={(e) => handleTogglePin(e, chat.id)}
+                  >
+                    <MapPinIcon
+                      className={`h-3.5 w-3.5 ${chat.isPinned ? "rotate-45" : ""}`}
                     />
+                  </button>
+                  <div className="rounded-full p-1 text-neutral-400 group-hover:text-neutral-500">
+                    <ChevronRightIcon className="h-3.5 w-3.5" />
                   </div>
                 </div>
-                <div className="mt-1 flex items-center text-xs text-neutral-500 dark:text-neutral-400">
-                  <span className="truncate">{chat.assistantTitle}</span>
-                  <span className="mx-1.5">·</span>
-                  <span className="whitespace-nowrap">
-                    {formatTime(chat.updatedAt)}
-                  </span>
-                </div>
-                {chat.lastMessage && (
-                  <p className="mt-1 truncate text-xs text-neutral-500 dark:text-neutral-400">
-                    {chat.lastMessage}
-                  </p>
-                )}
               </div>
-              <div className="ml-3 flex items-center gap-1">
-                <button
-                  className={`invisible rounded p-1 text-neutral-400 transition-colors hover:bg-neutral-200 hover:text-red-700 group-hover:visible dark:hover:bg-neutral-800 dark:hover:text-red-400 ${
-                    sortedHistory.length <= 1
-                      ? "opacity-50 cursor-not-allowed"
-                      : ""
-                  }`}
-                  title={
-                    sortedHistory.length <= 1
-                      ? "不能删除最后一个会话"
-                      : "删除会话"
-                  }
-                  onClick={(e) => handleDeleteTopic(e, chat)}
-                  disabled={sortedHistory.length <= 1}
-                >
-                  <TrashIcon className={`h-3.5 w-3.5`} />
-                </button>
-                <button
-                  className="invisible rounded p-1 text-neutral-400 transition-colors hover:bg-neutral-200 hover:text-neutral-700 group-hover:visible dark:hover:bg-neutral-800 dark:hover:text-neutral-300"
-                  title={chat.isPinned ? "取消置顶" : "置顶会话"}
-                  onClick={(e) => handleTogglePin(e, chat.id)}
-                >
-                  <MapPinIcon
-                    className={`h-3.5 w-3.5 ${chat.isPinned ? "rotate-45" : ""}`}
-                  />
-                </button>
-                <div className="rounded-full p-1 text-neutral-400 group-hover:text-neutral-500">
-                  <ChevronRightIcon className="h-3.5 w-3.5" />
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );
@@ -333,7 +421,10 @@ export default function SessionHistory({
       {topicToDelete && (
         <ConfirmationModal
           isOpen={isConfirmModalOpen}
-          onClose={() => setConfirmModalOpen(false)}
+          onClose={() => {
+            setConfirmModalOpen(false);
+            setTopicToDelete(null);
+          }}
           onConfirm={() => {
             deleteTopic(topicToDelete.id);
             setConfirmModalOpen(false);
@@ -343,6 +434,15 @@ export default function SessionHistory({
           message={`Are you sure you want to delete the topic "${topicToDelete.title}"?`}
         />
       )}
+
+      {/* Clear All Confirmation Modal */}
+      <ConfirmationModal
+        isOpen={isClearConfirmOpen}
+        onClose={() => setIsClearConfirmOpen(false)}
+        onConfirm={confirmClearAll}
+        title="清空所有对话"
+        message="确定要清空当前会话的所有对话记录吗？此操作不可恢复。"
+      />
     </>
   );
 }

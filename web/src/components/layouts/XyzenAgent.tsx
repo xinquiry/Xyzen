@@ -50,6 +50,7 @@ interface ContextMenuProps {
   onEdit: () => void;
   onDelete: () => void;
   onClose: () => void;
+  isDefaultAgent?: boolean;
 }
 
 const ContextMenu: React.FC<ContextMenuProps> = ({
@@ -58,6 +59,7 @@ const ContextMenu: React.FC<ContextMenuProps> = ({
   onEdit,
   onDelete,
   onClose,
+  isDefaultAgent = false,
 }) => {
   const menuRef = useRef<HTMLDivElement>(null);
 
@@ -90,29 +92,39 @@ const ContextMenu: React.FC<ContextMenuProps> = ({
       animate={{ opacity: 1, scale: 1 }}
       exit={{ opacity: 0, scale: 0.95 }}
       transition={{ duration: 0.1 }}
-      className="fixed z-50 w-40 rounded-lg border border-neutral-200 bg-white shadow-lg dark:border-neutral-700 dark:bg-neutral-800"
+      className="fixed z-50 w-48 rounded-lg border border-neutral-200 bg-white shadow-lg dark:border-neutral-700 dark:bg-neutral-800"
       style={{ left: x, top: y }}
     >
-      <button
-        onClick={() => {
-          onEdit();
-          onClose();
-        }}
-        className="flex w-full items-center gap-2 rounded-t-lg px-4 py-2.5 text-left text-sm text-neutral-700 transition-colors hover:bg-neutral-100 dark:text-neutral-300 dark:hover:bg-neutral-700"
-      >
-        <PencilIcon className="h-4 w-4 text-indigo-600 dark:text-indigo-400" />
-        编辑助手
-      </button>
-      <button
-        onClick={() => {
-          onDelete();
-          onClose();
-        }}
-        className="flex w-full items-center gap-2 rounded-b-lg px-4 py-2.5 text-left text-sm text-neutral-700 transition-colors hover:bg-red-50 dark:text-neutral-300 dark:hover:bg-neutral-700"
-      >
-        <TrashIcon className="h-4 w-4 text-red-600 dark:text-red-400" />
-        删除助手
-      </button>
+      {isDefaultAgent ? (
+        <div className="px-4 py-3 text-center">
+          <p className="text-xs text-neutral-500 dark:text-neutral-400">
+            默认助手不可编辑
+          </p>
+        </div>
+      ) : (
+        <>
+          <button
+            onClick={() => {
+              onEdit();
+              onClose();
+            }}
+            className="flex w-full items-center gap-2 rounded-t-lg px-4 py-2.5 text-left text-sm text-neutral-700 transition-colors hover:bg-neutral-100 dark:text-neutral-300 dark:hover:bg-neutral-700"
+          >
+            <PencilIcon className="h-4 w-4 text-indigo-600 dark:text-indigo-400" />
+            编辑助手
+          </button>
+          <button
+            onClick={() => {
+              onDelete();
+              onClose();
+            }}
+            className="flex w-full items-center gap-2 rounded-b-lg px-4 py-2.5 text-left text-sm text-neutral-700 transition-colors hover:bg-red-50 dark:text-neutral-300 dark:hover:bg-neutral-700"
+          >
+            <TrashIcon className="h-4 w-4 text-red-600 dark:text-red-400" />
+            删除助手
+          </button>
+        </>
+      )}
     </motion.div>
   );
 };
@@ -130,11 +142,6 @@ const AgentCard: React.FC<AgentCardProps> = ({
   } | null>(null);
 
   const handleContextMenu = (e: React.MouseEvent) => {
-    // 默认助手不显示右键菜单
-    if (agent.id === "default-chat") {
-      return;
-    }
-
     e.preventDefault();
     e.stopPropagation();
 
@@ -156,6 +163,7 @@ const AgentCard: React.FC<AgentCardProps> = ({
         className={`
         group relative flex cursor-pointer items-start gap-4 rounded-lg border p-3
         border-neutral-200 bg-white hover:bg-neutral-50 dark:border-neutral-800 dark:bg-neutral-900 dark:hover:bg-neutral-800/60
+        ${agent.id === "default-chat" ? "select-none" : ""}
       `}
       >
         {/* 头像 */}
@@ -203,6 +211,7 @@ const AgentCard: React.FC<AgentCardProps> = ({
           onEdit={() => onEdit?.(agent)}
           onDelete={() => onDelete?.(agent)}
           onClose={() => setContextMenu(null)}
+          isDefaultAgent={agent.id === "default-chat"}
         />
       )}
     </>
@@ -226,7 +235,15 @@ export default function XyzenAgent() {
   const [editingAgent, setEditingAgent] = useState<Agent | null>(null);
   const [isConfirmModalOpen, setConfirmModalOpen] = useState(false);
   const [agentToDelete, setAgentToDelete] = useState<Agent | null>(null);
-  const { agents, fetchAgents, createDefaultChannel, deleteAgent } = useXyzen();
+  const {
+    agents,
+    fetchAgents,
+    createDefaultChannel,
+    deleteAgent,
+    chatHistory,
+    channels,
+    activateChannel,
+  } = useXyzen();
 
   // 默认的"随便聊聊"助手
   const defaultAgent: Agent = {
@@ -242,12 +259,60 @@ export default function XyzenAgent() {
     fetchAgents();
   }, [fetchAgents]);
 
-  const handleAgentClick = (agent: Agent) => {
-    // 如果是默认助手，不传agent_id，让后端创建一个普通的session
-    if (agent.id === "default-chat") {
-      createDefaultChannel();
+  const handleAgentClick = async (agent: Agent) => {
+    // 确定 agentId（默认助手使用 undefined，其他使用实际 id）
+    const agentId = agent.id === "default-chat" ? undefined : agent.id;
+
+    // 1. 从 chatHistory 中找到该 agent 的所有 topics
+    const agentTopics = chatHistory.filter((topic) => {
+      const channel = channels[topic.id];
+      if (!channel) return false;
+
+      // 匹配逻辑：考虑 null 和 undefined 的情况
+      // 当 agentId 为 undefined/null 时，匹配 channel.agentId 也为 undefined/null 的情况
+      // 否则严格匹配 agentId
+      const channelAgentId = channel.agentId;
+      const isDefaultAgent = agentId === undefined || agentId === null;
+      const isDefaultChannel =
+        channelAgentId === undefined || channelAgentId === null;
+
+      if (isDefaultAgent && isDefaultChannel) {
+        return true; // 都是默认 agent
+      }
+
+      return channelAgentId === agentId; // 严格匹配
+    });
+
+    console.log(
+      `找到 ${agentTopics.length} 个属于 agent ${agentId || "default"} 的对话`,
+    );
+
+    // 2. 找到最近的空 topic（消息数 <= 1，只有系统消息或完全为空）
+    const emptyTopic = agentTopics
+      .sort(
+        (a, b) =>
+          new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime(),
+      )
+      .find((topic) => {
+        const channel = channels[topic.id];
+        if (!channel) return false;
+
+        // 检查消息数量：0条消息或只有1条系统消息算作"空对话"
+        const userMessages = channel.messages.filter(
+          (msg) => msg.role === "user" || msg.role === "assistant",
+        );
+        return userMessages.length === 0;
+      });
+
+    // 3. 如果有空 topic 就复用，否则创建新的
+    if (emptyTopic) {
+      console.log(
+        `复用现有空对话: ${emptyTopic.id} for agent: ${agentId || "default"}`,
+      );
+      await activateChannel(emptyTopic.id);
     } else {
-      createDefaultChannel(agent.id);
+      console.log(`创建新对话 for agent: ${agentId || "default"}`);
+      await createDefaultChannel(agentId);
     }
   };
 

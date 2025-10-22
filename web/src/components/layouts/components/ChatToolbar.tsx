@@ -255,7 +255,7 @@ export default function ChatToolbar({
         {/* Drag handle positioned above the toolbar */}
         <ResizeHandle />
 
-        <div className="flex items-center justify-between bg-neutral-100/50 px-2 py-1.5 dark:bg-neutral-900/50">
+        <div className="flex items-center justify-between bg-white px-2 py-1.5 dark:bg-black dark:border-t dark:border-neutral-800">
           <div className="flex items-center space-x-1">
             <button
               onClick={handleNewChat}
