@@ -61,17 +61,17 @@ const ChatBubble: React.FC<ChatBubbleProps> = ({ message }) => {
 
   // Different styles for user vs AI messages
   const messageStyles = isUserMessage
-    ? "border-l-2 border-blue-400 bg-blue-50/50 dark:border-blue-600 dark:bg-blue-900/20"
-    : "border-l-2 border-neutral-300 bg-white dark:border-neutral-600 dark:bg-neutral-800/50";
+    ? "rounded-xl border-blue-400 bg-blue-50/50 dark:border-blue-600 dark:bg-blue-900/20"
+    : "rounded-xl border-neutral-300 bg-white dark:border-neutral-600 dark:bg-neutral-800/50";
 
   // Loading state styles
   const loadingStyles = isLoading
-    ? "border-l-2 border-purple-400 bg-purple-50/30 dark:border-purple-500 dark:bg-purple-900/10"
+    ? "rounded-xl border-purple-400 bg-purple-50/30 dark:border-purple-500 dark:bg-purple-900/10"
     : messageStyles;
 
   // Streaming animation styles
   const streamingStyles = isStreaming
-    ? "animate-pulse border-l-2 border-green-400 bg-green-50/30 dark:border-green-500 dark:bg-green-900/10"
+    ? "animate-pulse rounded-xl border-green-400 bg-green-50/30 dark:border-green-500 dark:bg-green-900/10"
     : loadingStyles;
 
   // 渲染头像，使用初始字母作为最后的备用选项
@@ -187,7 +187,7 @@ const ChatBubble: React.FC<ChatBubbleProps> = ({ message }) => {
       <div
         className={`w-full rounded-none ${streamingStyles} transition-all duration-200 hover:shadow-sm`}
       >
-        <div className="p-3">
+        <div className="px-4 py-3">
           <div
             className={`prose prose-neutral dark:prose-invert prose-sm max-w-none ${
               isUserMessage
@@ -213,7 +213,7 @@ const ChatBubble: React.FC<ChatBubbleProps> = ({ message }) => {
 
           {/* Tool Calls */}
           {toolCalls && toolCalls.length > 0 && (
-            <div className="mt-3 space-y-2">
+            <div className="mt-4 space-y-3">
               {toolCalls.map((toolCall) => (
                 <ToolCallCard
                   key={toolCall.id}

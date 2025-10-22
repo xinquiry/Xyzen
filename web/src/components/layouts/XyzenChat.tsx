@@ -272,22 +272,17 @@ export default function XyzenChat() {
             )}
           </div>
 
-          {/* 分割线在消息区域和工具栏之间 */}
-          <div className="border-t border-neutral-200 dark:border-neutral-800" />
-
           <div className="flex-shrink-0">
             <ChatToolbar
               onShowHistory={handleToggleHistory}
               onHeightChange={handleInputHeightChange}
             />
-            <div className="bg-neutral-50/80 dark:bg-neutral-950/80">
-              <ChatInput
-                onSendMessage={handleSendMessage}
-                disabled={!connected}
-                placeholder="输入消息..."
-                height={inputHeight}
-              />
-            </div>
+            <ChatInput
+              onSendMessage={handleSendMessage}
+              disabled={!connected}
+              placeholder="输入消息..."
+              height={inputHeight}
+            />
           </div>
         </>
       )}

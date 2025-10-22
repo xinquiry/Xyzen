@@ -1,4 +1,4 @@
-import { PaperAirplaneIcon } from "@heroicons/react/24/solid";
+import { PaperAirplaneIcon } from "@heroicons/react/24/outline";
 import React, { useState } from "react";
 
 interface ChatInputProps {
@@ -44,8 +44,9 @@ export const ChatInput: React.FC<ChatInputProps> = ({
   };
 
   return (
-    <div className="w-full bg-neutral-50/80 dark:bg-neutral-950/80">
-      <div className="group relative">
+    <div className="w-full bg-neutral-50/30 dark:bg-neutral-900/20">
+      {/* 输入框容器 */}
+      <div className="relative flex items-end gap-3 border-t border-neutral-200/40 px-4 py-3 transition-all duration-200 dark:border-neutral-800/40">
         <textarea
           value={inputMessage}
           onChange={(e) => setInputMessage(e.target.value)}
@@ -53,26 +54,46 @@ export const ChatInput: React.FC<ChatInputProps> = ({
           onCompositionStart={handleCompositionStart}
           onCompositionEnd={handleCompositionEnd}
           placeholder={placeholder}
-          className="w-full resize-none bg-transparent py-2 pl-3 pr-12 text-sm placeholder-neutral-500 focus:outline-none dark:text-white dark:placeholder-neutral-400"
+          className="flex-1 resize-none bg-transparent text-[15px] text-neutral-900 placeholder-neutral-400 focus:outline-none dark:text-white dark:placeholder-neutral-500"
           style={{
-            height: `${height}px`,
+            height: `${height - 24}px`,
+            minHeight: "24px",
           }}
           disabled={disabled}
         />
-        <button
-          onClick={handleSendMessage}
-          disabled={disabled || !inputMessage.trim()}
-          className="absolute bottom-4 right-2 rounded-md
-           bg-indigo-600 p-1.5 text-white transition-colors
-            hover:bg-indigo-700 disabled:bg-neutral-300 disabled:text-neutral-500 dark:disabled:bg-neutral-700 dark:disabled:text-neutral-400"
-          aria-label="Send message"
-        >
-          <PaperAirplaneIcon className="h-4 w-4" />
-        </button>
+
+        {/* 右侧区域：发送按钮和提示在同一行 */}
+        <div className="flex-shrink-0 flex items-center gap-3">
+          {/* 快捷键提示 - 淡色 */}
+          <div className="flex items-center gap-2 text-[11px] text-neutral-400/60 dark:text-neutral-500/60">
+            <span className="flex items-center gap-1">
+              <kbd className="font-medium text-neutral-400/80 dark:text-neutral-500/80">
+                Enter
+              </kbd>
+              <span>发送</span>
+            </span>
+            <span className="text-neutral-300/50 dark:text-neutral-700/50">
+              ·
+            </span>
+            <span className="flex items-center gap-1">
+              <kbd className="font-medium text-neutral-400/80 dark:text-neutral-500/80">
+                Shift + Enter
+              </kbd>
+              <span>换行</span>
+            </span>
+          </div>
+
+          {/* 发送按钮 */}
+          <button
+            onClick={handleSendMessage}
+            disabled={disabled || !inputMessage.trim()}
+            className="rounded-full p-2 text-neutral-400 transition-all duration-200 hover:text-neutral-900 active:scale-95 disabled:opacity-30 disabled:cursor-not-allowed dark:text-neutral-500 dark:hover:text-white"
+            aria-label="发送消息"
+          >
+            <PaperAirplaneIcon className="h-5 w-5" />
+          </button>
+        </div>
       </div>
-      <p className="pb-2 ml-2 text-xs text-neutral-500 dark:text-neutral-400">
-        按 Enter 发送，Shift+Enter 换行
-      </p>
     </div>
   );
 };

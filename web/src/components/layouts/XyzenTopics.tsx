@@ -1,6 +1,5 @@
 "use client";
 
-import { Badge } from "@/components/base/Badge";
 import EditableTitle from "@/components/base/EditableTitle";
 import { LoadingSpinner } from "@/components/base/LoadingSpinner";
 import ConfirmationModal from "@/components/modals/ConfirmationModal";
@@ -219,11 +218,11 @@ export default function XyzenTopics() {
                         className=""
                       />
                     </div>
-                    {topic.id === activeChatChannel && (
+                    {/* {topic.id === activeChatChannel && (
                       <Badge variant="blue" className="text-[10px]">
                         Active
                       </Badge>
-                    )}
+                    )} */}
                   </div>
 
                   <div className="mt-1 flex items-center gap-2 text-xs text-neutral-500 dark:text-neutral-400">

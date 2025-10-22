@@ -1,0 +1,128 @@
+"""
+Synchronous chat response logic for AI conversations.
+"""
+
+import logging
+from typing import List
+
+from sqlmodel.ext.asyncio.session import AsyncSession
+
+from core.providers import ChatCompletionRequest, ChatMessage, get_user_provider_manager
+from models.topic import Topic as TopicModel
+
+from .tools import _execute_tool_call, _format_tool_result, _prepare_mcp_tools
+
+logger = logging.getLogger(__name__)
+
+
+async def get_ai_response(
+    db: AsyncSession,
+    message_text: str,
+    topic: TopicModel,
+    user_id: str,
+) -> str:
+    """
+    Gets a response from the AI model based on the message and chat history.
+    """
+    try:
+        user_provider_manager = await get_user_provider_manager(user_id, db)
+    except ValueError as e:
+        logger.error(f"Failed to get provider manager for user {user_id}: {e}")
+        return "Sorry, no LLM providers configured. Please configure a provider first."
+
+    provider = None
+    if topic.session.agent and topic.session.agent.provider_id:
+        provider = user_provider_manager.get_provider(str(topic.session.agent.provider_id))
+        if provider:
+            logger.info(f"Using agent-specific provider: {topic.session.agent.provider_id}")
+        else:
+            logger.warning(
+                f"Agent {topic.session.agent.id} has provider_id {topic.session.agent.provider_id} "
+                f"but it's not available for user {user_id}. Falling back to default."
+            )
+    if not provider:
+        provider = user_provider_manager.get_active_provider()
+        logger.info(f"Using user's default provider for user {user_id}")
+    if not provider:
+        logger.error(f"No LLM provider available for user {user_id}")
+        return "Sorry, no AI provider is currently available."
+
+    system_prompt = "You are a helpful AI assistant."
+    if topic.session.agent and topic.session.agent.prompt:
+        system_prompt = topic.session.agent.prompt
+
+    messages: List[ChatMessage] = [ChatMessage(role="system", content=system_prompt)]
+    for msg in topic.messages:
+        messages.append(ChatMessage(role=msg.role, content=msg.content))
+    messages.append(ChatMessage(role="user", content=message_text))
+
+    logger.info(f"Sending {len(messages)} messages to AI provider {provider.provider_name} for topic {topic.id}")
+
+    try:
+        model = provider.model
+        logger.info(f"Using model: {model} with temperature: {provider.temperature}")
+        tools = await _prepare_mcp_tools(db, topic)
+        request = ChatCompletionRequest(
+            messages=messages,
+            model=model,
+            temperature=provider.temperature,
+            max_tokens=provider.max_tokens,
+            tools=tools if tools else None,
+            tool_choice="auto" if tools else None,
+        )
+        response = await provider.chat_completion(request)
+        logger.info(f"Response from provider: {response}")
+        if response.tool_calls and len(response.tool_calls) > 0:
+            logger.info(f"AI requested {len(response.tool_calls)} tool call(s)")
+            assistant_content = response.content or "I'll use the available tools to help you."
+            messages.append(ChatMessage(role="assistant", content=assistant_content))
+            tool_results = []
+            for tool_call in response.tool_calls:
+                try:
+                    tool_name = tool_call.get("function", {}).get("name", "")
+                    tool_args = tool_call.get("function", {}).get("arguments", "{}")
+                    tool_id = tool_call.get("id", "")
+                    logger.info(f"Executing tool: {tool_name} with args: {tool_args}")
+                    tool_result = await _execute_tool_call(db, tool_name, tool_args, topic)
+                    formatted_result = _format_tool_result(tool_result, tool_name)
+                    tool_results.append({"tool_call_id": tool_id, "content": formatted_result})
+                    messages.append(ChatMessage(role="tool", content=formatted_result))
+                    logger.info(f"Added tool result to conversation: {formatted_result[:200]}...")
+                except Exception as tool_error:
+                    logger.error(f"Tool execution failed: {tool_error}")
+                    error_msg = f"Error executing tool '{tool_name}': {str(tool_error)[:200]}"
+                    messages.append(ChatMessage(role="tool", content=error_msg))
+            try:
+                logger.info(f"Preparing final request with {len(messages)} messages")
+                total_chars = sum(len(msg.content) for msg in messages)
+                logger.info(f"Approximate conversation length: {total_chars} characters")
+                final_request = ChatCompletionRequest(
+                    messages=messages,
+                    model=model,
+                    temperature=provider.temperature,
+                    max_tokens=provider.max_tokens,
+                    tools=None,
+                    tool_choice=None,
+                )
+                final_response = await provider.chat_completion(final_request)
+                logger.info(
+                    f"Final response from provider: content='{final_response.content}', "
+                    f"tool_calls={final_response.tool_calls}"
+                )
+                if final_response.content:
+                    logger.info(f"Received final AI response after tool execution")
+                    return final_response.content
+                else:
+                    logger.warning(f"Final response had no content: {final_response}")
+                    return "I executed the requested tools but couldn't generate a final response."
+            except Exception as final_error:
+                logger.error(f"Failed to get final response after tool execution: {final_error}")
+                return f"I executed the tools but encountered an error generating the final response: {final_error}"
+        if response.content:
+            logger.info(f"Received AI response from {provider.provider_name} for topic {topic.id}")
+            return response.content
+        else:
+            return "Sorry, I could not generate a response."
+    except Exception as e:
+        logger.error(f"Failed to call AI provider {provider.provider_name} for topic {topic.id}: {e}")
+        return f"Sorry, the AI service is currently unavailable. Error: {e}"

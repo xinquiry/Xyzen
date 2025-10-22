@@ -3,7 +3,7 @@ import McpIcon from "@/assets/McpIcon";
 import { Badge } from "@/components/base/Badge";
 import { PencilIcon, TrashIcon } from "@heroicons/react/24/outline";
 import { motion, type Variants } from "framer-motion";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 
 import AddAgentModal from "@/components/modals/AddAgentModal";
 import ConfirmationModal from "@/components/modals/ConfirmationModal";
@@ -43,6 +43,80 @@ const itemVariants: Variants = {
   },
 };
 
+// 右键菜单组件
+interface ContextMenuProps {
+  x: number;
+  y: number;
+  onEdit: () => void;
+  onDelete: () => void;
+  onClose: () => void;
+}
+
+const ContextMenu: React.FC<ContextMenuProps> = ({
+  x,
+  y,
+  onEdit,
+  onDelete,
+  onClose,
+}) => {
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+        onClose();
+      }
+    };
+
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        onClose();
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    document.addEventListener("keydown", handleEscape);
+
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener("keydown", handleEscape);
+    };
+  }, [onClose]);
+
+  return (
+    <motion.div
+      ref={menuRef}
+      initial={{ opacity: 0, scale: 0.95 }}
+      animate={{ opacity: 1, scale: 1 }}
+      exit={{ opacity: 0, scale: 0.95 }}
+      transition={{ duration: 0.1 }}
+      className="fixed z-50 w-40 rounded-lg border border-neutral-200 bg-white shadow-lg dark:border-neutral-700 dark:bg-neutral-800"
+      style={{ left: x, top: y }}
+    >
+      <button
+        onClick={() => {
+          onEdit();
+          onClose();
+        }}
+        className="flex w-full items-center gap-2 rounded-t-lg px-4 py-2.5 text-left text-sm text-neutral-700 transition-colors hover:bg-neutral-100 dark:text-neutral-300 dark:hover:bg-neutral-700"
+      >
+        <PencilIcon className="h-4 w-4 text-indigo-600 dark:text-indigo-400" />
+        编辑助手
+      </button>
+      <button
+        onClick={() => {
+          onDelete();
+          onClose();
+        }}
+        className="flex w-full items-center gap-2 rounded-b-lg px-4 py-2.5 text-left text-sm text-neutral-700 transition-colors hover:bg-red-50 dark:text-neutral-300 dark:hover:bg-neutral-700"
+      >
+        <TrashIcon className="h-4 w-4 text-red-600 dark:text-red-400" />
+        删除助手
+      </button>
+    </motion.div>
+  );
+};
+
 // 详细版本-包括名字，描述，头像，标签以及GPT模型
 const AgentCard: React.FC<AgentCardProps> = ({
   agent,
@@ -50,76 +124,88 @@ const AgentCard: React.FC<AgentCardProps> = ({
   onEdit,
   onDelete,
 }) => {
+  const [contextMenu, setContextMenu] = useState<{
+    x: number;
+    y: number;
+  } | null>(null);
+
+  const handleContextMenu = (e: React.MouseEvent) => {
+    // 默认助手不显示右键菜单
+    if (agent.id === "default-chat") {
+      return;
+    }
+
+    e.preventDefault();
+    e.stopPropagation();
+
+    setContextMenu({
+      x: e.clientX,
+      y: e.clientY,
+    });
+  };
+
   return (
-    <motion.div
-      layout
-      variants={itemVariants}
-      whileHover={{ scale: 1.03, transition: { duration: 0.2 } }}
-      whileTap={{ scale: 0.98 }}
-      onClick={() => onClick?.(agent)}
-      className={`
+    <>
+      <motion.div
+        layout
+        variants={itemVariants}
+        whileHover={{ scale: 1.03, transition: { duration: 0.2 } }}
+        whileTap={{ scale: 0.98 }}
+        onClick={() => onClick?.(agent)}
+        onContextMenu={handleContextMenu}
+        className={`
         group relative flex cursor-pointer items-start gap-4 rounded-lg border p-3
         border-neutral-200 bg-white hover:bg-neutral-50 dark:border-neutral-800 dark:bg-neutral-900 dark:hover:bg-neutral-800/60
       `}
-    >
-      {/* 头像 */}
-      <img
-        src={
-          agent.id === "default-chat"
-            ? "https://avatars.githubusercontent.com/u/176685?v=4" // 使用一个友好的默认头像
-            : "https://cdn1.deepmd.net/static/img/affb038eChatGPT Image 2025年8月6日 10_33_07.png"
-        }
-        alt={agent.name}
-        className="h-10 w-10 rounded-full object-cover border border-neutral-200 dark:border-neutral-700"
-      />
+      >
+        {/* 头像 */}
+        <img
+          src={
+            agent.id === "default-chat"
+              ? "https://avatars.githubusercontent.com/u/176685?v=4" // 使用一个友好的默认头像
+              : "https://cdn1.deepmd.net/static/img/affb038eChatGPT Image 2025年8月6日 10_33_07.png"
+          }
+          alt={agent.name}
+          className="h-10 w-10 flex-shrink-0 rounded-full border border-neutral-200 object-cover dark:border-neutral-700"
+        />
 
-      {/* 内容 */}
-      <div className="flex flex-1 flex-col">
-        <div className="flex items-center">
-          <h3 className="text-sm font-semibold text-neutral-800 dark:text-white">
-            {agent.name}
-          </h3>
-          {agent.mcp_servers && agent.mcp_servers.length > 0 && (
-            <Badge variant="blue" className="ml-2 flex items-center gap-1">
-              <McpIcon className="h-3 w-3" />
-              {agent.mcp_servers.length}
-            </Badge>
-          )}
+        {/* 内容 */}
+        <div className="flex flex-1 flex-col min-w-0">
+          <div className="flex items-center gap-2">
+            <h3
+              className="text-sm font-semibold text-neutral-800 dark:text-white truncate flex-shrink"
+              title={agent.name}
+            >
+              {agent.name}
+            </h3>
+            {agent.mcp_servers && agent.mcp_servers.length > 0 && (
+              <Badge
+                variant="blue"
+                className="flex items-center gap-1 flex-shrink-0"
+              >
+                <McpIcon className="h-3 w-3" />
+                {agent.mcp_servers.length}
+              </Badge>
+            )}
+          </div>
+
+          <p className="mt-1 text-xs text-neutral-600 dark:text-neutral-400 line-clamp-2">
+            {agent.description}
+          </p>
         </div>
+      </motion.div>
 
-        <p className="mt-1 text-xs text-neutral-600 dark:text-neutral-400 line-clamp-2">
-          {agent.description}
-        </p>
-      </div>
-
-      {/* 编辑按钮 - 高度和整个条目相同，带动画效果 */}
-      {agent.id !== "default-chat" && (
-        <>
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              onEdit?.(agent);
-            }}
-            className="z-10 ml-3 flex items-center justify-center rounded-lg bg-transparent px-3 text-neutral-400 opacity-0 transition-all duration-300 ease-in-out hover:bg-neutral-100 hover:text-indigo-600 hover:shadow-md hover:scale-105 group-hover:opacity-100 group-hover:shadow-sm active:scale-95 dark:text-neutral-500 dark:hover:bg-neutral-800 dark:hover:text-indigo-400"
-            style={{ alignSelf: "stretch", margin: "4px 0" }}
-            title="编辑助手"
-          >
-            <PencilIcon className="h-5 w-5 transition-transform duration-200" />
-          </button>
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              onDelete?.(agent);
-            }}
-            className="z-10 ml-1 flex items-center justify-center rounded-lg bg-transparent px-3 text-neutral-400 opacity-0 transition-all duration-300 ease-in-out hover:bg-neutral-100 hover:text-red-600 hover:shadow-md hover:scale-105 group-hover:opacity-100 group-hover:shadow-sm active:scale-95 dark:text-neutral-500 dark:hover:bg-neutral-800 dark:hover:text-red-400"
-            style={{ alignSelf: "stretch", margin: "4px 0" }}
-            title="删除助手"
-          >
-            <TrashIcon className="h-5 w-5 transition-transform duration-200" />
-          </button>
-        </>
+      {/* 右键菜单 */}
+      {contextMenu && (
+        <ContextMenu
+          x={contextMenu.x}
+          y={contextMenu.y}
+          onEdit={() => onEdit?.(agent)}
+          onDelete={() => onDelete?.(agent)}
+          onClose={() => setContextMenu(null)}
+        />
       )}
-    </motion.div>
+    </>
   );
 };
 

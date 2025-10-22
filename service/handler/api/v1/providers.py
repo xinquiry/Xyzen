@@ -41,6 +41,7 @@ async def get_my_providers(
     for provider in providers:
         if provider.is_system:
             provider.key = "••••••••"
+            provider.api = "•••••••••••••••••"
 
     return providers
 

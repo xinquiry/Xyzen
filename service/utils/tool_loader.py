@@ -87,7 +87,7 @@ class DatabaseToolLoader:
         request_tool_name: Optional[str] = None,
     ) -> Dict[str, Any]:
         existing_tools: Dict[str, FunctionTool] = mcp._tool_manager._tools  # type: ignore
-        logger.info(existing_tools)
+        logger.debug(existing_tools)
         for tool_name, tool_info in tools.items():
             tool_data = tool_info["tool_data"]
             proxy = tool_info["proxy"]

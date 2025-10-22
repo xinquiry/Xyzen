@@ -120,7 +120,7 @@ class BaseLLMProvider(ABC):
             True if streaming is supported, False otherwise
         """
         # Subclasses should override this if they support streaming
-        return False
+        return True
 
     @abstractmethod
     def is_available(self) -> bool:

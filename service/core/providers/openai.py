@@ -6,7 +6,7 @@ Standard OpenAI API support (use AzureOpenAIProvider for Azure).
 import logging
 from typing import Any, AsyncGenerator, List, Literal, Optional, cast
 
-from openai import OpenAI
+from openai import AsyncOpenAI
 from openai.types.chat import ChatCompletionMessageParam
 from openai.types.chat.chat_completion_tool_param import ChatCompletionToolParam
 
@@ -60,7 +60,7 @@ class OpenAIProvider(BaseLLMProvider):
 
         # Initialize OpenAI client
         logger.info(f"Initializing OpenAI client with endpoint: {api_endpoint or 'default'}")
-        self.client = OpenAI(
+        self.client = AsyncOpenAI(
             api_key=self.api_key,
             base_url=self.api_endpoint,
             timeout=self.timeout,
@@ -154,7 +154,7 @@ class OpenAIProvider(BaseLLMProvider):
                         if tool_choice_val in ["auto", "none", "required"]:
                             tool_choice = tool_choice_val  # type: ignore
 
-                        response = self.client.chat.completions.create(
+                        response = await self.client.chat.completions.create(
                             model=cast(str, api_params["model"]),
                             messages=cast(List[ChatCompletionMessageParam], api_params["messages"]),
                             # temperature=cast(float, api_params["temperature"]),
@@ -163,7 +163,7 @@ class OpenAIProvider(BaseLLMProvider):
                             tool_choice=tool_choice,
                         )
                     else:
-                        response = self.client.chat.completions.create(
+                        response = await self.client.chat.completions.create(
                             model=cast(str, api_params["model"]),
                             messages=cast(List[ChatCompletionMessageParam], api_params["messages"]),
                             # temperature=cast(float, api_params["temperature"]),
@@ -171,7 +171,7 @@ class OpenAIProvider(BaseLLMProvider):
                             tools=tools,
                         )
                 else:
-                    response = self.client.chat.completions.create(
+                    response = await self.client.chat.completions.create(
                         model=cast(str, api_params["model"]),
                         messages=cast(List[ChatCompletionMessageParam], api_params["messages"]),
                         # temperature=cast(float, api_params["temperature"]),
@@ -286,7 +286,7 @@ class OpenAIProvider(BaseLLMProvider):
             max_tokens_value = api_params.get("max_tokens")
             max_tokens = cast(int, max_tokens_value) if max_tokens_value is not None else None
 
-            stream = self.client.chat.completions.create(
+            stream = await self.client.chat.completions.create(
                 model=cast(str, api_params["model"]),
                 messages=cast(List[ChatCompletionMessageParam], api_params["messages"]),
                 temperature=cast(float, api_params["temperature"]),
@@ -294,7 +294,7 @@ class OpenAIProvider(BaseLLMProvider):
                 stream=True,
             )
 
-            for chunk in stream:
+            async for chunk in stream:
                 if chunk.choices and len(chunk.choices) > 0:
                     choice = chunk.choices[0]
                     if choice.delta and choice.delta.content:

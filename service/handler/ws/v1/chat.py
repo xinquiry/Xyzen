@@ -148,7 +148,8 @@ async def handle_tool_call_confirmation(
         model = pending_info["model"]
 
         # Import necessary functions
-        from core.chat import ChatCompletionRequest, ChatMessage, _execute_tool_calls
+        from core.chat.sync import ChatCompletionRequest, ChatMessage
+        from core.chat.tools import _execute_tool_calls
 
         try:
             # Execute the tools using the same logic as immediate execution

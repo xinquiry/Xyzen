@@ -59,7 +59,7 @@ export default defineConfig(() => {
       hmr: {
         // 热模块替换配置
         host: "localhost",
-        port: 32234,
+        port: 32233,
       },
     },
     build,

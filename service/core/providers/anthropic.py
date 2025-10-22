@@ -7,7 +7,7 @@ import json
 import logging
 from typing import Any, List, Optional
 
-from anthropic import Anthropic
+from anthropic import AsyncAnthropic
 from anthropic.types import MessageParam
 from anthropic.types.tool_param import ToolParam
 
@@ -56,9 +56,9 @@ class AnthropicProvider(BaseLLMProvider):
 
         # Initialize Anthropic client
         if self.api_endpoint:
-            self.client = Anthropic(api_key=self.api_key, base_url=self.api_endpoint, timeout=self.timeout)
+            self.client = AsyncAnthropic(api_key=self.api_key, base_url=self.api_endpoint, timeout=self.timeout)
         else:
-            self.client = Anthropic(api_key=self.api_key, timeout=self.timeout)
+            self.client = AsyncAnthropic(api_key=self.api_key, timeout=self.timeout)
 
     async def chat_completion(self, request: ChatCompletionRequest) -> ChatCompletionResponse:
         """
@@ -117,7 +117,7 @@ class AnthropicProvider(BaseLLMProvider):
             # Make the API call with proper error handling
             try:
                 if system_message and anthropic_tools:
-                    response = self.client.messages.create(
+                    response = await self.client.messages.create(
                         model=request.model,
                         messages=messages,
                         max_tokens=request.max_tokens or 4096,
@@ -126,7 +126,7 @@ class AnthropicProvider(BaseLLMProvider):
                         tools=anthropic_tools,
                     )
                 elif system_message:
-                    response = self.client.messages.create(
+                    response = await self.client.messages.create(
                         model=request.model,
                         messages=messages,
                         max_tokens=request.max_tokens or 4096,
@@ -134,7 +134,7 @@ class AnthropicProvider(BaseLLMProvider):
                         system=system_message,
                     )
                 elif anthropic_tools:
-                    response = self.client.messages.create(
+                    response = await self.client.messages.create(
                         model=request.model,
                         messages=messages,
                         max_tokens=request.max_tokens or 4096,
@@ -142,7 +142,7 @@ class AnthropicProvider(BaseLLMProvider):
                         tools=anthropic_tools,
                     )
                 else:
-                    response = self.client.messages.create(
+                    response = await self.client.messages.create(
                         model=request.model,
                         messages=messages,
                         max_tokens=request.max_tokens or 4096,

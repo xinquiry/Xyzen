@@ -6,7 +6,7 @@ LOGGING_CONFIG = {
     "formatters": {
         "default": {
             "()": "uvicorn.logging.DefaultFormatter",
-            "fmt": "%(levelprefix)s \033[90m%(asctime)s\033[0m \033[36m|\033[0m \033[35m%(name)s\033[0m \033[36m|\033[0m %(message)s",  # noqa: E501
+            "fmt": "%(levelprefix)s \033[90m%(asctime)s\033[0m \033[36m|\033[0m \033[35m%(name)s: \033[90m%(lineno)d\033[0m \033[36m|\033[0m %(message)s",  # noqa: E501
             "datefmt": "%Y-%m-%d %H:%M:%S",
             "use_colors": True,
         },

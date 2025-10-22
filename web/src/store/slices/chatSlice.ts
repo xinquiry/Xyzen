@@ -473,10 +473,12 @@ export const createChatSlice: StateCreator<
               );
               const eventData = event.data as { id: string };
               if (loadingIndex !== -1) {
+                // eslint-disable-next-line @typescript-eslint/no-unused-vars
+                const { isLoading: _, ...messageWithoutLoading } =
+                  channel.messages[loadingIndex];
                 channel.messages[loadingIndex] = {
-                  ...channel.messages[loadingIndex],
+                  ...messageWithoutLoading,
                   id: eventData.id,
-                  isLoading: false,
                   isStreaming: true,
                   content: "",
                 };
@@ -508,9 +510,14 @@ export const createChatSlice: StateCreator<
                 (m) => m.id === eventData.id,
               );
               if (endingIndex !== -1) {
+                // eslint-disable-next-line @typescript-eslint/no-unused-vars
+                const {
+                  isLoading: _,
+                  isStreaming: __,
+                  ...messageWithoutFlags
+                } = channel.messages[endingIndex];
                 channel.messages[endingIndex] = {
-                  ...channel.messages[endingIndex],
-                  isStreaming: false,
+                  ...messageWithoutFlags,
                   created_at: eventData.created_at || new Date().toISOString(),
                 };
               }
@@ -614,8 +621,6 @@ export const createChatSlice: StateCreator<
                 error?: string;
               };
 
-              let toolCompleted = false;
-
               // Find and update the tool call
               channel.messages.forEach((message) => {
                 if (message.toolCalls) {
@@ -635,29 +640,13 @@ export const createChatSlice: StateCreator<
                       console.log(
                         `ChatSlice: Updated tool call ${toolCall.name} status to ${responseData.status}`,
                       );
-
-                      // Check if tool completed successfully
-                      if (responseData.status === "completed") {
-                        toolCompleted = true;
-                      }
                     }
                   });
                 }
               });
 
-              // If tool completed, create loading message for AI response
-              if (toolCompleted) {
-                console.log(
-                  "ChatSlice: Tool completed, creating loading message for AI response",
-                );
-                channel.messages.push({
-                  id: `loading-${Date.now()}`,
-                  role: "assistant",
-                  content: "",
-                  created_at: new Date().toISOString(),
-                  isLoading: true,
-                });
-              }
+              // Note: Backend will send a 'loading' event before streaming the final response
+              // We don't need to create loading message here anymore
               break;
             }
 
