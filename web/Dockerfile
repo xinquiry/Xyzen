@@ -26,7 +26,6 @@ COPY . .
 # Set build-time environment variables
 ARG VITE_XYZEN_BACKEND_URL
 ENV NODE_ENV=production
-# 🔥 修复：ENV 名称要和 ARG 保持一致
 ENV VITE_XYZEN_BACKEND_URL=${VITE_XYZEN_BACKEND_URL}
 
 # Build the application
@@ -50,3 +49,5 @@ EXPOSE 32233
 # npx will download and run 'serve' without needing it in package.json
 # The '-s' flag handles SPA routing by redirecting all requests to index.html
 CMD ["npx", "-y", "serve", "-s", ".", "-l", "32233"]
+
+LABEL org.opencontainers.image.source https://github.com/scienceol/xyzen

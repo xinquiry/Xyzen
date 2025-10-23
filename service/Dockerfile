@@ -19,3 +19,5 @@ RUN uv sync --locked
 EXPOSE 48196
 
 CMD ["uv", "run", "python", "-m", "app.main"]
+
+LABEL org.opencontainers.image.source https://github.com/scienceol/xyzen
