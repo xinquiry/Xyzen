@@ -1,4 +1,4 @@
-name: Build and Push Docker Images
+name: Build and Push ghcr.io Images
 
 on:
   push:
@@ -14,7 +14,6 @@ on:
 
 env:
   REGISTRY: ghcr.io
-  # 修改为你的 GitHub 组织名称
   IMAGE_NAMESPACE: scienceol
 
 jobs:
