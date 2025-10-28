@@ -5,7 +5,7 @@ This module contains repository functions for database operations related to the
 import logging
 from uuid import UUID
 
-from sqlmodel import select, func
+from sqlmodel import func, select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 from models.sessions import Session as SessionModel
