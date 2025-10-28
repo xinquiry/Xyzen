@@ -5,8 +5,6 @@ from sqlmodel import Field, SQLModel
 
 
 class ProviderBase(SQLModel):
-    """Base model for a provider with required fields for creation."""
-
     user_id: str = Field(
         index=True,
         description="The user ID from authentication provider (e.g., Casdoor user ID)",
@@ -61,8 +59,6 @@ class ProviderBase(SQLModel):
 
 
 class Provider(ProviderBase, table=True):
-    """Database model for a provider, inherits from ProviderBase."""
-
     id: UUID = Field(
         default_factory=uuid4,
         primary_key=True,
@@ -72,22 +68,16 @@ class Provider(ProviderBase, table=True):
 
 
 class ProviderRead(ProviderBase):
-    """Model for reading a provider, includes the ID."""
-
     id: UUID = Field(
         description="Unique identifier for this provider configuration",
     )
 
 
 class ProviderCreate(ProviderBase):
-    """Model for creating a provider."""
-
     pass
 
 
 class ProviderUpdate(SQLModel):
-    """Model for updating a provider. All fields are optional."""
-
     name: Optional[str] = Field(
         default=None,
         min_length=1,

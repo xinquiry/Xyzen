@@ -5,11 +5,12 @@ This module contains repository functions for database operations related to the
 import logging
 from uuid import UUID
 
-from sqlmodel import select
+from sqlmodel import select, func
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 from models.sessions import Session as SessionModel
 from models.sessions import SessionCreate, SessionUpdate
+from models.topic import Topic
 
 logger = logging.getLogger(__name__)
 
@@ -135,3 +136,40 @@ class SessionRepository:
         await self.db.delete(session)
         await self.db.flush()
         return True
+
+    async def get_sessions_by_user_ordered_by_activity(self, user_id: str) -> list[SessionModel]:
+        """
+        Fetches all sessions for a given user, ordered by most recent topic activity.
+
+        Uses a single optimized query with LEFT JOIN and subquery to avoid N+1 problem.
+        Sessions are sorted by the most recent topic's updated_at timestamp in descending order.
+        Sessions without topics are sorted to the end (NULL values last).
+
+        Args:
+            user_id: The user ID.
+
+        Returns:
+            List of SessionModel instances ordered by recent topic activity.
+        """
+        logger.debug(f"Fetching sessions for user_id: {user_id} ordered by topic activity")
+
+        max_topic_activity = (
+            select(Topic.session_id, func.max(Topic.updated_at).label("latest_activity"))
+            # Type UUID is not compatible with accepted types
+            .group_by(Topic.session_id).subquery()  # pyright: ignore[reportArgumentType]
+        )
+
+        statement = (
+            select(SessionModel)
+            .where(SessionModel.user_id == user_id)
+            .outerjoin(
+                max_topic_activity,
+                # Type bool is not compatible with accepted types
+                SessionModel.id == max_topic_activity.c.session_id,  # pyright: ignore[reportArgumentType]
+            )
+            .order_by(max_topic_activity.c.latest_activity.desc().nulls_last())
+        )
+
+        result = await self.db.exec(statement)
+
+        return list(result.all())

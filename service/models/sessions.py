@@ -6,7 +6,7 @@ from uuid import UUID, uuid4
 from sqlalchemy import func
 from sqlmodel import Field, SQLModel
 
-from models.topic import TopicRead
+from .topic import TopicRead
 
 
 class SessionCreateBase(SQLModel):

@@ -6,7 +6,7 @@ from uuid import UUID, uuid4
 from sqlalchemy import func
 from sqlmodel import Field, SQLModel
 
-from models.message import MessageRead
+from .message import MessageRead
 
 
 class TopicBase(SQLModel):
@@ -40,8 +40,6 @@ class TopicRead(TopicBase):
 
 
 class TopicReadWithMessages(TopicBase):
-    """Topic response with messages included."""
-
     id: UUID
     updated_at: datetime
     messages: list[MessageRead] = []
