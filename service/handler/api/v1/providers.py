@@ -149,84 +149,6 @@ async def get_my_providers(
     return provider_reads
 
 
-@router.get("/me/default", response_model=ProviderRead)
-async def get_my_default_provider(
-    user: str = Depends(get_current_user),
-    db: AsyncSession = Depends(get_session),
-) -> ProviderRead:
-    """
-    Get the default provider for the current authenticated user.
-
-    Returns the user's currently selected default provider. System provider
-    API keys and endpoints are masked for security reasons.
-
-    Args:
-        user: Authenticated user ID (injected by dependency)
-        db: Database session (injected by dependency)
-
-    Returns:
-        ProviderRead: The user's default provider with masked sensitive data
-
-    Raises:
-        HTTPException: 404 if no default provider is set
-    """
-    provider_repo = ProviderRepository(db)
-    provider = await provider_repo.get_default_provider(user)
-    if not provider:
-        raise HTTPException(
-            status_code=404,
-            detail="No default provider found. Please set a default provider.",
-        )
-
-    # Convert to response model and mask sensitive data for system providers
-    provider_dict = provider.model_dump()
-    if provider.is_system:
-        provider_dict["key"] = "••••••••"
-        provider_dict["api"] = "•••••••••••••••••"
-
-    return ProviderRead(**provider_dict)
-
-
-@router.post("/me/default/{provider_id}", response_model=ProviderRead)
-async def set_my_default_provider(
-    provider_id: UUID,
-    user: str = Depends(get_current_user),
-    db: AsyncSession = Depends(get_session),
-) -> ProviderRead:
-    """
-    Set a provider as the default for the current authenticated user.
-
-    This will unset any other default providers for the user and set the
-    specified provider as the new default. The provider must be owned by
-    the user or be a system provider.
-
-    Args:
-        provider_id: UUID of the provider to set as default
-        user: Authenticated user ID (injected by dependency)
-        db: Database session (injected by dependency)
-
-    Returns:
-        ProviderRead: The newly set default provider
-
-    Raises:
-        HTTPException: 404 if provider not found, 403 if access denied
-    """
-    provider_repo = ProviderRepository(db)
-
-    # Verify the user can access this provider (own or system)
-    provider = await _verify_provider_authorization(provider_id, user, db, allow_system=True)
-    if not provider:
-        raise HTTPException(status_code=404, detail="Provider not found")
-
-    # Set as default
-    updated_provider = await provider_repo.set_default_provider(user, provider_id)
-    if not updated_provider:
-        raise HTTPException(status_code=404, detail="Provider not found")
-
-    await db.commit()
-    return ProviderRead(**updated_provider.model_dump())
-
-
 @router.post("/", response_model=ProviderRead, status_code=201)
 async def create_provider(
     provider_data: ProviderCreate,
@@ -264,12 +186,6 @@ async def create_provider(
 
     # Create provider using repository
     created_provider = await provider_repo.create_provider(provider_data, user)
-
-    # If this is the user's first provider, set it as default
-    user_providers = await provider_repo.get_providers_by_user(user, include_system=False)
-    if len(user_providers) == 1:  # Only the newly created provider
-        await provider_repo.set_default_provider(user, created_provider.id)
-        await db.refresh(created_provider)
 
     await db.commit()
     return ProviderRead(**created_provider.model_dump())

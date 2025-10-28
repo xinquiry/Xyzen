@@ -19,6 +19,7 @@ from .openai import OpenAIProvider
 
 logger = logging.getLogger(__name__)
 
+# TODO: Improve the logic of system provider initialization and management
 # System user ID for system-wide provider
 SYSTEM_USER_ID = "system"
 
@@ -68,7 +69,6 @@ async def initialize_system_provider(db: AsyncSession) -> Optional[Any]:
         "max_tokens": int(4096),
         "temperature": float(0.7),
         "is_system": bool(True),
-        "is_default": bool(False),  # System provider is not a user default
     }
 
     if system_provider:
@@ -369,8 +369,6 @@ async def get_user_provider_manager(user_id: str, db: AsyncSession) -> LLMProvid
     # Create a new provider manager for this user
     user_manager = LLMProviderManager()
 
-    has_user_default = False
-
     # Add all providers to the manager
     for db_provider in all_providers:
         try:
@@ -389,29 +387,23 @@ async def get_user_provider_manager(user_id: str, db: AsyncSession) -> LLMProvid
                 timeout=db_provider.timeout,
             )
 
-            # Set as active if it's the user's default provider
-            if db_provider.is_default and not db_provider.is_system:
-                user_manager.set_active_provider(provider_name)
-                has_user_default = True
-
             logger.debug(
                 f"Loaded provider {db_provider.name} (ID: {db_provider.id}) "
-                f"for user {user_id}, system: {db_provider.is_system}, default: {db_provider.is_default}"
+                f"for user {user_id}, system: {db_provider.is_system}"
             )
 
         except Exception as e:
             logger.error(f"Failed to load provider {db_provider.name} for user {user_id}: {e}")
             continue
 
-    # If user has no default set, use system provider or first available
-    if not user_manager.get_active_provider():
-        if "system" in [p["name"] for p in user_manager.list_providers()]:
-            user_manager.set_active_provider("system")
-            logger.info(f"Using system provider as default for user {user_id}")
-        elif user_manager.list_providers():
-            first_provider_name = user_manager.list_providers()[0]["name"]
-            user_manager.set_active_provider(first_provider_name)
-            logger.info(f"No default provider set for user {user_id}, using first available")
+    # Set system provider as default fallback if available
+    if "system" in [p["name"] for p in user_manager.list_providers()]:
+        user_manager.set_active_provider("system")
+        logger.info(f"Using system provider as fallback for user {user_id}")
+    elif user_manager.list_providers():
+        first_provider_name = user_manager.list_providers()[0]["name"]
+        user_manager.set_active_provider(first_provider_name)
+        logger.info(f"Using first available provider for user {user_id}")
 
     logger.info(f"Loaded {len(all_providers)} provider(s) for user {user_id}")
     return user_manager

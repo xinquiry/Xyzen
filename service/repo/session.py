@@ -106,11 +106,7 @@ class SessionRepository:
         session = await self.db.get(SessionModel, session_id)
         if not session:
             return None
-
-        update_data = session_data.model_dump(exclude_unset=True)
-        for key, value in update_data.items():
-            setattr(session, key, value)
-
+        session.sqlmodel_update(session_data)
         self.db.add(session)
         await self.db.flush()
         await self.db.refresh(session)
@@ -132,7 +128,6 @@ class SessionRepository:
         session = await self.db.get(SessionModel, session_id)
         if not session:
             return False
-
         await self.db.delete(session)
         await self.db.flush()
         return True
@@ -152,13 +147,11 @@ class SessionRepository:
             List of SessionModel instances ordered by recent topic activity.
         """
         logger.debug(f"Fetching sessions for user_id: {user_id} ordered by topic activity")
-
         max_topic_activity = (
             select(Topic.session_id, func.max(Topic.updated_at).label("latest_activity"))
             # Type UUID is not compatible with accepted types
             .group_by(Topic.session_id).subquery()  # pyright: ignore[reportArgumentType]
         )
-
         statement = (
             select(SessionModel)
             .where(SessionModel.user_id == user_id)
@@ -169,7 +162,5 @@ class SessionRepository:
             )
             .order_by(max_topic_activity.c.latest_activity.desc().nulls_last())
         )
-
         result = await self.db.exec(statement)
-
         return list(result.all())

@@ -52,29 +52,10 @@ class ProviderRepository:
         else:
             # Only user's own providers
             statement = select(Provider).where(Provider.user_id == user_id, Provider.is_system == False)  # noqa: E712
-
         result = await self.db.exec(statement)
         providers = list(result.all())
         logger.debug(f"Found {len(providers)} providers for user {user_id}")
         return providers
-
-    async def get_default_provider(self, user_id: str) -> Provider | None:
-        """
-        Fetches the default provider for a specific user.
-
-        Args:
-            user_id: The user ID to fetch default provider for.
-
-        Returns:
-            The default Provider instance, or None if not found.
-        """
-        logger.debug(f"Fetching default provider for user: {user_id}")
-        statement = select(Provider).where(Provider.user_id == user_id, Provider.is_default == True)  # noqa: E712
-        result = await self.db.exec(statement)
-        provider = result.first()
-        if provider:
-            logger.debug(f"Found default provider: {provider.name} for user {user_id}")
-        return provider
 
     async def get_system_provider(self) -> Provider | None:
         """
@@ -115,7 +96,6 @@ class ProviderRepository:
             model=provider_data.model,
             max_tokens=provider_data.max_tokens,
             temperature=provider_data.temperature,
-            is_default=provider_data.is_default,
             is_system=provider_data.is_system,
         )
         self.db.add(provider)
@@ -139,11 +119,7 @@ class ProviderRepository:
         provider = await self.db.get(Provider, provider_id)
         if not provider:
             return None
-
-        update_data = provider_data.model_dump(exclude_unset=True)
-        for key, value in update_data.items():
-            setattr(provider, key, value)
-
+        provider.sqlmodel_update(provider_data)
         self.db.add(provider)
         await self.db.flush()
         await self.db.refresh(provider)
@@ -164,44 +140,6 @@ class ProviderRepository:
         provider = await self.db.get(Provider, provider_id)
         if not provider:
             return False
-
         await self.db.delete(provider)
         await self.db.flush()
         return True
-
-    async def set_default_provider(self, user_id: str, provider_id: UUID) -> Provider | None:
-        """
-        Sets a provider as the default for a user.
-        Unsets any other default providers for the user atomically.
-        This function does NOT commit the transaction.
-
-        Args:
-            user_id: The user ID.
-            provider_id: The UUID of the provider to set as default.
-
-        Returns:
-            The updated Provider instance, or None if provider not found.
-        """
-        logger.debug(f"Setting provider {provider_id} as default for user {user_id}")
-
-        # First, unset all default providers for this user
-        statement = select(Provider).where(Provider.user_id == user_id, Provider.is_default == True)  # noqa: E712
-        result = await self.db.exec(statement)
-        current_defaults = list(result.all())
-
-        for provider in current_defaults:
-            provider.is_default = False
-            self.db.add(provider)
-
-        # Now set the selected provider as default
-        target_provider = await self.db.get(Provider, provider_id)
-        if not target_provider or target_provider.user_id != user_id:
-            return None
-
-        target_provider.is_default = True
-        self.db.add(target_provider)
-        await self.db.flush()
-        await self.db.refresh(target_provider)
-
-        logger.debug(f"Set provider {target_provider.name} as default for user {user_id}")
-        return target_provider

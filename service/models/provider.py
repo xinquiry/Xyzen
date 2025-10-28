@@ -47,10 +47,6 @@ class ProviderBase(SQLModel):
         le=2.0,
         description="Sampling temperature for response randomness (0.0-2.0)",
     )
-    is_default: bool = Field(
-        default=False,
-        description="Whether this is the user's default provider for new sessions",
-    )
     is_system: bool = Field(
         default=False,
         index=True,
@@ -117,8 +113,4 @@ class ProviderUpdate(SQLModel):
         ge=0.0,
         le=2.0,
         description="Sampling temperature for response randomness (0.0-2.0)",
-    )
-    is_default: Optional[bool] = Field(
-        default=None,
-        description="Whether this is the user's default provider",
     )

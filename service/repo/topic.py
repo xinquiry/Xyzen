@@ -80,11 +80,7 @@ class TopicRepository:
         topic = await self.db.get(Topic, topic_id)
         if not topic:
             return None
-
-        update_data = topic_data.model_dump(exclude_unset=True)
-        for key, value in update_data.items():
-            setattr(topic, key, value)
-
+        topic.sqlmodel_update(topic_data)
         topic.updated_at = datetime.now(timezone.utc)
         self.db.add(topic)
         await self.db.flush()
@@ -106,7 +102,6 @@ class TopicRepository:
         topic = await self.db.get(Topic, topic_id)
         if not topic:
             return False
-
         await self.db.delete(topic)
         await self.db.flush()
         return True
@@ -144,7 +139,6 @@ class TopicRepository:
         topic = await self.db.get(Topic, topic_id)
         if not topic:
             return None
-
         topic.updated_at = datetime.now(timezone.utc)
         self.db.add(topic)
         await self.db.flush()
