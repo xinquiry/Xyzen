@@ -1,69 +1,65 @@
-from typing import TYPE_CHECKING, List, Optional
+from __future__ import annotations
+
 from uuid import UUID, uuid4
 
-from sqlmodel import JSON, Column, Field, ForeignKey, Relationship, SQLModel
-
-from .links import AgentMcpServerLink
+from sqlmodel import JSON, Column, Field, SQLModel
+from datetime import datetime, timezone
+from sqlalchemy import func
 from .mcp import McpServer
 
-if TYPE_CHECKING:
-    from .sessions import Session
 
-
-class AgentBase(SQLModel):
+class AgentCreateBase(SQLModel):
     name: str
-    description: Optional[str] = None
-    avatar: Optional[str] = None
-    tags: Optional[List[str]] = Field(default=None, sa_column=Column(JSON))
-    model: Optional[str] = None
-    temperature: Optional[float] = None
-    prompt: Optional[str] = None
-    user_id: str = Field(index=True, description="The user ID from Casdoor")
-    require_tool_confirmation: bool = Field(
-        default=False, description="Whether to require user confirmation for tool calls"
-    )
+    description: str | None = None
+    avatar: str | None = None
+    tags: list[str] | None = Field(default=None, sa_column=Column(JSON))
+    model: str | None = None
+    temperature: float | None = None
+    prompt: str | None = None
+    user_id: str = Field(index=True)
+    require_tool_confirmation: bool = Field(default=False)
+    provider_id: UUID | None = Field(default=None, index=True)
 
-    provider_id: Optional[UUID] = Field(
-        default=None,
-        sa_column=Column(
-            ForeignKey("provider.id", ondelete="SET NULL"),
-            nullable=True,
-            index=True,
-        ),
-    )
+
+class AgentBase(AgentCreateBase):
+    user_id: str = Field(index=True)
 
 
 class Agent(AgentBase, table=True):
     id: UUID = Field(default_factory=uuid4, primary_key=True, index=True)
-    mcp_servers: List["McpServer"] = Relationship(
-        back_populates="agents",
-        link_model=AgentMcpServerLink,
-        sa_relationship_kwargs={"lazy": "selectin"},
+    created_at: datetime = Field(
+        default_factory=lambda: datetime.now(timezone.utc),
+        nullable=False,
+        sa_column_kwargs={"server_default": func.now()},
     )
-    session: Optional["Session"] = Relationship(back_populates="agent")
+    updated_at: datetime = Field(
+        default_factory=lambda: datetime.now(timezone.utc),
+        nullable=False,
+        sa_column_kwargs={"server_default": func.now(), "onupdate": func.now()},
+    )
 
 
-class AgentCreate(AgentBase):
-    mcp_server_ids: List[UUID] = []
+class AgentCreate(AgentCreateBase):
+    mcp_server_ids: list[UUID] = []
 
 
 class AgentRead(AgentBase):
     id: UUID
-    mcp_servers: List["McpServer"] = []
+    updated_at: datetime
+
+
+class AgentReadWithDetails(AgentRead):
+    mcp_servers: list[McpServer] = []
 
 
 class AgentUpdate(SQLModel):
-    name: Optional[str] = None
-    description: Optional[str] = None
-    avatar: Optional[str] = None
-    tags: Optional[List[str]] = None
-    model: Optional[str] = None
-    temperature: Optional[float] = None
-    prompt: Optional[str] = None
-    require_tool_confirmation: Optional[bool] = None
-    provider_id: Optional[UUID] = None
-    mcp_server_ids: Optional[List[UUID]] = None
-
-
-Agent.model_rebuild()
-McpServer.model_rebuild()
+    name: str | None = None
+    description: str | None = None
+    avatar: str | None = None
+    tags: list[str] | None = None
+    model: str | None = None
+    temperature: float | None = None
+    prompt: str | None = None
+    require_tool_confirmation: bool | None = None
+    provider_id: UUID | None = None
+    mcp_server_ids: list[UUID] | None = None
