@@ -74,17 +74,24 @@ async def initialize_system_provider(db: AsyncSession) -> Optional[Any]:
     if system_provider:
         # Update existing system provider
         logger.info(f"Updating existing system provider: {system_provider.id}")
-        for key, value in system_data.items():
-            if key != "user_id" and key != "is_system":  # Don't change these
-                setattr(system_provider, key, value)
-        updated_provider = await repo.update_provider(system_provider)
+        from models.provider import ProviderUpdate
+
+        # Create update data excluding user_id and is_system
+        update_data = {k: v for k, v in system_data.items() if k not in ("user_id", "is_system")}
+        provider_update = ProviderUpdate(**update_data)
+        updated_provider = await repo.update_provider(system_provider.id, provider_update)
+        if not updated_provider:
+            logger.error("Failed to update existing system provider")
+            return None
         logger.info(f"System provider updated: {updated_provider.name}")
         return updated_provider
     else:
         # Create new system provider
         logger.info("Creating new system provider from config")
-        new_provider = Provider(**system_data)
-        created_provider = await repo.create_provider(new_provider)
+        from models.provider import ProviderCreate
+
+        provider_create = ProviderCreate(**system_data)
+        created_provider = await repo.create_provider(provider_create, SYSTEM_USER_ID)
         logger.info(f"System provider created: {created_provider.name} (ID: {created_provider.id})")
         return created_provider
 

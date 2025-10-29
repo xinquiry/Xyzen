@@ -4,7 +4,7 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException
 from sqlmodel.ext.asyncio.session import AsyncSession
 
-from handler.api.v1.sessions import get_current_user
+from middleware.auth import get_current_user
 from middleware.database import get_session
 from models.agent import Agent as AgentModel
 from models.agent import AgentCreate, AgentRead, AgentUpdate

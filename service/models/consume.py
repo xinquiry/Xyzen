@@ -1,8 +1,3 @@
-"""Consumption record models
-
-Records user consumption history and statistics
-"""
-
 from datetime import datetime, timezone
 from uuid import UUID, uuid4
 
@@ -58,6 +53,7 @@ class ConsumeRecord(ConsumeRecordBase, table=True):
 
 class ConsumeRecordCreate(ConsumeRecordBase):
     """Schema for creating a new consume record."""
+
     pass
 
 
@@ -119,6 +115,7 @@ class UserConsumeSummary(UserConsumeSummaryBase, table=True):
 
 class UserConsumeSummaryCreate(UserConsumeSummaryBase):
     """Schema for creating a new user consume summary."""
+
     pass
 
 

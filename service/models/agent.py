@@ -1,11 +1,13 @@
-from __future__ import annotations
-
 from uuid import UUID, uuid4
 
 from sqlmodel import JSON, Column, Field, SQLModel
 from datetime import datetime, timezone
 from sqlalchemy import func
-from .mcp import McpServer
+
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from .mcp import McpServer
 
 
 class AgentCreateBase(SQLModel):
@@ -49,7 +51,7 @@ class AgentRead(AgentBase):
 
 
 class AgentReadWithDetails(AgentRead):
-    mcp_servers: list[McpServer] = []
+    mcp_servers: list["McpServer"] = []
 
 
 class AgentUpdate(SQLModel):

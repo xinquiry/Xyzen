@@ -1,12 +1,13 @@
-from __future__ import annotations
-
 from datetime import datetime, timezone
 from uuid import UUID, uuid4
 
 from sqlalchemy import func
 from sqlmodel import Field, SQLModel
 
-from .message import MessageRead
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from .message import MessageRead
 
 
 class TopicBase(SQLModel):
@@ -42,7 +43,7 @@ class TopicRead(TopicBase):
 class TopicReadWithMessages(TopicBase):
     id: UUID
     updated_at: datetime
-    messages: list[MessageRead] = []
+    messages: list["MessageRead"] = []
 
 
 class TopicUpdate(SQLModel):

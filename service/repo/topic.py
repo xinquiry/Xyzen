@@ -27,6 +27,20 @@ class TopicRepository:
         logger.debug(f"Fetching topic with id: {topic_id}")
         return await self.db.get(Topic, topic_id)
 
+    async def get_topic_with_details(self, topic_id: UUID) -> Topic | None:
+        """
+        Fetches a topic by its ID with details.
+        In the no-foreign-key architecture, this is equivalent to get_topic_by_id.
+
+        Args:
+            topic_id: The UUID of the topic to fetch.
+
+        Returns:
+            The Topic, or None if not found.
+        """
+        logger.debug(f"Fetching topic with details for id: {topic_id}")
+        return await self.get_topic_by_id(topic_id)
+
     async def get_topics_by_session(self, session_id: UUID, order_by_updated: bool = False) -> list[Topic]:
         """
         Fetches all topics for a given session.
@@ -58,10 +72,15 @@ class TopicRepository:
             The newly created Topic instance.
         """
         logger.debug(f"Creating new topic for session_id: {topic_data.session_id}")
-        topic = Topic.model_validate(topic_data)
+
+        # Convert Pydantic model to dict and create Topic instance
+        topic_dict = topic_data.model_dump()
+        topic = Topic(**topic_dict)
+
         self.db.add(topic)
         await self.db.flush()
         await self.db.refresh(topic)
+        logger.info(f"Created topic: {topic.id} for session {topic.session_id}")
         return topic
 
     async def update_topic(self, topic_id: UUID, topic_data: TopicUpdate) -> Topic | None:

@@ -1,12 +1,13 @@
-from __future__ import annotations
-
 from datetime import datetime, timezone
 from uuid import UUID, uuid4
 
 from sqlalchemy import func
 from sqlmodel import Field, SQLModel
 
-from .topic import TopicRead
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from .topic import TopicRead
 
 
 class SessionCreateBase(SQLModel):
@@ -44,7 +45,7 @@ class SessionRead(SessionBase):
 
 class SessionReadWithTopics(SessionBase):
     id: UUID
-    topics: list[TopicRead] = []
+    topics: list["TopicRead"] = []
 
 
 class SessionUpdate(SQLModel):

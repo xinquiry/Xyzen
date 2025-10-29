@@ -6,7 +6,7 @@ from fastmcp import FastMCP
 from fastmcp.tools import FunctionTool
 
 from middleware.database.connection import AsyncSessionLocal
-from models import ToolFunction, ToolStatus, ToolVersion
+from models.tool import ToolFunction, ToolStatus, ToolVersion
 from repo.tool import ToolRepository
 from utils.parser import parse_requirements
 from utils.tool_proxy import ContainerToolProxy, ToolProxyManager

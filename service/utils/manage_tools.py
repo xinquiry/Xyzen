@@ -11,7 +11,7 @@ This module provides functions for managing tools and functions in the MCP serve
 import logging
 import uuid
 from datetime import datetime, timedelta
-from typing import Any, Dict, Optional
+from typing import Any
 
 from fastmcp import FastMCP
 from fastmcp.server.dependencies import AccessToken, get_access_token
@@ -31,7 +31,7 @@ from utils.tool_loader import tool_loader
 logger = logging.getLogger(__name__)
 
 
-def error_response(message: str) -> Dict[str, Any]:
+def error_response(message: str) -> dict[str, Any]:
     return {
         "status": "error",
         "message": message,
@@ -61,7 +61,7 @@ def register_manage_tools(mcp: FastMCP) -> None:
         description: str,
         code_content: str,
         requirements: str = "",
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Create a new tool (script/module) with all its functions.
 
@@ -72,7 +72,7 @@ def register_manage_tools(mcp: FastMCP) -> None:
             requirements: Requirements.txt content (default: "")
 
         Returns:
-            Dictionary containing creation result and tool information
+            dictionary containing creation result and tool information
         """
         user_info = get_current_user()
 
@@ -159,7 +159,7 @@ def register_manage_tools(mcp: FastMCP) -> None:
     _ = create_tool
 
     @mcp.tool
-    async def create_function(tool_name: str, code_content: str) -> Dict[str, Any]:
+    async def create_function(tool_name: str, code_content: str) -> dict[str, Any]:
         """
         Add new function(s) to an existing tool by providing code content.
         The new code will be appended to the existing tool's code content.
@@ -170,7 +170,7 @@ def register_manage_tools(mcp: FastMCP) -> None:
             code_content: Python code containing one or more functions to add
 
         Returns:
-            Dictionary containing creation result
+            dictionary containing creation result
         """
         user_info = get_current_user()
         try:
@@ -272,11 +272,11 @@ def register_manage_tools(mcp: FastMCP) -> None:
     @mcp.tool
     async def update_tool(
         tool_name: str,
-        name: Optional[str] = None,
-        description: Optional[str] = None,
-        code_content: Optional[str] = None,
-        requirements: Optional[str] = None,
-    ) -> Dict[str, Any]:
+        name: str | None = None,
+        description: str | None = None,
+        code_content: str | None = None,
+        requirements: str | None = None,
+    ) -> dict[str, Any]:
         """
         Update an existing tool.
 
@@ -288,7 +288,7 @@ def register_manage_tools(mcp: FastMCP) -> None:
             requirements: New requirements (optional)
 
         Returns:
-            Dictionary containing update result
+            dictionary containing update result
         """
         user_info = get_current_user()
 
@@ -388,7 +388,7 @@ def register_manage_tools(mcp: FastMCP) -> None:
     _ = update_tool
 
     @mcp.tool
-    async def update_function(tool_id: uuid.UUID, function_name: str, code_content: str) -> Dict[str, Any]:
+    async def update_function(tool_id: uuid.UUID, function_name: str, code_content: str) -> dict[str, Any]:
         """
         Update a function in an existing tool by providing new code content.
         The new code will be appended to the existing tool's code content.
@@ -400,7 +400,7 @@ def register_manage_tools(mcp: FastMCP) -> None:
             code_content: Python code containing the updated function
 
         Returns:
-            Dictionary containing update result
+            dictionary containing update result
         """
         user_info = get_current_user()
 
@@ -517,7 +517,7 @@ def register_manage_tools(mcp: FastMCP) -> None:
     _ = update_function
 
     @mcp.tool
-    async def delete_tool(tool_id: uuid.UUID) -> Dict[str, Any]:
+    async def delete_tool(tool_id: uuid.UUID) -> dict[str, Any]:
         """
         Delete an entire tool and all its functions.
 
@@ -525,7 +525,7 @@ def register_manage_tools(mcp: FastMCP) -> None:
             tool_id: ID of the tool to delete
 
         Returns:
-            Dictionary containing deletion result
+            dictionary containing deletion result
         """
         user_info = get_current_user()
 
@@ -572,7 +572,7 @@ def register_manage_tools(mcp: FastMCP) -> None:
     _ = delete_tool
 
     @mcp.tool
-    async def delete_function(tool_id: uuid.UUID, function_name: str) -> Dict[str, Any]:
+    async def delete_function(tool_id: uuid.UUID, function_name: str) -> dict[str, Any]:
         """
         Delete a specific function from a tool.
 
@@ -581,7 +581,7 @@ def register_manage_tools(mcp: FastMCP) -> None:
             function_name: Name of the function to delete
 
         Returns:
-            Dictionary containing deletion result
+            dictionary containing deletion result
         """
         user_info = get_current_user()
 
@@ -637,7 +637,7 @@ def register_manage_tools(mcp: FastMCP) -> None:
     _ = delete_function
 
     @mcp.tool
-    async def list_tool_functions(tool_id: uuid.UUID) -> Dict[str, Any]:
+    async def list_tool_functions(tool_id: uuid.UUID) -> dict[str, Any]:
         """
         List all functions in a specific tool.
 
@@ -645,7 +645,7 @@ def register_manage_tools(mcp: FastMCP) -> None:
             tool_id: ID of the tool
 
         Returns:
-            Dictionary containing tool functions information
+            dictionary containing tool functions information
         """
         user_info = get_current_user()
 
@@ -697,7 +697,7 @@ def register_manage_tools(mcp: FastMCP) -> None:
     _ = list_tool_functions
 
     @mcp.tool
-    async def get_tool_info(tool_id: uuid.UUID) -> Dict[str, Any]:
+    async def get_tool_info(tool_id: uuid.UUID) -> dict[str, Any]:
         """
         Get complete information about a tool and its functions.
 
@@ -705,7 +705,7 @@ def register_manage_tools(mcp: FastMCP) -> None:
             tool_id: ID of the tool
 
         Returns:
-            Dictionary containing complete tool information
+            dictionary containing complete tool information
         """
         user_info = get_current_user()
 
@@ -764,7 +764,7 @@ def register_manage_tools(mcp: FastMCP) -> None:
     _ = get_tool_info
 
     @mcp.tool
-    async def get_tool_changes(hours: int = 24) -> Dict[str, Any]:
+    async def get_tool_changes(hours: int = 24) -> dict[str, Any]:
         """
         Get recent tool changes from the database.
 
@@ -772,7 +772,7 @@ def register_manage_tools(mcp: FastMCP) -> None:
             hours: Number of hours to look back for changes (default: 24)
 
         Returns:
-            Dictionary containing recent tool changes
+            dictionary containing recent tool changes
         """
         user_info = get_current_user()
 
@@ -849,12 +849,12 @@ def register_manage_tools(mcp: FastMCP) -> None:
     _ = get_tool_changes
 
     @mcp.tool
-    async def get_tool_statistics() -> Dict[str, Any]:
+    async def get_tool_statistics() -> dict[str, Any]:
         """
         Get comprehensive tool statistics from the database.
 
         Returns:
-            Dictionary containing tool statistics
+            dictionary containing tool statistics
         """
         user_info = get_current_user()
 
@@ -875,7 +875,7 @@ def register_manage_tools(mcp: FastMCP) -> None:
                 total_functions = await repo.get_all_tool_functions_by_user(user_info.id)
 
                 # Get tools by status
-                tools_by_status: Dict[str, int] = {}
+                tools_by_status: dict[str, int] = {}
                 for tool in total_tools:
                     latest_version = await repo.get_latest_tool_version(tool.id)
                     if latest_version:

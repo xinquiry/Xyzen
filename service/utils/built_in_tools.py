@@ -1,7 +1,7 @@
 import json
 import logging
 import traceback
-from typing import Any, Dict, List
+from typing import Any
 from urllib import parse, request
 
 import openai
@@ -25,7 +25,7 @@ SERVER_PORT = dynamic_mcp_config.port
 
 def register_built_in_tools(mcp: FastMCP) -> None:
     @mcp.tool
-    def search_github(query: str, max_results: int = 10, sort_by: str = "stars") -> List[Dict[str, Any]]:
+    def search_github(query: str, max_results: int = 10, sort_by: str = "stars") -> list[dict[str, Any]]:
         """
         Search GitHub Python language repositories and sort by specified criteria
 
@@ -57,9 +57,9 @@ def register_built_in_tools(mcp: FastMCP) -> None:
             items = data.get("items", [])[:max_results]
 
             # Extract key information and format
-            results = []
+            results: list[dict[str, Any]] = []
             for i, item in enumerate(items, 1):
-                repo_info = {
+                repo_info: dict[str, Any] = {
                     "rank": i,
                     "name": item["full_name"],
                     "url": item["html_url"],
@@ -79,8 +79,9 @@ def register_built_in_tools(mcp: FastMCP) -> None:
             logger.error(f"GitHub search failed: {e}")
             return [{"error": f"Search failed: {str(e)}"}]
 
-    # noinspection PyTypeChecker
-    # @mcp.tool
+    _ = search_github
+
+    @mcp.tool
     def llm_web_search(query: str) -> str:
         """
         Use AI-enhanced web search functionality to provide smarter search results with citations.
@@ -124,7 +125,7 @@ def register_built_in_tools(mcp: FastMCP) -> None:
             search_result = response_with_search.output_text
 
             # Process URL citations
-            annotations: List[Dict[str, Any]] = []
+            annotations: list[dict[str, Any]] = []
             citations_text = ""
 
             try:
@@ -172,8 +173,10 @@ def register_built_in_tools(mcp: FastMCP) -> None:
             logger.error(f"🔍 Error details: {traceback.format_exc()}")
             return f"❌ Search error: {str(e)}"
 
+    _ = llm_web_search
+
     @mcp.tool
-    async def refresh_tools() -> Dict[str, Any]:
+    async def refresh_tools() -> dict[str, Any]:
         """
         Manually refresh tools from the database for the current user, handling additions, deletions, and updates
 
@@ -191,7 +194,7 @@ def register_built_in_tools(mcp: FastMCP) -> None:
             user_id = user_info.id
 
             # Use the new refresh method that handles deletions properly
-            result = tool_loader.refresh_tools(mcp, user_id=user_id)
+            result = await tool_loader.refresh_tools(mcp, user_id=user_id)
 
             return {
                 "status": "success",
@@ -207,8 +210,10 @@ def register_built_in_tools(mcp: FastMCP) -> None:
             logger.error(f"Error refreshing tools: {e}")
             return {"status": "error", "message": f"Error refreshing tools: {str(e)}"}
 
+    _ = refresh_tools
+
     @mcp.tool
-    def get_server_status() -> Dict[str, Any]:
+    def get_server_status() -> dict[str, Any]:
         """
         Get server status information
 
@@ -226,14 +231,12 @@ def register_built_in_tools(mcp: FastMCP) -> None:
             "container_proxy_tools_count": len(tool_loader.proxy_manager.list_proxies()),
         }
 
-    # ================================
-    # Resources
-    # ================================
+    _ = get_server_status
 
     @mcp.resource("config://server")
-    def get_server_config() -> dict:
+    def get_server_config() -> dict[str, Any]:
         """Get server configuration information"""
-        config = {
+        config: dict[str, Any] = {
             "server": {
                 "name": SERVER_NAME,
                 "version": SERVER_VERSION,
@@ -248,3 +251,5 @@ def register_built_in_tools(mcp: FastMCP) -> None:
             ],
         }
         return config
+
+    _ = get_server_config
