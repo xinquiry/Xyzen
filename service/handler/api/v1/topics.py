@@ -170,11 +170,9 @@ async def update_topic(
         HTTPException: 404 if topic/session not found, 403 if access denied,
                       500 if update operation fails unexpectedly
     """
-    # Authorization is handled by the dependency
     topic_repo = TopicRepository(db)
     updated_topic = await topic_repo.update_topic(topic.id, topic_data)
     if not updated_topic:
-        # This should theoretically never happen since the dependency verified the topic exists
         raise HTTPException(status_code=500, detail="Failed to update topic")
 
     await db.commit()
@@ -203,7 +201,6 @@ async def get_topic_messages(
     Raises:
         HTTPException: 404 if topic/session not found, 403 if access denied
     """
-    # Authorization is handled by the dependency
     message_repo = MessageRepository(db)
     messages = await message_repo.get_messages_by_topic(topic.id, order_by_created=True)
     return [MessageRead(**m.model_dump()) for m in messages]

@@ -166,34 +166,24 @@ class AgentRepository:
         agent = await self.db.get(Agent, agent_id)
         if not agent:
             return None
-
-        # Handle MCP server updates separately
         mcp_server_ids = agent_data.mcp_server_ids
+        # TODO: Migrate to use sqlmodel_update
         update_data = agent_data.model_dump(exclude_unset=True, exclude={"mcp_server_ids"})
-
-        # Update agent fields
         for key, value in update_data.items():
             setattr(agent, key, value)
 
         self.db.add(agent)
         await self.db.flush()
-
-        # Update MCP server links if provided
         if mcp_server_ids is not None:
-            # Delete existing links
             delete_statement = select(AgentMcpServerLink).where(AgentMcpServerLink.agent_id == agent_id)
             delete_result = await self.db.exec(delete_statement)
             existing_links = list(delete_result.all())
             for link in existing_links:
                 await self.db.delete(link)
-
-            # Create new links
             for server_id in mcp_server_ids:
                 link = AgentMcpServerLink(agent_id=agent_id, mcp_server_id=server_id)
                 self.db.add(link)
-
             await self.db.flush()
-
         await self.db.refresh(agent)
         return agent
 
@@ -210,19 +200,14 @@ class AgentRepository:
             True if the agent was deleted, False if not found.
         """
         logger.debug(f"Deleting agent with id: {agent_id}")
-
-        # Delete MCP server links first
         link_statement = select(AgentMcpServerLink).where(AgentMcpServerLink.agent_id == agent_id)
         link_result = await self.db.exec(link_statement)
         links = list(link_result.all())
         for link in links:
             await self.db.delete(link)
-
-        # Delete the agent
         agent = await self.db.get(Agent, agent_id)
         if not agent:
             return False
-
         await self.db.delete(agent)
         await self.db.flush()
         return True
@@ -240,19 +225,14 @@ class AgentRepository:
             True if the link was created, False if it already exists.
         """
         logger.debug(f"Linking agent {agent_id} to MCP server {mcp_server_id}")
-
-        # Check if link already exists
         statement = select(AgentMcpServerLink).where(
             AgentMcpServerLink.agent_id == agent_id,
             AgentMcpServerLink.mcp_server_id == mcp_server_id,
         )
         result = await self.db.exec(statement)
         existing_link = result.first()
-
         if existing_link:
             return False
-
-        # Create new link
         link = AgentMcpServerLink(agent_id=agent_id, mcp_server_id=mcp_server_id)
         self.db.add(link)
         await self.db.flush()
@@ -271,17 +251,14 @@ class AgentRepository:
             True if the link was removed, False if it didn't exist.
         """
         logger.debug(f"Unlinking agent {agent_id} from MCP server {mcp_server_id}")
-
         statement = select(AgentMcpServerLink).where(
             AgentMcpServerLink.agent_id == agent_id,
             AgentMcpServerLink.mcp_server_id == mcp_server_id,
         )
         result = await self.db.exec(statement)
         link = result.first()
-
         if not link:
             return False
-
         await self.db.delete(link)
         await self.db.flush()
         return True
