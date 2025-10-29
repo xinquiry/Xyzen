@@ -1,7 +1,3 @@
-"""
-This module contains repository functions for database operations related to the Agent model.
-"""
-
 import logging
 from uuid import UUID
 
