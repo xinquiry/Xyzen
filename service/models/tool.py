@@ -1,4 +1,5 @@
 import enum
+import uuid
 from datetime import datetime, timezone
 from sqlalchemy import func
 from sqlmodel import Column, DateTime, Field, SQLModel, Text, UniqueConstraint, text
@@ -26,7 +27,7 @@ class Tool(ToolBase, table=True):
 
     __table_args__ = (UniqueConstraint("user_id", "name", name="uq_user_tool_name"),)
 
-    id: int | None = Field(default=None, primary_key=True, description="Unique identifier for this tool")
+    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True, description="Unique identifier for this tool")
     created_at: datetime = Field(
         default_factory=lambda: datetime.now(timezone.utc),
         nullable=False,
@@ -42,7 +43,7 @@ class Tool(ToolBase, table=True):
 class ToolRead(ToolBase):
     """Model for reading a tool, includes the ID and timestamps."""
 
-    id: int = Field(description="Unique identifier for this tool")
+    id: uuid.UUID = Field(description="Unique identifier for this tool")
     created_at: datetime
     updated_at: datetime
 
@@ -70,13 +71,15 @@ class ToolVersionBase(SQLModel):
     requirements: str = Field(sa_column=Column(Text), description="Python requirements.txt content")
     code_content: str = Field(sa_column=Column(Text), description="Python code content")
     status: ToolStatus = Field(default=ToolStatus.BUILDING, index=True, description="Build status")
-    tool_id: int = Field(index=True, description="Reference to tool table")
+    tool_id: uuid.UUID = Field(index=True, description="Reference to tool table")
 
 
 class ToolVersion(ToolVersionBase, table=True):
     """Database model for a tool version, inherits from ToolVersionBase."""
 
-    id: int | None = Field(default=None, primary_key=True, description="Unique identifier for this version")
+    id: uuid.UUID = Field(
+        default_factory=uuid.uuid4, primary_key=True, description="Unique identifier for this version"
+    )
     created_at: datetime = Field(
         default_factory=datetime.now,
         sa_column=Column(DateTime, server_default=text("CURRENT_TIMESTAMP")),
@@ -86,7 +89,7 @@ class ToolVersion(ToolVersionBase, table=True):
 class ToolVersionRead(ToolVersionBase):
     """Model for reading a tool version, includes the ID and timestamp."""
 
-    id: int = Field(description="Unique identifier for this version")
+    id: uuid.UUID = Field(description="Unique identifier for this version")
     created_at: datetime
 
 
@@ -113,19 +116,21 @@ class ToolFunctionBase(SQLModel):
     docstring: str | None = Field(default=None, description="Function docstring")
     input_schema: str = Field(default="{}", description="JSON schema for function input")
     output_schema: str = Field(default="{}", description="JSON schema for function output")
-    tool_version_id: int = Field(index=True, description="Reference to tool version table")
+    tool_version_id: uuid.UUID = Field(index=True, description="Reference to tool version table")
 
 
 class ToolFunction(ToolFunctionBase, table=True):
     """Database model for a tool function, inherits from ToolFunctionBase."""
 
-    id: int | None = Field(default=None, primary_key=True, description="Unique identifier for this function")
+    id: uuid.UUID = Field(
+        default_factory=uuid.uuid4, primary_key=True, description="Unique identifier for this function"
+    )
 
 
 class ToolFunctionRead(ToolFunctionBase):
     """Model for reading a tool function, includes the ID."""
 
-    id: int = Field(description="Unique identifier for this function")
+    id: uuid.UUID = Field(description="Unique identifier for this function")
 
 
 class ToolFunctionCreate(ToolFunctionBase):

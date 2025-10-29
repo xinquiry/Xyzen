@@ -4,6 +4,8 @@ Provides data access interface for tools, tool versions, and tool functions
 """
 
 import logging
+import uuid
+from datetime import datetime
 from sqlalchemy import func
 from sqlmodel import select
 from sqlmodel.ext.asyncio.session import AsyncSession
@@ -56,7 +58,7 @@ class ToolRepository:
         logger.info(f"Created tool: {tool.id} for user {user_id}, name: {tool.name}")
         return tool
 
-    async def get_tool_by_id(self, tool_id: int) -> Tool | None:
+    async def get_tool_by_id(self, tool_id: uuid.UUID) -> Tool | None:
         """
         Fetches a tool by its ID.
 
@@ -89,7 +91,7 @@ class ToolRepository:
         logger.debug(f"Found tool for user {user_id}, name '{name}': {'Yes' if tool else 'No'}")
         return tool
 
-    async def update_tool(self, tool_id: int, tool_data: ToolUpdate) -> Tool | None:
+    async def update_tool(self, tool_id: uuid.UUID, tool_data: ToolUpdate) -> Tool | None:
         """
         Updates an existing tool.
         This function does NOT commit the transaction.
@@ -148,7 +150,7 @@ class ToolRepository:
         logger.debug(f"Found {len(tools)} tools for user {user_id}")
         return tools
 
-    async def delete_tool(self, tool_id: int) -> bool:
+    async def delete_tool(self, tool_id: uuid.UUID) -> bool:
         """
         Soft delete a tool by setting is_active to False.
         This function does NOT commit the transaction.
@@ -200,7 +202,7 @@ class ToolRepository:
         logger.info(f"Created tool version: {version.id} for tool {version_data.tool_id}, version: {version.version}")
         return version
 
-    async def get_tool_version_by_id(self, version_id: int) -> ToolVersion | None:
+    async def get_tool_version_by_id(self, version_id: uuid.UUID) -> ToolVersion | None:
         """
         Fetches a tool version by its ID.
 
@@ -216,7 +218,7 @@ class ToolRepository:
         logger.debug(f"Found tool version {version_id}: {'Yes' if version else 'No'}")
         return version
 
-    async def get_latest_tool_version(self, tool_id: int) -> ToolVersion | None:
+    async def get_latest_tool_version(self, tool_id: uuid.UUID) -> ToolVersion | None:
         """
         Get the latest version of a tool.
 
@@ -238,7 +240,7 @@ class ToolRepository:
         return version
 
     async def list_tool_versions_by_tool(
-        self, tool_id: int, status: ToolStatus | None = None, limit: int = 100, offset: int = 0
+        self, tool_id: uuid.UUID, status: ToolStatus | None = None, limit: int = 100, offset: int = 0
     ) -> list[ToolVersion]:
         """
         Get list of tool versions for a tool.
@@ -267,7 +269,7 @@ class ToolRepository:
         logger.debug(f"Found {len(versions)} versions for tool {tool_id}")
         return versions
 
-    async def update_tool_version(self, version_id: int, version_data: ToolVersionUpdate) -> ToolVersion | None:
+    async def update_tool_version(self, version_id: uuid.UUID, version_data: ToolVersionUpdate) -> ToolVersion | None:
         """
         Updates an existing tool version.
         This function does NOT commit the transaction.
@@ -320,7 +322,7 @@ class ToolRepository:
         await self.db.refresh(function)
         return function
 
-    async def get_tool_function_by_id(self, function_id: int) -> ToolFunction | None:
+    async def get_tool_function_by_id(self, function_id: uuid.UUID) -> ToolFunction | None:
         """
         Fetches a tool function by its ID.
 
@@ -335,7 +337,7 @@ class ToolRepository:
         function = result.one_or_none()
         return function
 
-    async def list_tool_functions_by_version(self, tool_version_id: int) -> list[ToolFunction]:
+    async def list_tool_functions_by_version(self, tool_version_id: uuid.UUID) -> list[ToolFunction]:
         """
         Get list of tool functions for a tool version.
 
@@ -354,7 +356,9 @@ class ToolRepository:
         functions = list(result.all())
         return functions
 
-    async def update_tool_function(self, function_id: int, function_data: ToolFunctionUpdate) -> ToolFunction | None:
+    async def update_tool_function(
+        self, function_id: uuid.UUID, function_data: ToolFunctionUpdate
+    ) -> ToolFunction | None:
         """
         Updates an existing tool function.
         This function does NOT commit the transaction.
@@ -380,7 +384,7 @@ class ToolRepository:
         await self.db.refresh(function)
         return function
 
-    async def delete_tool_function(self, function_id: int) -> bool:
+    async def delete_tool_function(self, function_id: uuid.UUID) -> bool:
         """
         Hard delete a tool function.
         This function does NOT commit the transaction.
@@ -416,7 +420,7 @@ class ToolRepository:
         logger.debug(f"Tool count for user {user_id}: {count}")
         return count
 
-    async def get_tool_version_count_by_tool(self, tool_id: int, status: ToolStatus | None = None) -> int:
+    async def get_tool_version_count_by_tool(self, tool_id: uuid.UUID, status: ToolStatus | None = None) -> int:
         """Get tool version count for a tool"""
         logger.debug(f"Getting version count for tool_id: {tool_id}, status: {status}")
 
@@ -452,3 +456,162 @@ class ToolRepository:
 
         logger.debug(f"Found {len(tools)} ready tools for user {user_id}")
         return tools
+
+    async def get_tool_function_by_version_and_name(
+        self, tool_version_id: uuid.UUID, function_name: str
+    ) -> ToolFunction | None:
+        """
+        Get a tool function by version ID and function name.
+
+        Args:
+            tool_version_id: The tool version ID.
+            function_name: The function name to search for.
+
+        Returns:
+            The ToolFunction, or None if not found.
+        """
+        logger.debug(f"Fetching tool function for version_id: {tool_version_id}, function_name: {function_name}")
+        result = await self.db.exec(
+            select(ToolFunction).where(
+                ToolFunction.tool_version_id == tool_version_id,
+                ToolFunction.function_name == function_name,
+            )
+        )
+        function = result.one_or_none()
+        return function
+
+    async def get_functions_by_names(
+        self, tool_version_id: uuid.UUID, function_names: list[str]
+    ) -> list[ToolFunction]:
+        """
+        Get tool functions by version ID and list of function names.
+
+        Args:
+            tool_version_id: The tool version ID.
+            function_names: List of function names to search for.
+
+        Returns:
+            List of ToolFunction instances.
+        """
+        logger.debug(f"Fetching functions for version_id: {tool_version_id}, names: {function_names}")
+        result = await self.db.exec(
+            select(ToolFunction).where(
+                ToolFunction.tool_version_id == tool_version_id,
+                ToolFunction.function_name.in_(function_names),  # type: ignore
+            )
+        )
+        functions = list(result.all())
+        return functions
+
+    async def hard_delete_tool(self, tool_id: uuid.UUID) -> bool:
+        """
+        Hard delete a tool and all its related data (versions and functions).
+        This function does NOT commit the transaction.
+
+        Args:
+            tool_id: The ID of the tool to delete.
+
+        Returns:
+            True if tool was found and deleted, False otherwise.
+        """
+        logger.debug(f"Hard deleting tool with id: {tool_id}")
+        tool = await self.db.get(Tool, tool_id)
+        if not tool:
+            logger.debug(f"Tool {tool_id} not found for deletion")
+            return False
+
+        versions_result = await self.db.exec(select(ToolVersion).where(ToolVersion.tool_id == tool_id))
+        versions = list(versions_result.all())
+
+        for version in versions:
+            functions_result = await self.db.exec(
+                select(ToolFunction).where(ToolFunction.tool_version_id == version.id)
+            )
+            functions = list(functions_result.all())
+            for function in functions:
+                await self.db.delete(function)
+
+        for version in versions:
+            await self.db.delete(version)
+        await self.db.delete(tool)
+        await self.db.flush()
+
+        logger.info(f"Hard deleted tool: {tool_id}")
+        return True
+
+    async def get_tools_updated_since(self, user_id: str, since: datetime, limit: int = 50) -> list[Tool]:
+        """
+        Get tools updated since a specific datetime.
+
+        Args:
+            user_id: The user ID to filter by.
+            since: The datetime threshold.
+            limit: Maximum number of tools to return.
+
+        Returns:
+            List of Tool instances ordered by updated_at desc.
+        """
+        logger.debug(f"Fetching tools updated since {since} for user_id: {user_id}")
+        result = await self.db.exec(
+            select(Tool)
+            .where(Tool.user_id == user_id, Tool.updated_at >= since)
+            .order_by(Tool.updated_at.desc())  # type: ignore
+            .limit(limit)
+        )
+        tools = list(result.all())
+        return tools
+
+    async def get_tool_versions_created_since(
+        self, user_id: str, since: datetime, limit: int = 50
+    ) -> list[ToolVersion]:
+        """
+        Get tool versions created since a specific datetime for a user.
+
+        Args:
+            user_id: The user ID to filter by.
+            since: The datetime threshold.
+            limit: Maximum number of versions to return.
+
+        Returns:
+            List of ToolVersion instances ordered by created_at desc.
+        """
+        logger.debug(f"Fetching versions created since {since} for user_id: {user_id}")
+        result = await self.db.exec(
+            select(ToolVersion)
+            .join(Tool)
+            .where(Tool.user_id == user_id, ToolVersion.created_at >= since)
+            .order_by(ToolVersion.created_at.desc())  # type: ignore
+            .limit(limit)
+        )
+        versions = list(result.all())
+        return versions
+
+    async def get_all_tool_versions_by_user(self, user_id: str) -> list[ToolVersion]:
+        """
+        Get all tool versions for a user.
+
+        Args:
+            user_id: The user ID to filter by.
+
+        Returns:
+            List of ToolVersion instances.
+        """
+        logger.debug(f"Fetching all versions for user_id: {user_id}")
+        result = await self.db.exec(select(ToolVersion).join(Tool).where(Tool.user_id == user_id))
+        versions = list(result.all())
+        return versions
+
+    async def get_all_tool_functions_by_user(self, user_id: str) -> list[ToolFunction]:
+        """
+        Get all tool functions for a user.
+
+        Args:
+            user_id: The user ID to filter by.
+
+        Returns:
+            List of ToolFunction instances.
+        """
+        logger.debug(f"Fetching all functions for user_id: {user_id}")
+        result = await self.db.exec(select(ToolFunction).join(ToolVersion).join(Tool).where(Tool.user_id == user_id))
+        functions = list(result.all())
+        return functions
