@@ -2,6 +2,8 @@ from typing import Optional
 from uuid import UUID, uuid4
 
 from pydantic import BaseModel
+from sqlalchemy import Column
+from sqlalchemy.dialects.postgresql import JSONB
 from sqlmodel import Field, SQLModel
 
 
@@ -85,6 +87,7 @@ class ProviderBase(SQLModel):
     )
     provider_config: dict = Field(
         default_factory=dict,
+        sa_column=Column(JSONB),
         description="Provider-specific configuration as JSON",
     )
 

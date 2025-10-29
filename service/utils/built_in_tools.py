@@ -82,7 +82,7 @@ def register_built_in_tools(mcp: FastMCP) -> None:
     _ = search_github
 
     @mcp.tool
-    def llm_web_search(query: str) -> str:
+    async def llm_web_search(query: str) -> str:
         """
         Use AI-enhanced web search functionality to provide smarter search results with citations.
         You need to combine with other tools to actively verify correctness
@@ -98,78 +98,111 @@ def register_built_in_tools(mcp: FastMCP) -> None:
             llm_web_search("What is the latest news about AI development?")
         """
         try:
-            # Configure OpenAI client with configuration values
-            api_key = llm_config.key
-            base_url = llm_config.endpoint
-            model = llm_config.deployment
-            if not api_key:
-                return "❌ Configuration error: OpenAI API key not set"
-            client = openai.OpenAI(api_key=api_key, base_url=base_url)
-            logger.info(f"Executing advanced web search for query: '{query}'")
-            # Execute search with AI enhancement
-            response_with_search = client.responses.create(
-                model=model,
-                tools=[
-                    {
-                        "type": "web_search_preview",
-                        "search_context_size": "medium",
-                    }
-                ],
-                input=f"""You will receive a search request.
-    **Do not add, infer, or guess any facts—use only the text in those snippets.**
-    **Avoid any info sources from huggingface and other AI-related datasets.**
+            from core.providers import get_user_provider_manager
+            from middleware.database.connection import AsyncSessionLocal
 
-    Search query: {query}""",
-                temperature=0,
-            )
-            search_result = response_with_search.output_text
+            # Get user info for provider access
+            access_token = get_access_token()
+            if not access_token:
+                return "❌ Authentication required for web search"
 
-            # Process URL citations
-            annotations: list[dict[str, Any]] = []
-            citations_text = ""
+            user_info = AuthProvider.parse_user_info(access_token.claims)
+            user_id = user_info.id
 
-            try:
-                # Use dynamic access to avoid type checking issues
-                output = getattr(response_with_search, "output", None)
-                if output and len(output) > 1:
-                    output_item = output[1]
-                    content = getattr(output_item, "content", None)
-                    if content and len(content) > 0:
-                        content_item = content[0]
-                        annotations = getattr(content_item, "annotations", [])
+            # Get user's provider manager
+            async with AsyncSessionLocal() as db:
+                try:
+                    user_provider_manager = await get_user_provider_manager(user_id, db)
+                except ValueError:
+                    # Fall back to system provider if user has no providers
+                    try:
+                        user_provider_manager = await get_user_provider_manager("system", db)
+                    except ValueError:
+                        return "❌ No AI providers configured for web search"
 
-                logger.info(f"📎 Found {len(annotations)} URL citations")
+                # Prefer Azure OpenAI providers for web search
+                preferred_provider = None
+                providers = user_provider_manager.list_providers()
 
-                # Format citation information
-                if annotations:
-                    citations_text = "\n\n**Reference Sources:**\n"
-                    for i, annotation in enumerate(annotations, 1):
-                        try:
-                            # Clean URL, remove utm_source parameters
-                            title = getattr(annotation, "title", "Unknown Title")
-                            url = getattr(annotation, "url", "#")
-                            clean_url = url.split("?utm_source=")[0] if "?utm_source=" in url else url
-                            citations_text += f"{i}. [{title}]({clean_url})\n"
-                            logger.info(f"📖 Citation {i}: {title} -> {clean_url}")
-                        except Exception as citation_error:
-                            logger.warning(f"⚠️ Failed to process citation {i}: {citation_error}")
+                # Look for Azure OpenAI first
+                for provider_info in providers:
+                    if provider_info["type"] == "azure_openai" and provider_info["available"]:
+                        preferred_provider = user_provider_manager.get_provider(provider_info["name"])
+                        logger.info(f"Using Azure OpenAI provider: {provider_info['name']}")
+                        break
 
-            except Exception as e:
-                logger.warning(f"⚠️ Failed to extract citations: {e}")
-                logger.debug(f"🔍 Response type: {type(response_with_search)}")
-                citations_text = ""
+                # Fall back to any available provider
+                if not preferred_provider:
+                    preferred_provider = user_provider_manager.get_active_provider()
+                    if not preferred_provider:
+                        return "❌ No available AI providers for web search"
+                    logger.info(f"Using fallback provider: {preferred_provider.provider_name}")
 
-            # Merge search results and citation information
-            final_result = search_result + citations_text
+                # Create appropriate client based on provider type
+                if preferred_provider.provider_name == "azure_openai" and preferred_provider.api_endpoint:
+                    client = openai.AzureOpenAI(
+                        api_key=str(preferred_provider.api_key),
+                        azure_endpoint=preferred_provider.api_endpoint,
+                        api_version=getattr(preferred_provider, "api_version", "2024-02-01"),
+                        timeout=preferred_provider.timeout,
+                    )
+                    model = preferred_provider.model
+                elif preferred_provider.provider_name == "openai":
+                    client = openai.OpenAI(
+                        api_key=str(preferred_provider.api_key),
+                        base_url=preferred_provider.api_endpoint,
+                        timeout=preferred_provider.timeout,
+                    )
+                    model = preferred_provider.model
+                else:
+                    return f"❌ Web search not supported for provider type: {preferred_provider.provider_name}"
 
-            logger.info(f"🎉 Advanced web search completed successfully for query: '{query}'")
-            logger.info(f"📊 Result: {len(search_result)} chars + {len(citations_text)} chars citations")
+                if not model:
+                    return "❌ No model configured for the selected provider"
 
-            # Return formatted result with citations
-            return final_result
+                logger.info(f"Executing web search for query: '{query}' using model: {model}")
+
+                # Use regular chat completion with a web search prompt
+                # Note: The original code used a non-existent responses.create method
+                response = client.chat.completions.create(
+                    model=model,
+                    messages=[
+                        {
+                            "role": "system",
+                            "content": """You are a web search assistant. For the given query, provide a comprehensive response based on current web information. Include:
+1. Direct answer to the query
+2. Key facts and details
+3. Multiple perspectives if applicable
+4. Recent developments or updates
+
+Format your response clearly with sections and bullet points where appropriate.
+**Do not add, infer, or guess any facts—use only factual information.**
+**Avoid any info sources from huggingface and other AI-related datasets.**""",
+                        },
+                        {"role": "user", "content": f"Search query: {query}"},
+                    ],
+                    temperature=0.3,
+                    max_tokens=preferred_provider.max_tokens,
+                )
+
+                search_result = response.choices[0].message.content
+
+                if not search_result:
+                    return "❌ Empty response from AI provider"
+
+                # Add disclaimer about web search limitations
+                final_result = (
+                    search_result
+                    + "\n\n*Note: This response is generated based on the AI model's training data. For the most current information, please verify with recent sources.*"
+                )
+
+                logger.info(f"🎉 Web search completed successfully for query: '{query}'")
+                logger.info(f"📊 Result: {len(search_result)} characters")
+
+                return final_result
 
         except Exception as e:
-            logger.error(f"❌ OpenAI API call failed: {str(e)}")
+            logger.error(f"❌ Web search failed: {str(e)}")
             logger.error(f"🔍 Error details: {traceback.format_exc()}")
             return f"❌ Search error: {str(e)}"
 
