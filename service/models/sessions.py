@@ -1,8 +1,8 @@
 from datetime import datetime, timezone
 from uuid import UUID, uuid4
 
-from sqlalchemy import func
-from sqlmodel import Field, SQLModel
+from sqlalchemy import TIMESTAMP
+from sqlmodel import Column, Field, SQLModel
 
 from typing import TYPE_CHECKING
 
@@ -25,13 +25,11 @@ class Session(SessionBase, table=True):
     id: UUID = Field(default_factory=uuid4, primary_key=True, index=True)
     created_at: datetime = Field(
         default_factory=lambda: datetime.now(timezone.utc),
-        nullable=False,
-        sa_column_kwargs={"server_default": func.now()},
+        sa_column=Column(TIMESTAMP(timezone=True), nullable=False),
     )
     updated_at: datetime = Field(
         default_factory=lambda: datetime.now(timezone.utc),
-        nullable=False,
-        sa_column_kwargs={"server_default": func.now(), "onupdate": func.now()},
+        sa_column=Column(TIMESTAMP(timezone=True), nullable=False, onupdate=lambda: datetime.now(timezone.utc)),
     )
 
 

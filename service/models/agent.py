@@ -2,7 +2,7 @@ from uuid import UUID, uuid4
 
 from sqlmodel import JSON, Column, Field, SQLModel
 from datetime import datetime, timezone
-from sqlalchemy import func
+from sqlalchemy import TIMESTAMP
 
 from typing import TYPE_CHECKING
 
@@ -27,17 +27,18 @@ class AgentBase(AgentCreateBase):
     user_id: str = Field(index=True)
 
 
+datetime.utcnow
+
+
 class Agent(AgentBase, table=True):
     id: UUID = Field(default_factory=uuid4, primary_key=True, index=True)
     created_at: datetime = Field(
         default_factory=lambda: datetime.now(timezone.utc),
-        nullable=False,
-        sa_column_kwargs={"server_default": func.now()},
+        sa_column=Column(TIMESTAMP(timezone=True), nullable=False),
     )
     updated_at: datetime = Field(
         default_factory=lambda: datetime.now(timezone.utc),
-        nullable=False,
-        sa_column_kwargs={"server_default": func.now(), "onupdate": func.now()},
+        sa_column=Column(TIMESTAMP(timezone=True), nullable=False, onupdate=lambda: datetime.now(timezone.utc)),
     )
 
 

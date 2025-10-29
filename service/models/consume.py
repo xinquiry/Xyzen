@@ -1,9 +1,8 @@
 from datetime import datetime, timezone
 from uuid import UUID, uuid4
 
-from sqlalchemy import BigInteger, Column
-from sqlalchemy.dialects.postgresql import TIMESTAMP
-from sqlmodel import Field, SQLModel
+from sqlalchemy import TIMESTAMP, BigInteger
+from sqlmodel import Column, Field, SQLModel
 
 
 class ConsumeRecordBase(SQLModel):
@@ -42,12 +41,10 @@ class ConsumeRecord(ConsumeRecordBase, table=True):
     created_at: datetime = Field(
         default_factory=lambda: datetime.now(timezone.utc),
         sa_column=Column(TIMESTAMP(timezone=True), nullable=False),
-        description="Creation time",
     )
     updated_at: datetime = Field(
         default_factory=lambda: datetime.now(timezone.utc),
         sa_column=Column(TIMESTAMP(timezone=True), nullable=False, onupdate=lambda: datetime.now(timezone.utc)),
-        description="Update time",
     )
 
 
@@ -81,11 +78,6 @@ class ConsumeRecordUpdate(SQLModel):
     remote_response: str | None = Field(default=None, description="Remote billing response")
 
 
-# ============================================================================
-# UserConsumeSummary Models
-# ============================================================================
-
-
 class UserConsumeSummaryBase(SQLModel):
     """Base model for user consume summary with shared fields."""
 
@@ -104,12 +96,10 @@ class UserConsumeSummary(UserConsumeSummaryBase, table=True):
     created_at: datetime = Field(
         default_factory=lambda: datetime.now(timezone.utc),
         sa_column=Column(TIMESTAMP(timezone=True), nullable=False),
-        description="Creation time",
     )
     updated_at: datetime = Field(
         default_factory=lambda: datetime.now(timezone.utc),
         sa_column=Column(TIMESTAMP(timezone=True), nullable=False, onupdate=lambda: datetime.now(timezone.utc)),
-        description="Update time",
     )
 
 

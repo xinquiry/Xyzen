@@ -1,8 +1,8 @@
 import enum
 import uuid
 from datetime import datetime, timezone
-from sqlalchemy import func
-from sqlmodel import Column, DateTime, Field, SQLModel, Text, UniqueConstraint, text
+from sqlalchemy import func, TIMESTAMP
+from sqlmodel import Column, Field, SQLModel, Text, UniqueConstraint
 
 
 class ToolStatus(str, enum.Enum):
@@ -30,13 +30,11 @@ class Tool(ToolBase, table=True):
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True, description="Unique identifier for this tool")
     created_at: datetime = Field(
         default_factory=lambda: datetime.now(timezone.utc),
-        nullable=False,
-        sa_column_kwargs={"server_default": func.now()},
+        sa_column=Column(TIMESTAMP(timezone=True), nullable=False),
     )
     updated_at: datetime = Field(
         default_factory=lambda: datetime.now(timezone.utc),
-        nullable=False,
-        sa_column_kwargs={"server_default": func.now(), "onupdate": func.now()},
+        sa_column=Column(TIMESTAMP(timezone=True), nullable=False, onupdate=lambda: datetime.now(timezone.utc)),
     )
 
 
@@ -81,8 +79,8 @@ class ToolVersion(ToolVersionBase, table=True):
         default_factory=uuid.uuid4, primary_key=True, description="Unique identifier for this version"
     )
     created_at: datetime = Field(
-        default_factory=datetime.now,
-        sa_column=Column(DateTime, server_default=text("CURRENT_TIMESTAMP")),
+        default_factory=lambda: datetime.now(timezone.utc),
+        sa_column=Column(TIMESTAMP(timezone=True), server_default=func.now()),
     )
 
 
