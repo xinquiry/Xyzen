@@ -9,8 +9,7 @@ from sqlmodel.ext.asyncio.session import AsyncSession
 from core.mcp import async_check_mcp_server_status
 from middleware.auth import get_current_user
 from middleware.database.connection import get_session
-from models.mcp import McpServer
-from models.mcp import McpServerCreate, McpServerUpdate
+from models.mcp import McpServer, McpServerCreate, McpServerUpdate
 
 router = APIRouter()
 

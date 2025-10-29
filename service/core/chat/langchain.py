@@ -26,18 +26,9 @@ logger = logging.getLogger(__name__)
 ResponseT = TypeVar("ResponseT")
 
 
-def _create_langchain_model(provider: Any) -> AzureChatOpenAI:
-    """Create a LangChain AzureChatOpenAI model from our provider."""
-    return AzureChatOpenAI(
-        api_key=provider.api_key,
-        azure_endpoint=provider.api_endpoint,
-        api_version=getattr(provider, "api_version", "2025-03-01-preview"),
-        azure_deployment=provider.model,
-        # temperature=provider.temperature,
-        # max_completion_tokens=provider.max_tokens,
-        timeout=provider.timeout,
-        streaming=True,
-    )
+def _create_langchain_model(user_provider_manager: Any, provider_name: str | None = None) -> Any:
+    """Create a LangChain model from the provider manager."""
+    return user_provider_manager.create_langchain_model(provider_name)
 
 
 async def _prepare_langchain_tools(db: AsyncSession, agent: Any) -> List[BaseTool]:
@@ -169,8 +160,8 @@ async def get_ai_response_stream_langchain(
         return
 
     # Load session and agent first (needed for provider selection)
-    from repo.session import SessionRepository
     from repo.agent import AgentRepository
+    from repo.session import SessionRepository
 
     session_repo = SessionRepository(db)
     session = await session_repo.get_session_by_id(topic.session_id)
@@ -180,11 +171,13 @@ async def get_ai_response_stream_langchain(
         agent_repo = AgentRepository(db)
         agent = await agent_repo.get_agent_by_id(session.agent_id)
 
-    # Select provider using loaded agent
-    provider = None
+    # Select provider using loaded agent or use active provider
+    provider_name = None
     if agent and agent.provider_id:
-        provider = user_provider_manager.get_provider(str(agent.provider_id))
+        provider_name = str(agent.provider_id)
 
+    # Verify provider is available
+    provider = user_provider_manager.get_provider(provider_name)
     if not provider:
         provider = user_provider_manager.get_active_provider()
 
@@ -200,7 +193,7 @@ async def get_ai_response_stream_langchain(
 
     try:
         # Create langchain agent
-        llm = _create_langchain_model(provider)
+        llm = _create_langchain_model(user_provider_manager, provider_name)
         tools = await _prepare_langchain_tools(db, agent)
         langchain_agent: Any = create_agent(model=llm, tools=tools, system_prompt=system_prompt)
 

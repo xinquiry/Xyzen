@@ -5,7 +5,7 @@ from .mcp import McpServer
 from .message import Message
 from .provider import Provider
 from .sessions import Session
-from .tool import Tool, ToolVersion, ToolFunction
+from .tool import Tool, ToolFunction, ToolVersion
 from .topic import Topic
 
 __all__ = [

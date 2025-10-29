@@ -32,8 +32,8 @@ async def get_ai_response(
         return "Sorry, no LLM providers configured. Please configure a provider first."
 
     # Load session and agent for provider selection
-    from repo.session import SessionRepository
     from repo.agent import AgentRepository
+    from repo.session import SessionRepository
 
     session_repo = SessionRepository(db)
     session = await session_repo.get_session_by_id(topic.session_id)

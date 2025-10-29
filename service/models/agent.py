@@ -1,10 +1,9 @@
+from datetime import datetime, timezone
+from typing import TYPE_CHECKING
 from uuid import UUID, uuid4
 
-from sqlmodel import JSON, Column, Field, SQLModel
-from datetime import datetime, timezone
 from sqlalchemy import TIMESTAMP
-
-from typing import TYPE_CHECKING
+from sqlmodel import JSON, Column, Field, SQLModel
 
 if TYPE_CHECKING:
     from .mcp import McpServer

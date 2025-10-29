@@ -8,7 +8,7 @@ from middleware.auth import get_current_user
 from middleware.database import get_session
 from models.sessions import SessionCreate, SessionRead
 from models.topic import TopicCreate
-from repo import SessionRepository, TopicRepository, MessageRepository
+from repo import MessageRepository, SessionRepository, TopicRepository
 
 router = APIRouter()
 

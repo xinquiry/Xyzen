@@ -1,7 +1,8 @@
 import enum
 import uuid
 from datetime import datetime, timezone
-from sqlalchemy import func, TIMESTAMP
+
+from sqlalchemy import TIMESTAMP, func
 from sqlmodel import Column, Field, SQLModel, Text, UniqueConstraint
 
 

@@ -6,19 +6,22 @@ Provides abstract base classes and concrete implementations for different LLM pr
 import logging
 from typing import Any, Dict, Type, Union
 
+from langchain_core.language_models import BaseChatModel
+from pydantic import SecretStr
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 from internal import configs
 from internal.configs.llm import LLMConfig
+from middleware.database.connection import AsyncSessionLocal
 from models.provider import Provider, ProviderCreate, ProviderUpdate
-from schemas.providers import ProviderType
 from repo.provider import ProviderRepository
+from schemas.providers import ProviderType
+
 from .anthropic import AnthropicProvider
 from .azure_openai import AzureOpenAIProvider
 from .base import BaseLLMProvider, ChatCompletionRequest, ChatCompletionResponse, ChatMessage
 from .google import GoogleProvider
 from .openai import OpenAIProvider
-from middleware.database.connection import AsyncSessionLocal
 
 logger = logging.getLogger(__name__)
 
@@ -124,7 +127,7 @@ class LLMProviderFactory:
     def create_provider(
         cls,
         provider_type: Union[ProviderType, str],
-        api_key: str,
+        api_key: SecretStr,
         api_endpoint: str,
         model: str | None = None,
         max_tokens: int = 4096,
@@ -210,7 +213,7 @@ class LLMProviderManager:
         self,
         name: str,
         provider_type: Union[ProviderType, str],
-        api_key: str,
+        api_key: SecretStr,
         api_endpoint: str,
         model: str | None = None,
         max_tokens: int = 4096,
@@ -338,6 +341,28 @@ class LLMProviderManager:
 
         logger.info(f"Removed provider '{name}'")
 
+    def create_langchain_model(self, name: str | None = None) -> BaseChatModel:
+        """
+        Create a LangChain model from a provider.
+
+        Args:
+            name: Optional name of the provider to use. If None, uses active provider
+
+        Returns:
+            BaseChatModel instance ready for use with LangChain
+
+        Raises:
+            ValueError: If the provider is not found or not available
+        """
+        provider = self.get_provider(name)
+        if not provider:
+            raise ValueError(f"Provider '{name or 'active'}' not found")
+
+        if not provider.is_available():
+            raise ValueError(f"Provider '{name or 'active'}' is not available")
+
+        return provider.to_langchain_model()
+
 
 async def get_user_provider_manager(user_id: str, db: AsyncSession) -> LLMProviderManager:
     """
@@ -376,15 +401,17 @@ async def get_user_provider_manager(user_id: str, db: AsyncSession) -> LLMProvid
             provider_name = "system" if db_provider.is_system else str(db_provider.id)
 
             # Add provider with unified parameters matching SQLModel schema
+            # Pass provider_config as kwargs for provider-specific configuration
             user_manager.add_provider(
                 name=provider_name,
                 provider_type=db_provider.provider_type,
-                api_key=db_provider.key,
+                api_key=SecretStr(db_provider.key),
                 api_endpoint=db_provider.api,
                 model=db_provider.model,
                 max_tokens=db_provider.max_tokens,
                 temperature=db_provider.temperature,
                 timeout=db_provider.timeout,
+                **db_provider.provider_config,  # Pass provider-specific config
             )
 
             logger.debug(

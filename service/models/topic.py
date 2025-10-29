@@ -1,10 +1,9 @@
 from datetime import datetime, timezone
+from typing import TYPE_CHECKING
 from uuid import UUID, uuid4
 
 from sqlalchemy import TIMESTAMP
 from sqlmodel import Column, Field, SQLModel
-
-from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from .message import MessageRead

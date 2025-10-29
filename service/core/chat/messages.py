@@ -4,8 +4,9 @@ Message formatting and construction helpers for chat service.
 
 from typing import Optional
 
-from models.agent import Agent
 from sqlmodel.ext.asyncio.session import AsyncSession
+
+from models.agent import Agent
 
 
 async def agent_has_dynamic_mcp(db: AsyncSession, agent: Optional[Agent]) -> bool:
