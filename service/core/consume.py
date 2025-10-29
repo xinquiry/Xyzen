@@ -5,7 +5,7 @@ Provides core business logic for consumption records, remote billing, and statis
 
 import json
 import logging
-from typing import Any, Optional
+from typing import Any
 from uuid import UUID
 
 import requests
@@ -37,13 +37,13 @@ class ConsumeService:
         user_id: str,
         amount: int,
         auth_provider: str,
-        access_key: Optional[str] = None,
-        sku_id: Optional[int] = None,
-        scene: Optional[str] = None,
-        session_id: Optional[UUID] = None,
-        topic_id: Optional[UUID] = None,
-        message_id: Optional[UUID] = None,
-        description: Optional[str] = None,
+        access_key: str | None = None,
+        sku_id: int | None = None,
+        scene: str | None = None,
+        session_id: UUID | None = None,
+        topic_id: UUID | None = None,
+        message_id: UUID | None = None,
+        description: str | None = None,
     ) -> ConsumeRecord:
         """
         Create consumption record and execute remote billing (if needed)
@@ -236,15 +236,15 @@ class ConsumeService:
             record.consume_state = "failed"
             record.remote_error = f"Unexpected error: {str(e)}"
 
-    async def get_consume_record_by_id(self, record_id: UUID) -> Optional[ConsumeRecord]:
+    async def get_consume_record_by_id(self, record_id: UUID) -> ConsumeRecord | None:
         """Get consumption record"""
         return await self.repo.get_consume_record_by_id(record_id)
 
-    async def get_consume_record_by_biz_no(self, biz_no: int) -> Optional[ConsumeRecord]:
+    async def get_consume_record_by_biz_no(self, biz_no: int) -> ConsumeRecord | None:
         """Get consumption record by business ID (idempotency check)"""
         return await self.repo.get_consume_record_by_biz_no(biz_no)
 
-    async def get_user_consume_summary(self, user_id: str) -> Optional[UserConsumeSummary]:
+    async def get_user_consume_summary(self, user_id: str) -> UserConsumeSummary | None:
         """Get user consumption summary"""
         return await self.repo.get_user_consume_summary(user_id)
 
@@ -258,11 +258,11 @@ async def create_consume_for_chat(
     user_id: str,
     auth_provider: str,
     amount: int,
-    access_key: Optional[str] = None,
-    session_id: Optional[UUID] = None,
-    topic_id: Optional[UUID] = None,
-    message_id: Optional[UUID] = None,
-    description: Optional[str] = None,
+    access_key: str | None = None,
+    session_id: UUID | None = None,
+    topic_id: UUID | None = None,
+    message_id: UUID | None = None,
+    description: str | None = None,
 ) -> ConsumeRecord:
     """
     Convenience function to create consumption record for chat

@@ -1,7 +1,6 @@
 import asyncio
 import datetime
 import logging
-from typing import Optional
 from uuid import UUID
 
 import httpx
@@ -15,7 +14,7 @@ from models.mcp import McpServer
 logger = logging.getLogger(__name__)
 
 
-async def async_check_mcp_server_status(server_id: Optional[UUID]) -> None:
+async def async_check_mcp_server_status(server_id: UUID | None) -> None:
     """
     Asynchronously checks the status of an MCP server using fastmcp.Client.
     """

@@ -4,115 +4,108 @@ Provides abstract base classes and concrete implementations for different LLM pr
 """
 
 import logging
-from typing import Any, Dict, List, Optional, Type, Union
+from typing import Any, Dict, Type, Union
 
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 from internal import configs
+from internal.configs.llm import LLMConfig
+from models.provider import Provider, ProviderCreate, ProviderUpdate
 from schemas.providers import ProviderType
-
+from repo.provider import ProviderRepository
 from .anthropic import AnthropicProvider
 from .azure_openai import AzureOpenAIProvider
 from .base import BaseLLMProvider, ChatCompletionRequest, ChatCompletionResponse, ChatMessage
 from .google import GoogleProvider
 from .openai import OpenAIProvider
+from middleware.database.connection import AsyncSessionLocal
 
 logger = logging.getLogger(__name__)
 
-# TODO: Improve the logic of system provider initialization and management
-# System user ID for system-wide provider
-SYSTEM_USER_ID = "system"
+SYSTEM_USER_ID = "da2a8078-dd7c-4052-ad68-1209c3f647f1"
 
 
-async def initialize_system_provider(db: AsyncSession) -> Optional[Any]:
-    """
-    Ensure system default provider exists in database.
-    Creates or updates from environment configuration on startup.
+class SystemProviderManager:
+    def __init__(self, db: AsyncSession):
+        self.repo = ProviderRepository(db)
 
-    The system provider:
-    - Is available to all users as a fallback
-    - Cannot be edited or deleted by users
-    - Is configured via environment variables
+    async def ensure_system_provider(self, llm_config: LLMConfig) -> Provider | None:
+        """
+        Ensure system provider exists and is up-to-date.
+        Uses upsert pattern for cleaner logic.
 
-    Args:
-        db: Database session
+        Args:
+            llm_config: LLMConfig instance
 
-    Returns:
-        The system provider if configs.LLM is enabled, None otherwise
-    """
-    from models.provider import Provider
-    from repo.provider import ProviderRepository
-
-    llm_config = configs.LLM
-
-    if not llm_config.is_enabled:
-        logger.info("LLM config not enabled, skipping system provider initialization")
-        return None
-
-    repo = ProviderRepository(db)
-    system_provider: Provider | None = await repo.get_system_provider()
-
-    # Prepare system provider data with explicit type conversion
-    provider_type_value = (
-        llm_config.provider.value if hasattr(llm_config.provider, "value") else str(llm_config.provider)
-    )
-
-    # Ensure all values match the Provider model's expected types
-    system_data = {
-        "user_id": str(SYSTEM_USER_ID),
-        "name": str("System Default"),
-        "provider_type": str(provider_type_value),
-        "api": str(llm_config.endpoint),
-        "key": str(llm_config.key),
-        "model": str(llm_config.deployment) if llm_config.deployment else None,
-        "timeout": int(60),
-        "max_tokens": int(4096),
-        "temperature": float(0.7),
-        "is_system": bool(True),
-    }
-
-    if system_provider:
-        # Update existing system provider
-        logger.info(f"Updating existing system provider: {system_provider.id}")
-        from models.provider import ProviderUpdate
-
-        # Create update data excluding user_id and is_system
-        update_data = {k: v for k, v in system_data.items() if k not in ("user_id", "is_system")}
-        provider_update = ProviderUpdate(**update_data)
-        updated_provider = await repo.update_provider(system_provider.id, provider_update)
-        if not updated_provider:
-            logger.error("Failed to update existing system provider")
+        Returns:
+            The system provider if successful, None otherwise
+        """
+        if not llm_config.is_enabled:
+            logger.info("LLM config not enabled, skipping system provider")
             return None
-        logger.info(f"System provider updated: {updated_provider.name}")
-        return updated_provider
-    else:
-        # Create new system provider
-        logger.info("Creating new system provider from config")
-        from models.provider import ProviderCreate
 
-        provider_create = ProviderCreate(**system_data)
-        created_provider = await repo.create_provider(provider_create, SYSTEM_USER_ID)
-        logger.info(f"System provider created: {created_provider.name} (ID: {created_provider.id})")
-        return created_provider
+        try:
+            provider_data = llm_config.to_provider_data(user_id=SYSTEM_USER_ID)
+            existing = await self.repo.get_system_provider()
+
+            if existing:
+                return await self._update_system_provider(existing, provider_data)
+            else:
+                return await self._create_system_provider(provider_data)
+
+        except Exception as e:
+            logger.error(f"Failed to ensure system provider: {e}")
+            return None
+
+    async def _create_system_provider(self, provider_data: Dict[str, Any]) -> Provider:
+        """Create new system provider."""
+        logger.info("Creating new system provider")
+
+        provider_create = ProviderCreate(**provider_data)
+        created = await self.repo.create_provider(provider_create, SYSTEM_USER_ID)
+
+        logger.info(f"System provider created: {created.name} (ID: {created.id})")
+        return created
+
+    async def _update_system_provider(self, existing: Provider, provider_data: Dict[str, Any]) -> Provider:
+        """Update existing system provider."""
+        logger.info(f"Updating system provider: {existing.id}")
+
+        update_fields = {
+            k: v
+            for k, v in provider_data.items()
+            if k not in ("user_id", "is_system") and getattr(existing, k, None) != v
+        }
+
+        if not update_fields:
+            logger.info("System provider already up-to-date")
+            return existing
+
+        provider_update = ProviderUpdate(**update_fields)
+        updated = await self.repo.update_provider(existing.id, provider_update)
+
+        if not updated:
+            raise RuntimeError("Failed to update system provider")
+
+        logger.info(f"System provider updated: {updated.name}")
+        return updated
 
 
 async def initialize_providers_on_startup() -> None:
     """
-    Initialize LLM providers on application startup.
-    This function ensures the system provider is created/updated in the database.
-
-    Should be called once during FastAPI lifespan startup.
-    All user requests should use get_user_provider_manager() to load providers dynamically.
+    Initialize providers on startup with better error handling.
     """
-    from middleware.database.connection import AsyncSessionLocal
 
     async with AsyncSessionLocal() as db:
         try:
-            await initialize_system_provider(db)
-            logger.info("System provider initialized successfully")
+            manager = SystemProviderManager(db)
+            provider = await manager.ensure_system_provider(configs.LLM)
+            if provider:
+                logger.info(f"System provider ready: {provider.name} ({provider.provider_type})")
+            else:
+                logger.warning("System provider not configured")
         except Exception as e:
-            logger.error(f"Failed to initialize system provider: {e}")
-            # Don't raise - allow app to start even if provider init fails
+            logger.error(f"Provider initialization failed: {e}")
 
 
 class LLMProviderFactory:
@@ -133,7 +126,7 @@ class LLMProviderFactory:
         provider_type: Union[ProviderType, str],
         api_key: str,
         api_endpoint: str,
-        model: Optional[str] = None,
+        model: str | None = None,
         max_tokens: int = 4096,
         temperature: float = 0.7,
         timeout: int = 60,
@@ -182,7 +175,7 @@ class LLMProviderFactory:
         )
 
     @classmethod
-    def get_supported_providers(cls) -> List[str]:
+    def get_supported_providers(cls) -> list[str]:
         """
         Get a list of all supported provider types.
 
@@ -210,8 +203,8 @@ class LLMProviderManager:
 
     def __init__(self) -> None:
         """Initialize the provider manager."""
-        self._providers: Dict[str, BaseLLMProvider] = {}
-        self._active_provider: Optional[str] = None
+        self._providers: dict[str, BaseLLMProvider] = {}
+        self._active_provider: str | None = None
 
     def add_provider(
         self,
@@ -219,7 +212,7 @@ class LLMProviderManager:
         provider_type: Union[ProviderType, str],
         api_key: str,
         api_endpoint: str,
-        model: Optional[str] = None,
+        model: str | None = None,
         max_tokens: int = 4096,
         temperature: float = 0.7,
         timeout: int = 60,
@@ -278,7 +271,7 @@ class LLMProviderManager:
         self._active_provider = name
         logger.info(f"Switched to provider '{name}'")
 
-    def get_provider(self, name: Optional[str] = None) -> Optional[BaseLLMProvider]:
+    def get_provider(self, name: str | None = None) -> BaseLLMProvider | None:
         """
         Get a provider by name, or the active provider if no name is specified.
 
@@ -293,7 +286,7 @@ class LLMProviderManager:
             return None
         return self._providers.get(provider_name)
 
-    def get_active_provider(self) -> Optional[BaseLLMProvider]:
+    def get_active_provider(self) -> BaseLLMProvider | None:
         """
         Get the currently active provider.
 
@@ -302,7 +295,7 @@ class LLMProviderManager:
         """
         return self.get_provider()
 
-    def list_providers(self) -> List[Dict[str, Any]]:
+    def list_providers(self) -> list[Dict[str, Any]]:
         """
         List all registered providers.
 
@@ -427,9 +420,9 @@ __all__ = [
     "GoogleProvider",
     "LLMProviderFactory",
     "LLMProviderManager",
+    "SystemProviderManager",
     "ProviderType",
     "get_user_provider_manager",
-    "initialize_system_provider",
     "initialize_providers_on_startup",
     "SYSTEM_USER_ID",
 ]

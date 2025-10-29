@@ -67,9 +67,7 @@ class McpRepository:
             List of McpServer instances.
         """
         logger.debug(f"Fetching MCP servers for user_id: {user_id}")
-        result = await self.db.exec(
-            select(McpServer).where(McpServer.user_id == user_id)
-        )
+        result = await self.db.exec(select(McpServer).where(McpServer.user_id == user_id))
         servers = list(result.all())
         logger.debug(f"Found {len(servers)} MCP servers for user {user_id}")
         return servers
@@ -86,10 +84,7 @@ class McpRepository:
         """
         logger.debug(f"Fetching online MCP servers for user_id: {user_id}")
         result = await self.db.exec(
-            select(McpServer).where(
-                McpServer.user_id == user_id,
-                McpServer.status == "online"
-            )
+            select(McpServer).where(McpServer.user_id == user_id, McpServer.status == "online")
         )
         servers = list(result.all())
         logger.debug(f"Found {len(servers)} online MCP servers for user {user_id}")
@@ -124,10 +119,7 @@ class McpRepository:
         return server
 
     async def update_mcp_server_status(
-        self,
-        server_id: UUID,
-        status: str,
-        tools: List[Dict[str, Any]] | None = None
+        self, server_id: UUID, status: str, tools: List[Dict[str, Any]] | None = None
     ) -> McpServer | None:
         """
         Updates MCP server status and tools.
@@ -192,7 +184,7 @@ class McpRepository:
             select(McpServer).where(
                 McpServer.user_id == user_id,
                 McpServer.status == "online",
-                McpServer.tools.is_not(None)  # type: ignore
+                McpServer.tools.is_not(None),  # type: ignore
             )
         )
         servers = list(result.all())
