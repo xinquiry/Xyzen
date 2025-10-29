@@ -179,7 +179,9 @@ async def get_ai_response_stream_langchain(
     # Verify provider is available
     provider = user_provider_manager.get_provider(provider_name)
     if not provider:
-        logger.warning(f"Requested provider {provider_name} not found for user {user_id}, falling back to active provider")
+        logger.warning(
+            f"Requested provider {provider_name} not found for user {user_id}, falling back to active provider"
+        )
         provider = user_provider_manager.get_active_provider()
         if provider:
             # Update provider_name to match the fallback provider

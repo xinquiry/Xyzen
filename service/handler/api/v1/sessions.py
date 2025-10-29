@@ -16,6 +16,7 @@ try:
 except Exception as e:
     # If rebuild fails, log the error for debugging
     import logging
+
     logging.getLogger(__name__).warning(f"Failed to rebuild SessionReadWithTopics: {e}")
 
 router = APIRouter()
@@ -128,7 +129,7 @@ async def get_sessions(
         topic_reads = [TopicRead(**topic.model_dump()) for topic in topics]
 
         session_dict = session.model_dump()
-        session_dict['topics'] = topic_reads
+        session_dict["topics"] = topic_reads
         sessions_with_topics.append(SessionReadWithTopics(**session_dict))
 
     return sessions_with_topics

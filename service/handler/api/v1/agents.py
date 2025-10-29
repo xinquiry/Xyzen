@@ -16,6 +16,7 @@ try:
 except Exception as e:
     # If rebuild fails, log the error for debugging
     import logging
+
     logging.getLogger(__name__).warning(f"Failed to rebuild AgentReadWithDetails: {e}")
 from repo import AgentRepository, ProviderRepository
 
@@ -180,7 +181,7 @@ async def get_agents(
 
         # Create agent dict with MCP servers
         agent_dict = agent.model_dump()
-        agent_dict['mcp_servers'] = mcp_servers
+        agent_dict["mcp_servers"] = mcp_servers
         agents_with_details.append(AgentReadWithDetails(**agent_dict))
 
     return agents_with_details
