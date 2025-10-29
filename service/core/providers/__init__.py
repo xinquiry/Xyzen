@@ -104,11 +104,13 @@ async def initialize_providers_on_startup() -> None:
             manager = SystemProviderManager(db)
             provider = await manager.ensure_system_provider(configs.LLM)
             if provider:
+                await db.commit()  # Explicitly commit the transaction
                 logger.info(f"System provider ready: {provider.name} ({provider.provider_type})")
             else:
                 logger.warning("System provider not configured")
         except Exception as e:
             logger.error(f"Provider initialization failed: {e}")
+            await db.rollback()  # Rollback on error
 
 
 class LLMProviderFactory:
@@ -411,7 +413,7 @@ async def get_user_provider_manager(user_id: str, db: AsyncSession) -> LLMProvid
                 max_tokens=db_provider.max_tokens,
                 temperature=db_provider.temperature,
                 timeout=db_provider.timeout,
-                **db_provider.provider_config,  # Pass provider-specific config
+                **(db_provider.provider_config or {}),  # Pass provider-specific config, default to empty dict
             )
 
             logger.debug(

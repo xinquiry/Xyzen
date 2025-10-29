@@ -6,9 +6,17 @@ from sqlmodel.ext.asyncio.session import AsyncSession
 
 from middleware.auth import get_current_user
 from middleware.database import get_session
-from models.sessions import SessionCreate, SessionRead
-from models.topic import TopicCreate
+from models.sessions import SessionCreate, SessionRead, SessionReadWithTopics
+from models.topic import TopicCreate, TopicRead
 from repo import MessageRepository, SessionRepository, TopicRepository
+
+# Ensure forward references are resolved after importing both models
+try:
+    SessionReadWithTopics.model_rebuild()
+except Exception as e:
+    # If rebuild fails, log the error for debugging
+    import logging
+    logging.getLogger(__name__).warning(f"Failed to rebuild SessionReadWithTopics: {e}")
 
 router = APIRouter()
 
@@ -88,31 +96,42 @@ async def get_session_by_agent(
     return SessionRead(**session.model_dump())
 
 
-@router.get("/", response_model=List[SessionRead])
+@router.get("/", response_model=List[SessionReadWithTopics])
 async def get_sessions(
     user: str = Depends(get_current_user), db: AsyncSession = Depends(get_session)
-) -> List[SessionRead]:
+) -> List[SessionReadWithTopics]:
     """
-    Retrieve all sessions for the current user, ordered by recent activity.
+    Retrieve all sessions for the current user with their topics, ordered by recent activity.
 
     Returns all sessions owned by the authenticated user, sorted by the most
     recent topic activity (based on topic updated_at timestamps). Sessions
-    without topics are sorted to the end.
+    without topics are sorted to the end. Each session includes all its topics.
 
     Args:
         user: Authenticated user ID (injected by dependency)
         db: Database session (injected by dependency)
 
     Returns:
-        List[SessionRead]: List of user's sessions, ordered by recent activity
+        List[SessionReadWithTopics]: List of user's sessions with topics, ordered by recent activity
 
     Raises:
         HTTPException: None - this endpoint always succeeds, returning empty list if no sessions
     """
     session_repo = SessionRepository(db)
+    topic_repo = TopicRepository(db)
     sessions = await session_repo.get_sessions_by_user_ordered_by_activity(user)
 
-    return [SessionRead(**session.model_dump()) for session in sessions]
+    # Load topics for each session
+    sessions_with_topics = []
+    for session in sessions:
+        topics = await topic_repo.get_topics_by_session(session.id, order_by_updated=True)
+        topic_reads = [TopicRead(**topic.model_dump()) for topic in topics]
+
+        session_dict = session.model_dump()
+        session_dict['topics'] = topic_reads
+        sessions_with_topics.append(SessionReadWithTopics(**session_dict))
+
+    return sessions_with_topics
 
 
 @router.delete("/{session_id}/topics", status_code=204)

@@ -7,7 +7,16 @@ from sqlmodel.ext.asyncio.session import AsyncSession
 from middleware.auth import get_current_user
 from middleware.database import get_session
 from models.agent import Agent as AgentModel
-from models.agent import AgentCreate, AgentRead, AgentUpdate
+from models.agent import AgentCreate, AgentRead, AgentReadWithDetails, AgentUpdate
+from models.mcp import McpServer  # Import McpServer to resolve forward reference
+
+# Ensure forward references are resolved after importing both models
+try:
+    AgentReadWithDetails.model_rebuild()
+except Exception as e:
+    # If rebuild fails, log the error for debugging
+    import logging
+    logging.getLogger(__name__).warning(f"Failed to rebuild AgentReadWithDetails: {e}")
 from repo import AgentRepository, ProviderRepository
 
 router = APIRouter()
@@ -139,30 +148,42 @@ async def create_agent(
     return AgentRead(**created_agent.model_dump())
 
 
-@router.get("/", response_model=List[AgentRead])
+@router.get("/", response_model=List[AgentReadWithDetails])
 async def get_agents(
     user: str = Depends(get_current_user),
     db: AsyncSession = Depends(get_session),
-) -> List[AgentRead]:
+) -> List[AgentReadWithDetails]:
     """
     Get all agents for the current authenticated user.
 
     Returns all agents owned by the authenticated user, ordered by creation time.
-    Each agent includes its basic configuration and metadata.
+    Each agent includes its basic configuration, metadata, and associated MCP servers.
 
     Args:
         user: Authenticated user ID (injected by dependency)
         db: Database session (injected by dependency)
 
     Returns:
-        List[AgentRead]: List of agents owned by the user
+        List[AgentReadWithDetails]: List of agents owned by the user with MCP server details
 
     Raises:
         HTTPException: None - this endpoint always succeeds, returning empty list if no agents
     """
     agent_repo = AgentRepository(db)
     agents = await agent_repo.get_agents_by_user(user)
-    return [AgentRead(**agent.model_dump()) for agent in agents]
+
+    # Load MCP servers for each agent and create AgentReadWithDetails
+    agents_with_details = []
+    for agent in agents:
+        # Get MCP servers for this agent
+        mcp_servers = await agent_repo.get_agent_mcp_servers(agent.id)
+
+        # Create agent dict with MCP servers
+        agent_dict = agent.model_dump()
+        agent_dict['mcp_servers'] = mcp_servers
+        agents_with_details.append(AgentReadWithDetails(**agent_dict))
+
+    return agents_with_details
 
 
 @router.get("/{agent_id}", response_model=AgentRead)

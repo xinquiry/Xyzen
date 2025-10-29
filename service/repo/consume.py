@@ -94,9 +94,11 @@ class ConsumeRepository:
         if not record:
             return None
 
-        update_data = record_data.model_dump(exclude_unset=True)
+        # Only update fields that are not None to avoid null constraint violations
+        update_data = record_data.model_dump(exclude_unset=True, exclude_none=True)
         for key, value in update_data.items():
-            setattr(record, key, value)
+            if hasattr(record, key):
+                setattr(record, key, value)
 
         self.db.add(record)
         await self.db.flush()
@@ -227,9 +229,11 @@ class ConsumeRepository:
         if not summary:
             return None
 
-        update_data = summary_data.model_dump(exclude_unset=True)
+        # Only update fields that are not None to avoid null constraint violations
+        update_data = summary_data.model_dump(exclude_unset=True, exclude_none=True)
         for key, value in update_data.items():
-            setattr(summary, key, value)
+            if hasattr(summary, key):
+                setattr(summary, key, value)
 
         self.db.add(summary)
         await self.db.flush()

@@ -115,7 +115,13 @@ class ProviderRepository:
         provider = await self.db.get(Provider, provider_id)
         if not provider:
             return None
-        provider.sqlmodel_update(provider_data)
+
+        # Only update fields that are not None to avoid null constraint violations
+        update_data = provider_data.model_dump(exclude_unset=True, exclude_none=True)
+        for field, value in update_data.items():
+            if hasattr(provider, field):
+                setattr(provider, field, value)
+
         self.db.add(provider)
         await self.db.flush()
         await self.db.refresh(provider)

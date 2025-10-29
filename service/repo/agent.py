@@ -163,10 +163,11 @@ class AgentRepository:
         if not agent:
             return None
         mcp_server_ids = agent_data.mcp_server_ids
-        # TODO: Migrate to use sqlmodel_update
-        update_data = agent_data.model_dump(exclude_unset=True, exclude={"mcp_server_ids"})
+        # Use safe update pattern to avoid null constraint violations
+        update_data = agent_data.model_dump(exclude_unset=True, exclude_none=True, exclude={"mcp_server_ids"})
         for key, value in update_data.items():
-            setattr(agent, key, value)
+            if hasattr(agent, key):
+                setattr(agent, key, value)
 
         self.db.add(agent)
         await self.db.flush()

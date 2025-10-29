@@ -99,7 +99,13 @@ class TopicRepository:
         topic = await self.db.get(Topic, topic_id)
         if not topic:
             return None
-        topic.sqlmodel_update(topic_data)
+
+        # Only update fields that are not None to avoid null constraint violations
+        update_data = topic_data.model_dump(exclude_unset=True, exclude_none=True)
+        for field, value in update_data.items():
+            if hasattr(topic, field):
+                setattr(topic, field, value)
+
         topic.updated_at = datetime.now(timezone.utc)
         self.db.add(topic)
         await self.db.flush()

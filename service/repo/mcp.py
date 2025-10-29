@@ -107,9 +107,11 @@ class McpRepository:
         if not server:
             return None
 
-        update_data = server_data.model_dump(exclude_unset=True)
+        # Only update fields that are not None to avoid null constraint violations
+        update_data = server_data.model_dump(exclude_unset=True, exclude_none=True)
         for key, value in update_data.items():
-            setattr(server, key, value)
+            if hasattr(server, key):
+                setattr(server, key, value)
 
         self.db.add(server)
         await self.db.flush()

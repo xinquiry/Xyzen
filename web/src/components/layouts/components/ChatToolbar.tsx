@@ -79,7 +79,7 @@ export default function ChatToolbar({
     if (!agent?.mcp_servers?.length) return null;
 
     const connectedServers = mcpServers.filter((server) =>
-      agent.mcp_servers.some((mcpRef) => mcpRef.id === server.id),
+      agent.mcp_servers?.some((mcpRef) => mcpRef.id === server.id),
     );
 
     return {

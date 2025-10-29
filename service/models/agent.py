@@ -26,9 +26,6 @@ class AgentBase(AgentCreateBase):
     user_id: str = Field(index=True)
 
 
-datetime.utcnow
-
-
 class Agent(AgentBase, table=True):
     id: UUID = Field(default_factory=uuid4, primary_key=True, index=True)
     created_at: datetime = Field(
@@ -65,3 +62,17 @@ class AgentUpdate(SQLModel):
     require_tool_confirmation: bool | None = None
     provider_id: UUID | None = None
     mcp_server_ids: list[UUID] | None = None
+
+
+# Rebuild models after all definitions to resolve forward references
+def _rebuild_models():
+    """Rebuild Pydantic models to resolve forward references."""
+    try:
+        AgentReadWithDetails.model_rebuild()
+    except Exception:
+        # If rebuild fails, it might be due to import order - that's okay
+        pass
+
+
+# Call rebuild function
+_rebuild_models()

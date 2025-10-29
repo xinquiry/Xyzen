@@ -102,7 +102,13 @@ class SessionRepository:
         session = await self.db.get(SessionModel, session_id)
         if not session:
             return None
-        session.sqlmodel_update(session_data)
+
+        # Only update fields that are not None to avoid null constraint violations
+        update_data = session_data.model_dump(exclude_unset=True, exclude_none=True)
+        for field, value in update_data.items():
+            if hasattr(session, field):
+                setattr(session, field, value)
+
         self.db.add(session)
         await self.db.flush()
         await self.db.refresh(session)

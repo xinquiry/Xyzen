@@ -577,7 +577,15 @@ async def chat_websocket(
 
     except WebSocketDisconnect:
         logger.info(f"WebSocket disconnected for topic {connection_id}")
+        try:
+            await db.rollback()
+        except Exception:
+            pass  # Rollback failure is not critical for disconnect
     except Exception as e:
         logger.error(f"An error occurred in WebSocket for topic {connection_id}: {e}")
+        try:
+            await db.rollback()
+        except Exception as rollback_error:
+            logger.error(f"Failed to rollback transaction: {rollback_error}")
     finally:
         manager.disconnect(connection_id)

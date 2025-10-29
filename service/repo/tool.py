@@ -110,9 +110,11 @@ class ToolRepository:
             logger.debug(f"Tool {tool_id} not found for update")
             return None
 
-        update_data = tool_data.model_dump(exclude_unset=True)
+        # Only update fields that are not None to avoid null constraint violations
+        update_data = tool_data.model_dump(exclude_unset=True, exclude_none=True)
         for key, value in update_data.items():
-            setattr(tool, key, value)
+            if hasattr(tool, key):
+                setattr(tool, key, value)
 
         self.db.add(tool)
         await self.db.flush()
@@ -288,9 +290,11 @@ class ToolRepository:
             logger.debug(f"Tool version {version_id} not found for update")
             return None
 
-        update_data = version_data.model_dump(exclude_unset=True)
+        # Only update fields that are not None to avoid null constraint violations
+        update_data = version_data.model_dump(exclude_unset=True, exclude_none=True)
         for key, value in update_data.items():
-            setattr(version, key, value)
+            if hasattr(version, key):
+                setattr(version, key, value)
 
         self.db.add(version)
         await self.db.flush()
@@ -376,9 +380,11 @@ class ToolRepository:
         if not function:
             logger.debug(f"Tool function {function_id} not found for update")
             return None
-        update_data = function_data.model_dump(exclude_unset=True)
+        # Only update fields that are not None to avoid null constraint violations
+        update_data = function_data.model_dump(exclude_unset=True, exclude_none=True)
         for key, value in update_data.items():
-            setattr(function, key, value)
+            if hasattr(function, key):
+                setattr(function, key, value)
 
         self.db.add(function)
         await self.db.flush()
