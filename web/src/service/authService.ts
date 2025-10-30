@@ -2,7 +2,6 @@ import { useXyzen } from "@/store";
 
 const getBackendUrl = () => {
   const url = useXyzen.getState().backendUrl;
-  // 🔥 修复：如果 backendUrl 为空，使用当前页面的协议和域名
   if (!url || url === "") {
     if (typeof window !== "undefined") {
       return `${window.location.protocol}//${window.location.host}`;
@@ -49,12 +48,62 @@ export interface AuthResult {
 
 class AuthService {
   private static readonly TOKEN_KEY = "access_token";
+  private static readonly COOKIE_TOKEN_KEY = "appAccessKey";
   private authCheckPromise: Promise<AuthResult> | null = null;
   private listeners: ((result: AuthResult) => void)[] = [];
 
-  // 从 localStorage 获取 token
+  // 从 localStorage 或 cookie 获取 token，并作兜底
   getToken(): string | null {
-    return localStorage.getItem(AuthService.TOKEN_KEY);
+    console.log("AuthService: 开始获取 token...");
+    // 1. 优先从 localStorage 获取
+    const tokenFromStorage = localStorage.getItem(AuthService.TOKEN_KEY);
+    if (tokenFromStorage) {
+      console.log("AuthService: 在 localStorage 中找到 token。");
+      return tokenFromStorage;
+    }
+
+    console.log(
+      "AuthService: localStorage 中未找到 token，尝试从 cookie 获取。",
+    );
+    // 2. 如果 localStorage 没有，则尝试从 cookie 获取 (兜底)
+    const tokenFromCookie = this.getCookie(AuthService.COOKIE_TOKEN_KEY);
+    if (tokenFromCookie) {
+      // 为了统一管理，可以将 cookie 中的 token 同步到 localStorage
+      console.log(
+        "AuthService: 从 cookie 中获取到 token 并同步到 localStorage",
+      );
+      this.setToken(tokenFromCookie);
+      return tokenFromCookie;
+    }
+
+    console.log("AuthService: 在 localStorage 和 cookie 中均未找到 token。");
+    return null;
+  }
+
+  private getCookie(name: string): string | null {
+    if (typeof document === "undefined") {
+      console.log(
+        "AuthService: getCookie - document is not defined (not in a browser environment).",
+      );
+      return null;
+    }
+    console.log(`AuthService: 正在从 cookie 中查找名为 "${name}" 的 token...`);
+    console.log("AuthService: 当前 document.cookie:", document.cookie);
+
+    // 使用更可靠的正则表达式来匹配 cookie
+    const match = document.cookie.match(
+      new RegExp("(^|;\\s*)" + name + "=([^;]+)"),
+    );
+
+    if (match) {
+      const token = decodeURIComponent(match[2]);
+      console.log(
+        `AuthService: 成功在 cookie 中找到 token: ${token.substring(0, 20)}...`,
+      );
+      return token;
+    }
+    console.log(`AuthService: 未能在 cookie 中找到名为 "${name}" 的 token。`);
+    return null;
   }
 
   // 设置 token 到 localStorage (默认都启用自动登录)

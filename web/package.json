@@ -2,7 +2,7 @@
   "name": "@sciol/xyzen",
   "type": "module",
   "packageManager": "yarn@4.9.2",
-  "version": "0.3.1",
+  "version": "0.3.3",
   "description": "A modern, lightweight, and extensible chat component for React.",
   "author": "Haohui <harveyque@outlook.com>",
   "license": "GPL-3.0-only",
@@ -36,6 +36,7 @@
   "scripts": {
     "dev": "vite --host 0.0.0.0 --port 32233 --strictPort",
     "build": "rimraf site && tsc -b && vite build",
+    "build:bohr_app": "VITE_XYZEN_BACKEND_URL='https://chat.sciol.ac.cn' yarn build && mkdir -p tmp && zip -r tmp/$(date +'%Y%m%d-%H%M%S').zip site/*",
     "build:lib": "rimraf dist && cross-env BUILD_MODE=library vite build",
     "image:bohr": "docker buildx build . --build-arg VITE_XYZEN_BACKEND_URL=https://uni-xyzen.test.bohrium.com --platform linux/amd64 -t registry.dp.tech/public/xyzen-web:latest --push",
     "lint": "eslint .",
