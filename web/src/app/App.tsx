@@ -7,9 +7,15 @@ import {
   useSensor,
   useSensors,
 } from "@dnd-kit/core";
-import {
-  restrictToHorizontalAxis,
-} from "@dnd-kit/modifiers";
+import { restrictToHorizontalAxis } from "@dnd-kit/modifiers";
+
+// Import styles - these will be included in both app and library builds
+import "@/styles/markdown.css";
+import "@/styles/markdown.dark.css";
+import "@/styles/markdown.quote.css";
+import "@/styles/markdown.abstract.css";
+import "@/styles/code-block.css";
+import "@/styles/prose.css";
 import {
   Dialog,
   DialogPanel,
@@ -24,7 +30,11 @@ import { LlmProviders } from "@/app/LlmProviders";
 import { Mcp } from "@/app/Mcp";
 import { AppFullscreen } from "@/app/AppFullscreen";
 import McpIcon from "@/assets/McpIcon";
-import { AuthStatus, SettingsButton, CenteredInput } from "@/components/features";
+import {
+  AuthStatus,
+  SettingsButton,
+  CenteredInput,
+} from "@/components/features";
 import XyzenAgent from "@/components/layouts/XyzenAgent";
 import XyzenChat from "@/components/layouts/XyzenChat";
 import { AddLlmProviderModal } from "@/components/modals/AddLlmProviderModal";
@@ -65,7 +75,6 @@ const DragHandle = ({
     ></div>
   );
 };
-
 
 export interface XyzenProps {
   backendUrl?: string;
@@ -174,7 +183,6 @@ function XyzenSidebar({
   const handleDragEnd = () => {
     setIsDragging(false);
   };
-
 
   const handleResizeDoubleClick = () => {
     setPanelWidth(DEFAULT_WIDTH);
