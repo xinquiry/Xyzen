@@ -4,6 +4,7 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException
 from sqlmodel.ext.asyncio.session import AsyncSession
 
+from core.agent_service import AgentService, UnifiedAgentRead
 from middleware.auth import get_current_user
 from middleware.database import get_session
 from models.agent import Agent as AgentModel
@@ -186,6 +187,32 @@ async def get_agents(
     return agents_with_details
 
 
+@router.get("/all/unified", response_model=List[UnifiedAgentRead])
+async def get_all_agents_unified(
+    user: str = Depends(get_current_user),
+    db: AsyncSession = Depends(get_session),
+) -> List[UnifiedAgentRead]:
+    """
+    Get all agents (both regular and graph) for the current authenticated user.
+
+    Returns a unified list that includes both regular agents and graph agents,
+    with consistent formatting and type indicators. This endpoint is designed
+    for frontend consumption where both agent types should be displayed together.
+
+    Args:
+        user: Authenticated user ID (injected by dependency)
+        db: Database session (injected by dependency)
+
+    Returns:
+        List[UnifiedAgentRead]: Unified list of all agents owned by the user
+
+    Raises:
+        HTTPException: None - this endpoint always succeeds, returning empty list if no agents
+    """
+    agent_service = AgentService(db)
+    return await agent_service.get_all_agents_for_user(user)
+
+
 @router.get("/{agent_id}", response_model=AgentRead)
 async def get_agent(
     agent: AgentModel = Depends(get_authorized_agent),
@@ -209,12 +236,12 @@ async def get_agent(
     return AgentRead(**agent.model_dump())
 
 
-@router.patch("/{agent_id}", response_model=AgentRead)
+@router.patch("/{agent_id}", response_model=AgentReadWithDetails)
 async def update_agent(
     agent_data: AgentUpdate,
     agent: AgentModel = Depends(get_authorized_agent),
     db: AsyncSession = Depends(get_session),
-) -> AgentRead:
+) -> AgentReadWithDetails:
     """
     Update an existing agent's properties.
 
@@ -228,7 +255,7 @@ async def update_agent(
         db: Database session (injected by dependency)
 
     Returns:
-        AgentRead: The updated agent with new timestamps
+        AgentReadWithDetails: The updated agent with new timestamps and MCP servers
 
     Raises:
         HTTPException: 404 if agent not found, 403 if access denied,
@@ -249,7 +276,14 @@ async def update_agent(
         raise HTTPException(status_code=500, detail="Failed to update agent")
 
     await db.commit()
-    return AgentRead(**updated_agent.model_dump())
+
+    # Get MCP servers for the updated agent
+    mcp_servers = await agent_repo.get_agent_mcp_servers(updated_agent.id)
+
+    # Create agent dict with MCP servers
+    agent_dict = updated_agent.model_dump()
+    agent_dict["mcp_servers"] = mcp_servers
+    return AgentReadWithDetails(**agent_dict)
 
 
 @router.delete("/{agent_id}", status_code=204)
