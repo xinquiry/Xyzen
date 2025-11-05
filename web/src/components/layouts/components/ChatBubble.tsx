@@ -131,34 +131,10 @@ const ChatBubble: React.FC<ChatBubbleProps> = ({ message }) => {
     second: "2-digit",
   });
 
-  // Clean chart loading component
-  const ChartLoadingState = () => (
-    <div className="w-full bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
-      <div className="h-96 flex items-center justify-center">
-        <div className="text-center space-y-4">
-          <div className="flex items-center justify-center space-x-1">
-            <div className="w-2 h-2 bg-blue-600 rounded-full animate-bounce"></div>
-            <div
-              className="w-2 h-2 bg-blue-600 rounded-full animate-bounce"
-              style={{ animationDelay: "0.1s" }}
-            ></div>
-            <div
-              className="w-2 h-2 bg-blue-600 rounded-full animate-bounce"
-              style={{ animationDelay: "0.2s" }}
-            ></div>
-          </div>
-          <p className="text-sm text-gray-600 dark:text-gray-400">
-            Generating visualization...
-          </p>
-        </div>
-      </div>
-    </div>
-  );
-
   // Render message content based on type and chart detection
   const renderMessageContent = React.useCallback(() => {
     if (isLoading) {
-      return role === "assistant" ? <ChartLoadingState /> : <LoadingMessage />;
+      return <LoadingMessage />;
     } else if (isUserMessage) {
       return <p>{content}</p>;
     } else if (chartDetection.isChartable && chartDetection.data) {
@@ -337,11 +313,11 @@ const ChatBubble: React.FC<ChatBubbleProps> = ({ message }) => {
 
       {/* Message content */}
       <div
-        className={`w-full rounded-none ${streamingStyles} transition-all duration-200 hover:shadow-sm`}
+        className={`w-full min-w-0 rounded-none ${streamingStyles} transition-all duration-200 hover:shadow-sm`}
       >
-        <div className="px-4 py-3">
+        <div className="px-4 py-3 min-w-0">
           <div
-            className={`prose prose-neutral dark:prose-invert prose-sm max-w-none ${
+            className={`prose prose-neutral dark:prose-invert prose-sm max-w-none min-w-0 overflow-x-auto ${
               isUserMessage
                 ? "text-sm text-neutral-800 dark:text-neutral-200"
                 : "text-sm text-neutral-700 dark:text-neutral-300"
