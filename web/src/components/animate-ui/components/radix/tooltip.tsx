@@ -1,16 +1,14 @@
-import * as React from "react";
-
 import {
-  TooltipProvider as TooltipProviderPrimitive,
-  Tooltip as TooltipPrimitive,
-  TooltipTrigger as TooltipTriggerPrimitive,
-  TooltipContent as TooltipContentPrimitive,
   TooltipArrow as TooltipArrowPrimitive,
+  TooltipContent as TooltipContentPrimitive,
   TooltipPortal as TooltipPortalPrimitive,
-  type TooltipProviderProps as TooltipProviderPrimitiveProps,
-  type TooltipProps as TooltipPrimitiveProps,
-  type TooltipTriggerProps as TooltipTriggerPrimitiveProps,
+  Tooltip as TooltipPrimitive,
+  TooltipProvider as TooltipProviderPrimitive,
+  TooltipTrigger as TooltipTriggerPrimitive,
   type TooltipContentProps as TooltipContentPrimitiveProps,
+  type TooltipProps as TooltipPrimitiveProps,
+  type TooltipProviderProps as TooltipProviderPrimitiveProps,
+  type TooltipTriggerProps as TooltipTriggerPrimitiveProps,
 } from "@/components/animate-ui/primitives/radix/tooltip";
 import { cn } from "@/lib/utils";
 
@@ -68,9 +66,9 @@ function TooltipContent({
 
 export {
   Tooltip,
-  TooltipTrigger,
   TooltipContent,
+  TooltipTrigger,
+  type TooltipContentProps,
   type TooltipProps,
   type TooltipTriggerProps,
-  type TooltipContentProps,
 };

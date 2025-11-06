@@ -44,7 +44,7 @@ const UnifiedMcpMarketList: React.FC<UnifiedMcpMarketListProps> = ({
     "all" | "official" | "bohrium"
   >("all");
   const [starredApps, setStarredApps] = useState<Set<string>>(new Set());
-  const [showStarredOnly, setShowStarredOnly] = useState(false);
+  const [showStarredOnly] = useState(false);
   const [sortBy, setSortBy] = useState<"none" | "stars" | "usage" | "alpha">(
     "none",
   );
