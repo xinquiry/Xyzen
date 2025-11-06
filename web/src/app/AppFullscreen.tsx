@@ -2,7 +2,6 @@ import { useXyzen } from "@/store";
 import type { DragEndEvent } from "@dnd-kit/core";
 import { DndContext } from "@dnd-kit/core";
 import { restrictToVerticalAxis } from "@dnd-kit/modifiers";
-import { CogIcon } from "@heroicons/react/24/outline";
 import { useCallback, useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 
@@ -28,7 +27,6 @@ export interface AppFullscreenProps {
 
 export function AppFullscreen({
   backendUrl = DEFAULT_BACKEND_URL,
-  showLlmProvider = false,
 }: AppFullscreenProps) {
   const {
     user,
@@ -40,7 +38,6 @@ export function AppFullscreen({
     setActivePanel,
     // centralized UI actions
     openMcpListModal,
-    openSettingsModal,
   } = useXyzen();
 
   const [mounted, setMounted] = useState(false);
@@ -111,15 +108,6 @@ export function AppFullscreen({
               >
                 <McpIcon className="h-5 w-5" />
               </button>
-              {showLlmProvider && (
-                <button
-                  className="rounded-sm p-1.5 text-neutral-500 hover:bg-neutral-100 dark:text-neutral-400 dark:hover:bg-neutral-800"
-                  title="LLM Providers"
-                  onClick={() => openSettingsModal("provider")}
-                >
-                  <CogIcon className="h-5 w-5" />
-                </button>
-              )}
               <div className="mx-2 h-6 w-px bg-neutral-200 dark:bg-neutral-700"></div>
               <AuthStatus className="ml-2" />
             </div>

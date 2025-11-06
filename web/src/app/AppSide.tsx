@@ -29,6 +29,7 @@ import { AddLlmProviderModal } from "@/components/modals/AddLlmProviderModal";
 import { AddMcpServerModal } from "@/components/modals/AddMcpServerModal";
 import { DEFAULT_BACKEND_URL } from "@/configs";
 import { useXyzen } from "@/store";
+import { PanelRightCloseIcon } from "lucide-react";
 
 export interface AppSideProps {
   backendUrl?: string;
@@ -344,7 +345,7 @@ export function AppSide({
                       className="rounded-sm p-1.5 text-neutral-500 hover:bg-neutral-100 dark:text-neutral-400 dark:hover:bg-neutral-800"
                       title="关闭"
                     >
-                      <XMarkIcon className="h-5 w-5" />
+                      <PanelRightCloseIcon className="h-5 w-5" />
                     </button>
                   </div>
                 </div>
