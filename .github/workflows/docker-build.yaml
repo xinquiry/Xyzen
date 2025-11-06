@@ -1,4 +1,4 @@
-name: Build and Push sciol Images
+name: Production Deployment
 
 on:
   push:
