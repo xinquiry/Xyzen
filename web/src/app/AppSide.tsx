@@ -14,6 +14,7 @@ import {
 } from "@heroicons/react/24/outline";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
+import Explorer from "@/app/explore/page";
 import McpIcon from "@/assets/McpIcon";
 import {
   AuthStatus,
@@ -21,7 +22,6 @@ import {
   SettingsButton,
 } from "@/components/features";
 import ActivityBar from "@/components/layouts/ActivityBar";
-import Explorer from "@/components/layouts/Explorer";
 import Workshop from "@/components/layouts/Workshop";
 import XyzenAgent from "@/components/layouts/XyzenAgent";
 import XyzenChat from "@/components/layouts/XyzenChat";

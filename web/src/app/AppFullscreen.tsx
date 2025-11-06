@@ -7,10 +7,10 @@ import { createPortal } from "react-dom";
 
 import { McpListModal } from "@/components/layouts/McpListModal";
 
+import Explorer from "@/app/explore/page";
 import McpIcon from "@/assets/McpIcon";
 import { AuthStatus, SettingsButton } from "@/components/features";
 import ActivityBar from "@/components/layouts/ActivityBar";
-import Explorer from "@/components/layouts/Explorer";
 import Workshop from "@/components/layouts/Workshop";
 import WorkshopChat from "@/components/layouts/WorkshopChat";
 import XyzenAgent from "@/components/layouts/XyzenAgent";
