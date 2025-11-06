@@ -186,7 +186,7 @@ export function AddMcpServerModal() {
                 <div className="flex-1 space-y-2 overflow-y-auto max-h-96">
                   {builtinMcpServers.map((server, index) => (
                     <motion.div
-                      key={server.module_name}
+                      key={server.id}
                       initial={{ opacity: 0, x: -10 }}
                       animate={{ opacity: 1, x: 0 }}
                       transition={{ delay: index * 0.05 }}
@@ -197,7 +197,7 @@ export function AddMcpServerModal() {
                           <p className="text-sm font-medium text-neutral-900 dark:text-white truncate">
                             {server.name}
                           </p>
-                          {server.requires_auth && (
+                          {server.data.requires_auth && (
                             <div className="flex-shrink-0 flex items-center gap-1 rounded-full bg-amber-100 px-1.5 py-0.5 dark:bg-amber-900/30">
                               <LockClosedIcon className="h-3 w-3 text-amber-600 dark:text-amber-400" />
                               <span className="text-[10px] font-medium text-amber-700 dark:text-amber-300">

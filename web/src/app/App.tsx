@@ -1,4 +1,5 @@
 import { useXyzen } from "@/store";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 
 import { CenteredInput } from "@/components/features";
@@ -8,6 +9,16 @@ import useTheme from "@/hooks/useTheme";
 import { McpListModal } from "../components/layouts/McpListModal";
 import { AppFullscreen } from "./AppFullscreen";
 import { AppSide } from "./AppSide";
+
+// 创建 React Query client
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      refetchOnWindowFocus: false,
+      retry: 1,
+    },
+  },
+});
 
 export interface XyzenProps {
   backendUrl?: string;
@@ -41,11 +52,15 @@ export function Xyzen({
   const isMobile = viewportWidth < MOBILE_BREAKPOINT;
 
   if (!isXyzenOpen) {
-    return <CenteredInput />;
+    return (
+      <QueryClientProvider client={queryClient}>
+        <CenteredInput />
+      </QueryClientProvider>
+    );
   }
 
   return (
-    <>
+    <QueryClientProvider client={queryClient}>
       {isMobile ? (
         // 小于阈值：强制 Sidebar，全宽且不可拖拽
         <AppSide
@@ -65,6 +80,6 @@ export function Xyzen({
       )}
       <McpListModal />
       <SettingsModal />
-    </>
+    </QueryClientProvider>
   );
 }

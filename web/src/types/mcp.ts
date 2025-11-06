@@ -9,21 +9,70 @@ export interface McpServer {
   user_id: string;
 }
 
-export interface ExplorableMcpServer {
+/**
+ * 内置 MCP Server 数据
+ */
+export interface BuiltinMcpData {
   name: string;
   module_name: string;
   mount_path: string;
   description: string;
-  is_builtin: boolean;
+  is_builtin: true;
   requires_auth: boolean;
   is_default?: boolean;
   banner?: string;
-  source?: "official" | "bohrium" | string;
+}
+
+/**
+ * Bohrium MCP Server 数据
+ */
+export interface BohriumMcpData {
+  id: number;
+  appKey: string;
+  appUuid: string;
+  title: string;
+  description: string;
+  descriptionCn: string;
+  cover: string;
+  type: number;
+  subscribeNum: number;
+  accessNum: number;
+  tags?: Array<{
+    id: number;
+    name: string;
+    theme: string;
+  }>;
+  latestDeploymentId?: number;
+}
+
+/**
+ * 可探索的 MCP Server（统一类型）
+ */
+export interface ExplorableMcpServer<T = BuiltinMcpData | BohriumMcpData> {
+  id: string; // 唯一标识符
+  name: string; // 显示名称
+  description: string; // 描述
+  source: "official" | "bohrium" | string; // 来源
+  cover?: string; // 封面图片
+  data: T; // 原始数据
+}
+
+// 类型守卫
+export function isBuiltinMcp(
+  server: ExplorableMcpServer,
+): server is ExplorableMcpServer<BuiltinMcpData> {
+  return server.source === "official";
+}
+
+export function isBohriumMcp(
+  server: ExplorableMcpServer,
+): server is ExplorableMcpServer<BohriumMcpData> {
+  return server.source === "bohrium";
 }
 
 // 为了向后兼容，保留旧名称作为类型别名
 /** @deprecated Use ExplorableMcpServer instead */
-export type BuiltinMcpServer = ExplorableMcpServer;
+export type BuiltinMcpServer = ExplorableMcpServer<BuiltinMcpData>;
 
 export type McpServerCreate = Omit<
   McpServer,

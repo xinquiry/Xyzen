@@ -61,6 +61,29 @@ export default defineConfig(() => {
         host: "localhost",
         port: 32233,
       },
+      proxy: {
+        // 代理 Bohrium API 请求以解决 CORS 问题
+        "/api/bohrium": {
+          target: "https://www.bohrium.com",
+          changeOrigin: true,
+          rewrite: (path: string) =>
+            path.replace(/^\/api\/bohrium/, "/bohrapi"),
+          secure: true,
+          headers: {
+            Origin: "https://www.bohrium.com",
+          },
+        },
+        "/api/openapi": {
+          target: "https://openapi.dp.tech",
+          changeOrigin: true,
+          rewrite: (path: string) =>
+            path.replace(/^\/api\/openapi/, "/openapi"),
+          secure: true,
+          headers: {
+            Origin: "https://openapi.dp.tech",
+          },
+        },
+      },
     },
     build,
   };

@@ -1,7 +1,8 @@
 "use client";
 import { Badge } from "@/components/base/Badge";
 import { CardBody, CardContainer, CardItem } from "@/components/ui/3d-card";
-import type { ExplorableMcpServer } from "@/types/mcp";
+import type { BuiltinMcpData, ExplorableMcpServer } from "@/types/mcp";
+import { isBuiltinMcp } from "@/types/mcp";
 import React from "react";
 
 const DEFAULT_BANNER = "https://storage.sciol.ac.cn/library/origin.png";
@@ -25,8 +26,10 @@ const getSourceBadge = (source?: string) => {
   return null;
 };
 
-const ExplorerMcpCard: React.FC<{ mcp: ExplorableMcpServer }> = ({ mcp }) => {
-  const bannerUrl = mcp.banner || DEFAULT_BANNER;
+const ExplorerMcpCard: React.FC<{
+  mcp: ExplorableMcpServer<BuiltinMcpData>;
+}> = ({ mcp }) => {
+  const bannerUrl = mcp.cover || DEFAULT_BANNER;
 
   return (
     <CardContainer className="py-4" containerClassName="p-0">
@@ -61,7 +64,7 @@ const ExplorerMcpCard: React.FC<{ mcp: ExplorableMcpServer }> = ({ mcp }) => {
             <Badge variant="blue" className="text-xs">
               MCP
             </Badge>
-            {mcp.requires_auth && (
+            {isBuiltinMcp(mcp) && mcp.data.requires_auth && (
               <Badge variant="yellow" className="text-xs">
                 Auth
               </Badge>
@@ -71,7 +74,7 @@ const ExplorerMcpCard: React.FC<{ mcp: ExplorableMcpServer }> = ({ mcp }) => {
             translateZ={20}
             className="text-xs text-neutral-500 dark:text-neutral-400"
           >
-            📦 {mcp.module_name}
+            📦 {mcp.data.module_name}
           </CardItem>
         </div>
       </CardBody>

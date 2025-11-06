@@ -605,7 +605,7 @@ function HighlightItem<T extends React.ElementType>({
 export {
   Highlight,
   HighlightItem,
-  useHighlight, // eslint-disable-line react-refresh/only-export-components
+  useHighlight, //eslint-disable-line
   type HighlightItemProps,
   type HighlightProps,
 };

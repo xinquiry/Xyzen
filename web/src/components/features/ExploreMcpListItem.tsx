@@ -1,6 +1,6 @@
 "use client";
 import { Badge } from "@/components/base/Badge";
-import type { ExplorableMcpServer } from "@/types/mcp";
+import type { BuiltinMcpData, ExplorableMcpServer } from "@/types/mcp";
 import React from "react";
 
 const DEFAULT_BANNER = "https://storage.sciol.ac.cn/library/origin.png";
@@ -24,10 +24,10 @@ const getSourceBadge = (source?: string) => {
   return null;
 };
 
-const ExploreMcpListItem: React.FC<{ mcp: ExplorableMcpServer }> = ({
-  mcp,
-}) => {
-  const bannerUrl = mcp.banner || DEFAULT_BANNER;
+const ExploreMcpListItem: React.FC<{
+  mcp: ExplorableMcpServer<BuiltinMcpData>;
+}> = ({ mcp }) => {
+  const bannerUrl = mcp.cover || DEFAULT_BANNER;
 
   return (
     <div className="flex items-start gap-4 rounded-lg border border-neutral-200 bg-white p-4 hover:bg-neutral-50 dark:border-neutral-800 dark:bg-neutral-900 dark:hover:bg-neutral-800/60 transition-colors">
@@ -46,7 +46,7 @@ const ExploreMcpListItem: React.FC<{ mcp: ExplorableMcpServer }> = ({
             <Badge variant="blue" className="text-xs">
               MCP
             </Badge>
-            {mcp.requires_auth && (
+            {mcp.data.requires_auth && (
               <Badge variant="yellow" className="text-xs">
                 Auth
               </Badge>
@@ -57,7 +57,7 @@ const ExploreMcpListItem: React.FC<{ mcp: ExplorableMcpServer }> = ({
           {mcp.description}
         </p>
         <div className="text-xs text-neutral-500 dark:text-neutral-400">
-          📦 {mcp.module_name}
+          📦 {mcp.data.module_name}
         </div>
       </div>
     </div>

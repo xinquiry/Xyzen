@@ -127,7 +127,7 @@ export function AppFullscreen({
 
             {/* Explorer takes full width in fullscreen */}
             {activePanel === "explorer" && (
-              <section className="flex flex-1 flex-col overflow-hidden bg-white dark:bg-black">
+              <section className="flex flex-1 flex-col overflow-y-auto bg-white dark:bg-black">
                 <div className="h-[10rem] w-full rounded-md flex md:items-center md:justify-center bg-black/[0.96] antialiased bg-grid-white/[0.02] relative overflow-hidden">
                   <Spotlight />
                   <div className=" p-4 max-w-7xl  mx-auto relative z-10  w-full pt-20 md:pt-0">
@@ -148,7 +148,7 @@ export function AppFullscreen({
                     </p>
                   </div>
                 </div>
-                <div className="flex-1 overflow-hidden">
+                <div className="flex-1 overflow-y-auto">
                   <Explorer />
                 </div>
               </section>

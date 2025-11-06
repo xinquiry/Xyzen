@@ -105,7 +105,8 @@ const AddAgentModal: React.FC<AddAgentModalProps> = ({ isOpen, onClose }) => {
 
       // Check if it's in builtin servers and marked as default
       const defaultBuiltinMcp = builtinMcpServers.find(
-        (bs) => bs.is_default && bs.module_name === "dynamic_mcp_server",
+        (bs) =>
+          bs.data.is_default && bs.data.module_name === "dynamic_mcp_server",
       );
 
       if (defaultBuiltinMcp && !isAutoAddingDefaultMcp) {

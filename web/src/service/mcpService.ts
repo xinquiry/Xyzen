@@ -1,11 +1,6 @@
 import { authService } from "@/service/authService";
 import { useXyzen } from "@/store";
-import type {
-  ExplorableMcpServer,
-  McpServer,
-  McpServerCreate,
-  McpServerUpdate,
-} from "@/types/mcp";
+import type { McpServer, McpServerCreate, McpServerUpdate } from "@/types/mcp";
 
 const getBackendUrl = () => {
   const url = useXyzen.getState().backendUrl;
@@ -104,7 +99,8 @@ export const mcpService = {
     }
   },
 
-  async getBuiltinMcpServers(): Promise<ExplorableMcpServer[]> {
+  // 返回原始数据，可能是旧格式或新格式
+  async getBuiltinMcpServers(): Promise<unknown[]> {
     try {
       const response = await fetch(
         `${getBackendUrl()}/xyzen/api/v1/mcps/discover`,

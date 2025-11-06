@@ -41,8 +41,8 @@ export default function Explorer() {
   ];
 
   return (
-    <div className="h-full flex flex-col">
-      <Tabs defaultValue="agents" className="h-full flex flex-col">
+    <div className="flex flex-col">
+      <Tabs defaultValue="agents" className="flex flex-col">
         {/* Header with Tabs */}
         <div className="border-b border-neutral-200 dark:border-neutral-800 bg-gradient-to-r from-white to-neutral-50 dark:from-neutral-950 dark:to-neutral-900">
           <div className="px-6 pt-6 pb-4">
@@ -65,13 +65,9 @@ export default function Explorer() {
         </div>
 
         {/* Content */}
-        <TabsContents mode="auto-height" className="flex-1 overflow-hidden">
+        <TabsContents mode="auto-height">
           {tabStructure.map((tab) => (
-            <TabsContent
-              key={tab.value}
-              value={tab.value}
-              className="h-full overflow-y-auto"
-            >
+            <TabsContent key={tab.value} value={tab.value}>
               <tab.content />
             </TabsContent>
           ))}

@@ -1,17 +1,19 @@
 import { mcpService } from "@/service/mcpService";
 import type {
+  BuiltinMcpData,
   ExplorableMcpServer,
   McpServer,
   McpServerCreate,
   McpServerUpdate,
 } from "@/types/mcp";
+import { convertBuiltinServers } from "@/utils/mcpConverters";
 import type { StateCreator } from "zustand";
 import type { XyzenState } from "../types";
 import { LoadingKeys } from "./loadingSlice";
 
 export interface McpSlice {
   mcpServers: McpServer[];
-  builtinMcpServers: ExplorableMcpServer[];
+  builtinMcpServers: ExplorableMcpServer<BuiltinMcpData>[];
   lastFetchTime: number; // 添加最后一次获取时间
   isEditMcpServerModalOpen: boolean;
   editingMcpServer: McpServer | null;
@@ -19,7 +21,9 @@ export interface McpSlice {
   fetchBuiltinMcpServers: () => Promise<void>;
   refreshMcpServers: () => Promise<void>;
   addMcpServer: (server: McpServerCreate) => Promise<void>;
-  quickAddBuiltinServer: (server: ExplorableMcpServer) => Promise<void>;
+  quickAddBuiltinServer: (
+    server: ExplorableMcpServer<BuiltinMcpData>,
+  ) => Promise<void>;
   editMcpServer: (id: string, server: McpServerUpdate) => Promise<void>;
   removeMcpServer: (id: string) => Promise<void>;
   updateMcpServerInList: (server: McpServer) => void;
@@ -70,16 +74,18 @@ export const createMcpSlice: StateCreator<
   },
   fetchBuiltinMcpServers: async () => {
     try {
-      const builtinServers = await mcpService.getBuiltinMcpServers();
+      const rawServers = await mcpService.getBuiltinMcpServers();
+      // 转换为新格式
+      const builtinServers = convertBuiltinServers(rawServers);
       const { mcpServers, backendUrl } = get();
 
       // Filter out servers that user has already added
       const existingUrls = mcpServers.map((s) => s.url);
       const filtered = builtinServers.filter((bs) => {
         // Ensure URL has trailing slash for comparison
-        const mountPath = bs.mount_path.endsWith("/")
-          ? bs.mount_path
-          : `${bs.mount_path}/`;
+        const mountPath = bs.data.mount_path.endsWith("/")
+          ? bs.data.mount_path
+          : `${bs.data.mount_path}/`;
         const fullUrl = `${backendUrl}${mountPath}`;
         return !existingUrls.includes(fullUrl);
       });
@@ -131,9 +137,9 @@ export const createMcpSlice: StateCreator<
 
     try {
       // Ensure URL has trailing slash for MCP server endpoint
-      const mountPath = server.mount_path.endsWith("/")
-        ? server.mount_path
-        : `${server.mount_path}/`;
+      const mountPath = server.data.mount_path.endsWith("/")
+        ? server.data.mount_path
+        : `${server.data.mount_path}/`;
 
       const serverToCreate: McpServerCreate = {
         name: server.name,
@@ -147,7 +153,7 @@ export const createMcpSlice: StateCreator<
         state.mcpServers.push(newServer);
         // Remove from builtin list since it's now added
         state.builtinMcpServers = state.builtinMcpServers.filter(
-          (bs) => bs.module_name !== server.module_name,
+          (bs) => bs.data.module_name !== server.data.module_name,
         );
       });
       get().closeAddMcpServerModal();
