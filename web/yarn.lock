@@ -1081,7 +1081,6 @@ __metadata:
     date-fns: "npm:^4.1.0"
     date-fns-tz: "npm:^3.2.0"
     echarts: "npm:^6.0.0"
-    echarts-for-react: "npm:3.0.2"
     eslint: "npm:^9.30.1"
     eslint-plugin-react-hooks: "npm:^5.2.0"
     eslint-plugin-react-refresh: "npm:^0.4.20"
@@ -2345,19 +2344,6 @@ __metadata:
   version: 0.2.0
   resolution: "eastasianwidth@npm:0.2.0"
   checksum: 10c0/26f364ebcdb6395f95124fda411f63137a4bfb5d3a06453f7f23dfe52502905bd84e0488172e0f9ec295fdc45f05c23d5d91baf16bd26f0fe9acd777a188dc39
-  languageName: node
-  linkType: hard
-
-"echarts-for-react@npm:3.0.2":
-  version: 3.0.2
-  resolution: "echarts-for-react@npm:3.0.2"
-  dependencies:
-    fast-deep-equal: "npm:^3.1.3"
-    size-sensor: "npm:^1.0.1"
-  peerDependencies:
-    echarts: ^3.0.0 || ^4.0.0 || ^5.0.0
-    react: ^15.0.0 || >=16.0.0
-  checksum: 10c0/a67d76d2cea6fdb8efa9e305fa998f4933053a647df13ea58b4ea0c7892a72e9afb7523a7382d98b541983e5e073adafc2c4103d7dcb88d86757c4582d45e400
   languageName: node
   linkType: hard
 
@@ -5305,13 +5291,6 @@ __metadata:
   version: 4.1.0
   resolution: "signal-exit@npm:4.1.0"
   checksum: 10c0/41602dce540e46d599edba9d9860193398d135f7ff72cab629db5171516cfae628d21e7bfccde1bbfdf11c48726bc2a6d1a8fb8701125852fbfda7cf19c6aa83
-  languageName: node
-  linkType: hard
-
-"size-sensor@npm:^1.0.1":
-  version: 1.0.2
-  resolution: "size-sensor@npm:1.0.2"
-  checksum: 10c0/2cb020cd54ae7bea76a0600ba82c1a09daf51e8bec6f96355e17b4806eb24003626e3349d6cb091f821ed5fbba193f59ca59f0ea7f6dd8b75d7c20b96c465c26
   languageName: node
   linkType: hard
 
