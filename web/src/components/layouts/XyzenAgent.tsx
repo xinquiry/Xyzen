@@ -21,7 +21,7 @@ export type Agent = {
   require_tool_confirmation?: boolean;
   provider_id?: string | null;
   // New fields for unified agent support
-  agent_type: "regular" | "graph" | "builtin";
+  agent_type: "regular" | "graph" | "builtin" | "system";
   avatar?: string | null;
   tags?: string[] | null;
   model?: string | null;
@@ -33,6 +33,8 @@ export type Agent = {
   state_schema?: Record<string, unknown>;
   node_count?: number;
   edge_count?: number;
+  is_published?: boolean;
+  is_official?: boolean;
 };
 
 interface AgentCardProps {
