@@ -8,13 +8,13 @@ import { useXyzen } from "@/store";
 import type { ChatHistoryItem } from "@/store/types";
 import { MapPinIcon } from "@heroicons/react/20/solid";
 import {
+  ArchiveBoxXMarkIcon,
   ChevronRightIcon,
   ClockIcon,
+  MagnifyingGlassIcon,
   PlusIcon,
   TrashIcon,
   UserIcon,
-  MagnifyingGlassIcon,
-  ArchiveBoxXMarkIcon,
   XMarkIcon,
 } from "@heroicons/react/24/outline";
 import { motion } from "framer-motion";
@@ -210,7 +210,7 @@ export default function XyzenTopics() {
             </div>
             <button
               onClick={handleCreateNewTopic}
-              className="flex items-center gap-1 rounded-lg bg-indigo-600 px-3 py-1.5 text-xs font-medium text-white transition-colors hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600"
+              className="flex items-center gap-1 rounded-sm bg-indigo-600 px-3 py-1.5 text-xs font-medium text-white transition-colors hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600"
               title="Create new topic"
             >
               <PlusIcon className="h-4 w-4" />
@@ -230,7 +230,7 @@ export default function XyzenTopics() {
                 placeholder="搜索对话..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full rounded-lg border border-neutral-200 bg-white py-2 pl-9 pr-3 text-sm text-neutral-800 placeholder-neutral-400 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 dark:border-neutral-700 dark:bg-neutral-900 dark:text-white dark:placeholder-neutral-500"
+                className="w-full rounded-sm border border-neutral-200 bg-white py-2 pl-9 pr-3 text-sm text-neutral-800 placeholder-neutral-400 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 dark:border-neutral-700 dark:bg-neutral-900 dark:text-white dark:placeholder-neutral-500"
               />
               {searchQuery && (
                 <button
@@ -245,7 +245,7 @@ export default function XyzenTopics() {
             {/* Clear All Button */}
             <button
               onClick={handleClearAllTopics}
-              className="flex items-center gap-1.5 rounded-lg border border-neutral-200 bg-white px-3 py-2 text-xs font-medium text-neutral-700 transition-colors hover:bg-red-50 hover:border-red-200 hover:text-red-700 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-300 dark:hover:bg-red-950/30 dark:hover:border-red-800 dark:hover:text-red-400"
+              className="flex items-center gap-1.5 rounded-sm border border-neutral-200 bg-white px-3 py-2 text-xs font-medium text-neutral-700 transition-colors hover:bg-red-50 hover:border-red-200 hover:text-red-700 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-300 dark:hover:bg-red-950/30 dark:hover:border-red-800 dark:hover:text-red-400"
               title="清空所有对话"
             >
               <ArchiveBoxXMarkIcon className="h-4 w-4" />
@@ -270,7 +270,7 @@ export default function XyzenTopics() {
                   initial={{ opacity: 0, y: -10 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -10 }}
-                  className={`group relative flex cursor-pointer items-center justify-between rounded-lg border p-3 transition-all hover:shadow-sm ${
+                  className={`group relative flex cursor-pointer items-center justify-between rounded-sm border p-3 transition-all hover:shadow-sm ${
                     topic.id === activeChatChannel
                       ? "border-indigo-300 bg-indigo-50 shadow-sm dark:border-indigo-700 dark:bg-indigo-950/30"
                       : "border-neutral-200 bg-white hover:border-neutral-300 hover:bg-neutral-50 dark:border-neutral-800 dark:bg-neutral-900 dark:hover:border-neutral-700 dark:hover:bg-neutral-800"

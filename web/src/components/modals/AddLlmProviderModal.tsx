@@ -1,5 +1,5 @@
-import { Input } from "@/components/base/Input";
 import { Modal } from "@/components/animate-ui/primitives/headless/modal";
+import { Input } from "@/components/base/Input";
 import { useXyzen } from "@/store";
 import type { LlmProviderCreate } from "@/types/llmProvider";
 import { Button, Field, Label } from "@headlessui/react";
@@ -227,7 +227,7 @@ export function AddLlmProviderModal() {
         </div>
 
         {error && (
-          <div className="rounded-md bg-red-50 p-3 dark:bg-red-950/50">
+          <div className="rounded-sm bg-red-50 p-3 dark:bg-red-950/50">
             <p className="text-sm text-red-800 dark:text-red-200">{error}</p>
           </div>
         )}
@@ -235,14 +235,14 @@ export function AddLlmProviderModal() {
         <div className="flex justify-end space-x-3 pt-4">
           <Button
             onClick={handleClose}
-            className="rounded-md border border-neutral-300 bg-white px-4 py-2 text-sm font-medium text-neutral-700 hover:bg-neutral-50 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-300 dark:hover:bg-neutral-700"
+            className="rounded-sm border border-neutral-300 bg-white px-4 py-2 text-sm font-medium text-neutral-700 hover:bg-neutral-50 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-300 dark:hover:bg-neutral-700"
           >
             Cancel
           </Button>
           <Button
             onClick={handleAddProvider}
             disabled={loading}
-            className="inline-flex items-center rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 disabled:opacity-50 dark:bg-indigo-500 dark:hover:bg-indigo-600"
+            className="inline-flex items-center rounded-sm bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 disabled:opacity-50 dark:bg-indigo-500 dark:hover:bg-indigo-600"
           >
             {loading ? "Adding..." : "Add Provider"}
           </Button>

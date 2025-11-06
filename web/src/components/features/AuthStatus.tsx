@@ -67,14 +67,14 @@ function TokenInputModal({
       className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50"
       onClick={handleBackdropClick}
     >
-      <div className="w-full max-w-md rounded-lg bg-white p-6 shadow-xl dark:bg-neutral-800">
+      <div className="w-full max-w-md rounded-sm bg-white p-6 shadow-xl dark:bg-neutral-800">
         <div className="mb-4 flex items-center justify-between">
           <h3 className="text-lg font-medium text-neutral-900 dark:text-neutral-100">
             输入访问令牌
           </h3>
           <button
             onClick={handleClose}
-            className="rounded-md p-1 text-neutral-400 hover:bg-neutral-100 hover:text-neutral-500 dark:hover:bg-neutral-700"
+            className="rounded-sm p-1 text-neutral-400 hover:bg-neutral-100 hover:text-neutral-500 dark:hover:bg-neutral-700"
           >
             <XMarkIcon className="h-5 w-5" />
           </button>
@@ -94,7 +94,7 @@ function TokenInputModal({
               value={tokenInput}
               onChange={(e) => setTokenInput(e.target.value)}
               placeholder="请输入您的访问令牌"
-              className="w-full rounded-md border border-neutral-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100"
+              className="w-full rounded-sm border border-neutral-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100"
               autoFocus
               required
             />
@@ -107,13 +107,13 @@ function TokenInputModal({
             <button
               type="button"
               onClick={handleClose}
-              className="rounded-md px-4 py-2 text-sm font-medium text-neutral-700 hover:bg-neutral-50 dark:text-neutral-300 dark:hover:bg-neutral-700"
+              className="rounded-sm px-4 py-2 text-sm font-medium text-neutral-700 hover:bg-neutral-50 dark:text-neutral-300 dark:hover:bg-neutral-700"
             >
               取消
             </button>
             <button
               type="submit"
-              className="rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
+              className="rounded-sm bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
             >
               确认
             </button>

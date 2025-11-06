@@ -1,5 +1,5 @@
-import { LoadingSpinner } from "@/components/base/LoadingSpinner";
 import { Modal } from "@/components/animate-ui/primitives/headless/modal";
+import { LoadingSpinner } from "@/components/base/LoadingSpinner";
 import { useXyzen } from "@/store";
 import type { McpServer } from "@/types/mcp";
 import { Button } from "@headlessui/react";
@@ -170,7 +170,7 @@ export const ToolTestModal: React.FC<ToolTestModalProps> = ({
           {/* Left Panel - Tool Configuration */}
           <div className="flex-1 flex flex-col min-w-0">
             {/* Tool Info */}
-            <div className="rounded-lg bg-neutral-50 p-4 dark:bg-neutral-800/50 mb-6">
+            <div className="rounded-sm bg-neutral-50 p-4 dark:bg-neutral-800/50 mb-6">
               <div className="flex items-center space-x-2 mb-3">
                 <CommandLineIcon className="h-5 w-5 text-indigo-500" />
                 <h3 className="font-medium text-neutral-900 dark:text-white">
@@ -217,7 +217,7 @@ export const ToolTestModal: React.FC<ToolTestModalProps> = ({
                 value={parameters}
                 onChange={(e) => handleParametersChange(e.target.value)}
                 placeholder='{"key": "value"}'
-                className="flex-1 w-full rounded-lg border border-neutral-300 bg-white px-3 py-2 text-sm font-mono text-neutral-900 placeholder-neutral-500 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 dark:border-neutral-600 dark:bg-neutral-800 dark:text-neutral-100 dark:placeholder-neutral-400 resize-none min-h-[200px]"
+                className="flex-1 w-full rounded-sm border border-neutral-300 bg-white px-3 py-2 text-sm font-mono text-neutral-900 placeholder-neutral-500 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 dark:border-neutral-600 dark:bg-neutral-800 dark:text-neutral-100 dark:placeholder-neutral-400 resize-none min-h-[200px]"
               />
               {parametersError && (
                 <div className="mt-2 flex items-center space-x-2 text-sm text-red-600 dark:text-red-400">
@@ -245,7 +245,7 @@ export const ToolTestModal: React.FC<ToolTestModalProps> = ({
               <Button
                 onClick={handleTestTool}
                 disabled={isRunning || !!parametersError}
-                className="inline-flex items-center gap-2 rounded-lg bg-gradient-to-r from-indigo-600 to-indigo-700 px-4 py-2 text-sm font-medium text-white shadow-lg transition-all hover:from-indigo-500 hover:to-indigo-600 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="inline-flex items-center gap-2 rounded-sm bg-gradient-to-r from-indigo-600 to-indigo-700 px-4 py-2 text-sm font-medium text-white shadow-lg transition-all hover:from-indigo-500 hover:to-indigo-600 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {isRunning ? (
                   <>
@@ -304,7 +304,7 @@ export const ToolTestModal: React.FC<ToolTestModalProps> = ({
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: -20 }}
                     transition={{ duration: 0.3 }}
-                    className={`rounded-lg border p-4 ${
+                    className={`rounded-sm border p-4 ${
                       result.success
                         ? "border-green-200 bg-green-50 dark:border-green-800 dark:bg-green-900/20"
                         : "border-red-200 bg-red-50 dark:border-red-800 dark:bg-red-900/20"
@@ -335,7 +335,7 @@ export const ToolTestModal: React.FC<ToolTestModalProps> = ({
                             <span className="text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2 block">
                               Result:
                             </span>
-                            <pre className="overflow-auto rounded-lg bg-neutral-900 p-4 text-sm text-green-400 dark:bg-neutral-800 max-h-96 whitespace-pre-wrap break-words">
+                            <pre className="overflow-auto rounded-sm bg-neutral-900 p-4 text-sm text-green-400 dark:bg-neutral-800 max-h-96 whitespace-pre-wrap break-words">
                               {typeof result.result === "string"
                                 ? result.result
                                 : (JSON.stringify(result.result, null, 2) ??
@@ -349,7 +349,7 @@ export const ToolTestModal: React.FC<ToolTestModalProps> = ({
                           <span className="text-sm font-medium text-red-700 dark:text-red-300 mb-2 block">
                             Error:
                           </span>
-                          <pre className="overflow-auto rounded-lg bg-neutral-900 p-4 text-sm text-red-400 dark:bg-neutral-800 max-h-96 whitespace-pre-wrap break-words">
+                          <pre className="overflow-auto rounded-sm bg-neutral-900 p-4 text-sm text-red-400 dark:bg-neutral-800 max-h-96 whitespace-pre-wrap break-words">
                             {result.error}
                           </pre>
                         </div>
@@ -367,7 +367,7 @@ export const ToolTestModal: React.FC<ToolTestModalProps> = ({
           <Button
             onClick={handleClose}
             disabled={isRunning}
-            className="rounded-lg bg-neutral-200 px-6 py-2 text-sm font-medium text-neutral-700 transition-colors hover:bg-neutral-300 focus:outline-none focus:ring-2 focus:ring-neutral-500 focus:ring-offset-2 disabled:opacity-50 dark:bg-neutral-700 dark:text-neutral-200 dark:hover:bg-neutral-600"
+            className="rounded-sm bg-neutral-200 px-6 py-2 text-sm font-medium text-neutral-700 transition-colors hover:bg-neutral-300 focus:outline-none focus:ring-2 focus:ring-neutral-500 focus:ring-offset-2 disabled:opacity-50 dark:bg-neutral-700 dark:text-neutral-200 dark:hover:bg-neutral-600"
           >
             Close
           </Button>

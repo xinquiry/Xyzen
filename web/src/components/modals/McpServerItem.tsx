@@ -20,7 +20,7 @@ export const McpServerItem: React.FC<McpServerItemProps> = ({
   return (
     <div
       className={clsx(
-        "flex items-center justify-between rounded-lg p-3 transition-colors",
+        "flex items-center justify-between rounded-sm p-3 transition-colors",
         {
           "hover:bg-neutral-100 dark:hover:bg-neutral-800": !isOffline,
           "opacity-60": isOffline,

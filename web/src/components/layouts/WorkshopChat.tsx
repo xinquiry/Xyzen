@@ -324,14 +324,14 @@ function BaseChat({ config, historyEnabled = false }: BaseChatProps) {
 
         {/* Connection Status */}
         {!connected && (
-          <div className="mb-1 flex flex-shrink-0 items-center justify-between rounded-md bg-amber-50 px-3 py-1.5 dark:bg-amber-900/20">
+          <div className="mb-1 flex flex-shrink-0 items-center justify-between rounded-sm bg-amber-50 px-3 py-1.5 dark:bg-amber-900/20">
             <span className="text-xs text-amber-700 dark:text-amber-200">
               {error || config.connectionMessages.connecting}
             </span>
             <button
               onClick={handleRetryConnection}
               disabled={isRetrying}
-              className="ml-2 rounded-md p-1 text-amber-700 hover:bg-amber-100 focus:outline-none focus:ring-1 focus:ring-amber-500 dark:text-amber-300 dark:hover:bg-amber-800/30"
+              className="ml-2 rounded-sm p-1 text-amber-700 hover:bg-amber-100 focus:outline-none focus:ring-1 focus:ring-amber-500 dark:text-amber-300 dark:hover:bg-amber-800/30"
               title={config.connectionMessages.retrying}
             >
               <ArrowPathIcon
@@ -345,7 +345,7 @@ function BaseChat({ config, historyEnabled = false }: BaseChatProps) {
         <div className="relative flex-grow overflow-y-auto min-w-0">
           <div
             ref={messagesContainerRef}
-            className="h-full overflow-y-auto overflow-x-hidden rounded-lg bg-neutral-50 pt-6 dark:bg-black custom-scrollbar"
+            className="h-full overflow-y-auto overflow-x-hidden rounded-sm bg-neutral-50 pt-6 dark:bg-black custom-scrollbar"
             onScroll={handleScroll}
           >
             <div className="px-3 min-w-0">
@@ -396,7 +396,7 @@ function BaseChat({ config, historyEnabled = false }: BaseChatProps) {
             onHeightChange={handleInputHeightChange}
           />
           {sendBlocked && (
-            <div className="mx-4 mb-1 rounded-md bg-amber-50 px-3 py-1.5 text-xs text-amber-700 ring-1 ring-inset ring-amber-200 dark:bg-amber-900/20 dark:text-amber-200 dark:ring-amber-800/40">
+            <div className="mx-4 mb-1 rounded-sm bg-amber-50 px-3 py-1.5 text-xs text-amber-700 ring-1 ring-inset ring-amber-200 dark:bg-amber-900/20 dark:text-amber-200 dark:ring-amber-800/40">
               正在生成回复，暂时无法发送。请稍后再试。
             </div>
           )}

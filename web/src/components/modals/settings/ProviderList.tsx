@@ -1,3 +1,9 @@
+import {
+  AnthropicIcon,
+  AzureIcon,
+  GoogleIcon,
+  OpenAIIcon,
+} from "@/assets/icons";
 import { LoadingSpinner } from "@/components/base/LoadingSpinner";
 import { useXyzen } from "@/store";
 import type {
@@ -6,12 +12,6 @@ import type {
 } from "@/types/llmProvider";
 import { CheckCircleIcon, PlusCircleIcon } from "@heroicons/react/24/outline";
 import { useEffect } from "react";
-import {
-  OpenAIIcon,
-  AnthropicIcon,
-  GoogleIcon,
-  AzureIcon,
-} from "@/assets/icons";
 
 export const ProviderList = () => {
   const {
@@ -75,7 +75,7 @@ export const ProviderList = () => {
             <button
               key={template.type}
               onClick={() => handleTemplateClick(template)}
-              className={`flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left transition-colors ${
+              className={`flex w-full items-center gap-3 rounded-sm px-3 py-2 text-left transition-colors ${
                 selectedProviderId === `new:${template.type}`
                   ? "bg-indigo-50 text-indigo-600 dark:bg-indigo-950/30 dark:text-indigo-400"
                   : "hover:bg-neutral-100 dark:hover:bg-neutral-800"
@@ -113,7 +113,7 @@ export const ProviderList = () => {
               <button
                 key={provider.id}
                 onClick={() => handleProviderClick(provider)}
-                className={`flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left transition-colors ${
+                className={`flex w-full items-center gap-3 rounded-sm px-3 py-2 text-left transition-colors ${
                   selectedProviderId === provider.id
                     ? "bg-indigo-50 text-indigo-600 dark:bg-indigo-950/30 dark:text-indigo-400"
                     : "hover:bg-neutral-100 dark:hover:bg-neutral-800"

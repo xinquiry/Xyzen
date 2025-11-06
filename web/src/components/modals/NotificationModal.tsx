@@ -3,9 +3,9 @@
 import { Modal } from "@/components/animate-ui/primitives/headless/modal";
 import { Button } from "@headlessui/react";
 import {
+  CheckCircleIcon,
   ExclamationTriangleIcon,
   InformationCircleIcon,
-  CheckCircleIcon,
   XCircleIcon,
 } from "@heroicons/react/24/outline";
 
@@ -89,7 +89,7 @@ const NotificationModal: React.FC<NotificationModalProps> = ({
             <Button
               type="button"
               onClick={onClose}
-              className="inline-flex items-center gap-2 rounded-md bg-neutral-100 py-1.5 px-3 text-sm/6 font-semibold text-neutral-700 shadow-sm focus:outline-none data-[hover]:bg-neutral-200 dark:bg-neutral-800 dark:text-neutral-200 dark:data-[hover]:bg-neutral-700"
+              className="inline-flex items-center gap-2 rounded-sm bg-neutral-100 py-1.5 px-3 text-sm/6 font-semibold text-neutral-700 shadow-sm focus:outline-none data-[hover]:bg-neutral-200 dark:bg-neutral-800 dark:text-neutral-200 dark:data-[hover]:bg-neutral-700"
             >
               Close
             </Button>
@@ -99,7 +99,7 @@ const NotificationModal: React.FC<NotificationModalProps> = ({
                 onAction();
                 onClose();
               }}
-              className={`inline-flex items-center gap-2 rounded-md py-1.5 px-3 text-sm/6 font-semibold text-white shadow-inner shadow-white/10 focus:outline-none ${buttonColor}`}
+              className={`inline-flex items-center gap-2 rounded-sm py-1.5 px-3 text-sm/6 font-semibold text-white shadow-inner shadow-white/10 focus:outline-none ${buttonColor}`}
             >
               {actionLabel}
             </Button>
@@ -108,7 +108,7 @@ const NotificationModal: React.FC<NotificationModalProps> = ({
           <Button
             type="button"
             onClick={onClose}
-            className={`inline-flex items-center gap-2 rounded-md py-1.5 px-3 text-sm/6 font-semibold text-white shadow-inner shadow-white/10 focus:outline-none ${buttonColor}`}
+            className={`inline-flex items-center gap-2 rounded-sm py-1.5 px-3 text-sm/6 font-semibold text-white shadow-inner shadow-white/10 focus:outline-none ${buttonColor}`}
           >
             OK
           </Button>

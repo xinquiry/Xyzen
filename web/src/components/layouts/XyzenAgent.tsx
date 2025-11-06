@@ -3,7 +3,7 @@ import McpIcon from "@/assets/McpIcon";
 import { Badge } from "@/components/base/Badge";
 import { PencilIcon, TrashIcon } from "@heroicons/react/24/outline";
 import { motion, type Variants } from "framer-motion";
-import React, { useEffect, useState, useRef } from "react";
+import React, { useEffect, useRef, useState } from "react";
 
 import AddAgentModal from "@/components/modals/AddAgentModal";
 import ConfirmationModal from "@/components/modals/ConfirmationModal";
@@ -107,7 +107,7 @@ const ContextMenu: React.FC<ContextMenuProps> = ({
       animate={{ opacity: 1, scale: 1 }}
       exit={{ opacity: 0, scale: 0.95 }}
       transition={{ duration: 0.1 }}
-      className="fixed z-50 w-48 rounded-lg border border-neutral-200 bg-white shadow-lg dark:border-neutral-700 dark:bg-neutral-800"
+      className="fixed z-50 w-48 rounded-sm border border-neutral-200 bg-white shadow-lg dark:border-neutral-700 dark:bg-neutral-800"
       style={{ left: x, top: y }}
     >
       {isDefaultAgent ? (
@@ -176,7 +176,7 @@ const AgentCard: React.FC<AgentCardProps> = ({
         onClick={() => onClick?.(agent)}
         onContextMenu={handleContextMenu}
         className={`
-        group relative flex cursor-pointer items-start gap-4 rounded-lg border p-3
+        group relative flex cursor-pointer items-start gap-4 rounded-sm border p-3
         border-neutral-200 bg-white hover:bg-neutral-50 dark:border-neutral-800 dark:bg-neutral-900 dark:hover:bg-neutral-800/60
         ${agent.id === "default-chat" ? "select-none" : ""}
       `}
@@ -397,7 +397,7 @@ export default function XyzenAgent({
         />
       ))}
       <button
-        className="w-full rounded-lg border-2 border-dashed border-neutral-300 bg-transparent py-3 text-sm font-semibold text-neutral-600 transition-colors hover:border-neutral-400 hover:bg-neutral-50 dark:border-neutral-700 dark:text-neutral-400 dark:hover:border-neutral-600 dark:hover:bg-neutral-800/50"
+        className="w-full rounded-sm border-2 border-dashed border-neutral-300 bg-transparent py-3 text-sm font-semibold text-neutral-600 transition-colors hover:border-neutral-400 hover:bg-neutral-50 dark:border-neutral-700 dark:text-neutral-400 dark:hover:border-neutral-600 dark:hover:bg-neutral-800/50"
         onClick={() => setAddModalOpen(true)}
       >
         + 添加助手

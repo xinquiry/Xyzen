@@ -5,9 +5,9 @@ import { CenteredInput } from "@/components/features";
 import { SettingsModal } from "@/components/modals/SettingsModal";
 import { DEFAULT_BACKEND_URL } from "@/configs";
 import useTheme from "@/hooks/useTheme";
+import { McpListModal } from "../components/layouts/McpListModal";
 import { AppFullscreen } from "./AppFullscreen";
 import { AppSide } from "./AppSide";
-import { McpListModal } from "./McpListModal";
 
 export interface XyzenProps {
   backendUrl?: string;

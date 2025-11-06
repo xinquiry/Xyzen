@@ -2,11 +2,11 @@ import { useXyzen } from "@/store";
 import type { DragEndEvent } from "@dnd-kit/core";
 import { DndContext } from "@dnd-kit/core";
 import { restrictToVerticalAxis } from "@dnd-kit/modifiers";
+import { CogIcon } from "@heroicons/react/24/outline";
 import { useCallback, useEffect, useState } from "react";
 import { createPortal } from "react-dom";
-import { CogIcon } from "@heroicons/react/24/outline";
 
-import { McpListModal } from "@/app/McpListModal";
+import { McpListModal } from "@/components/layouts/McpListModal";
 
 import McpIcon from "@/assets/McpIcon";
 import { AuthStatus, SettingsButton } from "@/components/features";
@@ -105,7 +105,7 @@ export function AppFullscreen({
             <div className="flex items-center space-x-1">
               <SettingsButton />
               <button
-                className="rounded-md p-1.5 text-neutral-500 hover:bg-neutral-100 dark:text-neutral-400 dark:hover:bg-neutral-800"
+                className="rounded-sm p-1.5 text-neutral-500 hover:bg-neutral-100 dark:text-neutral-400 dark:hover:bg-neutral-800"
                 title="MCP Management"
                 onClick={openMcpListModal}
               >
@@ -113,7 +113,7 @@ export function AppFullscreen({
               </button>
               {showLlmProvider && (
                 <button
-                  className="rounded-md p-1.5 text-neutral-500 hover:bg-neutral-100 dark:text-neutral-400 dark:hover:bg-neutral-800"
+                  className="rounded-sm p-1.5 text-neutral-500 hover:bg-neutral-100 dark:text-neutral-400 dark:hover:bg-neutral-800"
                   title="LLM Providers"
                   onClick={() => openSettingsModal("provider")}
                 >

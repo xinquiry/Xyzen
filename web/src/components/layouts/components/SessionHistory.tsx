@@ -9,13 +9,13 @@ import type { ChatHistoryItem } from "@/store/types";
 
 import { MapPinIcon } from "@heroicons/react/20/solid";
 import {
+  ArchiveBoxXMarkIcon,
   ChevronRightIcon,
   ClockIcon,
+  MagnifyingGlassIcon,
   TrashIcon,
   UserIcon,
   XMarkIcon,
-  MagnifyingGlassIcon,
-  ArchiveBoxXMarkIcon,
 } from "@heroicons/react/24/outline";
 import { useEffect, useMemo, useState } from "react";
 
@@ -175,7 +175,7 @@ export default function SessionHistory({
       <div className="mt-6">
         <button
           onClick={onClose}
-          className="rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-indigo-700"
+          className="rounded-sm bg-indigo-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-indigo-700"
         >
           关闭
         </button>
@@ -214,7 +214,7 @@ export default function SessionHistory({
           </h2>
           <button
             onClick={onClose}
-            className="rounded-md p-1.5 text-neutral-500 hover:bg-neutral-100 hover:text-neutral-700 dark:text-neutral-400 dark:hover:bg-neutral-800 dark:hover:text-neutral-300"
+            className="rounded-sm p-1.5 text-neutral-500 hover:bg-neutral-100 hover:text-neutral-700 dark:text-neutral-400 dark:hover:bg-neutral-800 dark:hover:text-neutral-300"
             title="关闭历史记录"
           >
             <XMarkIcon className="h-5 w-5" />
@@ -236,7 +236,7 @@ export default function SessionHistory({
               placeholder="搜索对话..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full rounded-lg border border-neutral-200 bg-white py-2 pl-9 pr-3 text-sm text-neutral-800 placeholder-neutral-400 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 dark:border-neutral-700 dark:bg-neutral-800 dark:text-white dark:placeholder-neutral-500"
+              className="w-full rounded-sm border border-neutral-200 bg-white py-2 pl-9 pr-3 text-sm text-neutral-800 placeholder-neutral-400 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 dark:border-neutral-700 dark:bg-neutral-800 dark:text-white dark:placeholder-neutral-500"
             />
             {searchQuery && (
               <button
@@ -251,7 +251,7 @@ export default function SessionHistory({
           {/* Clear All Button */}
           <button
             onClick={handleClearAllTopics}
-            className="flex items-center gap-1.5 rounded-lg border border-neutral-200 bg-white px-3 py-2 text-sm font-medium text-neutral-700 transition-colors hover:bg-red-50 hover:border-red-200 hover:text-red-700 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-300 dark:hover:bg-red-950/30 dark:hover:border-red-800 dark:hover:text-red-400"
+            className="flex items-center gap-1.5 rounded-sm border border-neutral-200 bg-white px-3 py-2 text-sm font-medium text-neutral-700 transition-colors hover:bg-red-50 hover:border-red-200 hover:text-red-700 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-300 dark:hover:bg-red-950/30 dark:hover:border-red-800 dark:hover:text-red-400"
             title="清空所有对话"
           >
             <ArchiveBoxXMarkIcon className="h-4 w-4" />
@@ -281,7 +281,7 @@ export default function SessionHistory({
             {sortedHistory.map((chat: ChatHistoryItem) => (
               <div
                 key={chat.id}
-                className={`group relative flex cursor-pointer items-center justify-between rounded-lg border p-3 transition-colors hover:bg-neutral-50 dark:hover:bg-neutral-900 ${
+                className={`group relative flex cursor-pointer items-center justify-between rounded-sm border p-3 transition-colors hover:bg-neutral-50 dark:hover:bg-neutral-900 ${
                   chat.id === activeChatChannel
                     ? "border-indigo-200 bg-indigo-50 dark:border-indigo-800 dark:bg-indigo-950"
                     : "border-neutral-200 dark:border-neutral-800"

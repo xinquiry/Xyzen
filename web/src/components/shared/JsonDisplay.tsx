@@ -75,7 +75,7 @@ export const JsonDisplay: React.FC<JsonDisplayProps> = ({
       case "success":
         return {
           container: compact
-            ? "rounded-md bg-green-50/50 dark:bg-green-900/10 border border-green-200/60 dark:border-green-700/60"
+            ? "rounded-sm bg-green-50/50 dark:bg-green-900/10 border border-green-200/60 dark:border-green-700/60"
             : "code-block-container bg-green-50/50 dark:bg-green-900/10 border-green-200/60 dark:border-green-700/60",
           header: compact
             ? "flex items-center justify-between px-2 py-1 bg-green-100/60 dark:bg-green-800/30 border-b border-green-200/60 dark:border-green-600/60 rounded-t-md"
@@ -87,7 +87,7 @@ export const JsonDisplay: React.FC<JsonDisplayProps> = ({
       case "error":
         return {
           container: compact
-            ? "rounded-md bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-700"
+            ? "rounded-sm bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-700"
             : "code-block-container bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-700",
           header: compact
             ? "flex items-center justify-between px-2 py-1 bg-red-100 dark:bg-red-800/50 border-b border-red-200 dark:border-red-600 rounded-t-md"
@@ -99,7 +99,7 @@ export const JsonDisplay: React.FC<JsonDisplayProps> = ({
       default:
         return {
           container: compact
-            ? "rounded-md bg-neutral-100 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700"
+            ? "rounded-sm bg-neutral-100 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700"
             : "code-block-container",
           header: compact
             ? "flex items-center justify-between px-2 py-1 bg-neutral-50 dark:bg-neutral-700/50 border-b border-neutral-200 dark:border-neutral-600 rounded-t-md"

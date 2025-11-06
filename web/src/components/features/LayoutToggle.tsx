@@ -1,7 +1,7 @@
 import { useXyzen } from "@/store";
 import {
-  ViewColumnsIcon,
   Bars3BottomRightIcon,
+  ViewColumnsIcon,
 } from "@heroicons/react/24/outline";
 
 export type LayoutToggleProps = {
@@ -20,7 +20,7 @@ export const LayoutToggle = ({
   };
 
   const baseClass =
-    "rounded-md p-1.5 text-neutral-500 hover:bg-neutral-100 dark:text-neutral-400 dark:hover:bg-neutral-800";
+    "rounded-sm p-1.5 text-neutral-500 hover:bg-neutral-100 dark:text-neutral-400 dark:hover:bg-neutral-800";
 
   return (
     <button

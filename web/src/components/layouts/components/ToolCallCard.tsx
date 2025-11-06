@@ -1,5 +1,5 @@
-import type { ToolCall } from "@/store/types";
 import JsonDisplay from "@/components/shared/JsonDisplay";
+import type { ToolCall } from "@/store/types";
 import { ChevronDownIcon } from "@heroicons/react/24/outline";
 import {
   CheckCircleIcon,
@@ -105,7 +105,7 @@ export default function ToolCallCard({
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -10 }}
       transition={{ duration: 0.3, ease: "easeOut" }}
-      className={`rounded-lg border min-w-0 overflow-hidden ${getStatusColor(toolCall.status)} ${className}`}
+      className={`rounded-sm border min-w-0 overflow-hidden ${getStatusColor(toolCall.status)} ${className}`}
     >
       {/* Header - Always visible */}
       <div
@@ -150,7 +150,7 @@ export default function ToolCallCard({
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
               onClick={() => onCancel?.(toolCall.id)}
-              className="flex items-center justify-center rounded-md p-2 text-red-600 hover:bg-red-100 dark:text-red-400 dark:hover:bg-red-900/30 transition-colors"
+              className="flex items-center justify-center rounded-sm p-2 text-red-600 hover:bg-red-100 dark:text-red-400 dark:hover:bg-red-900/30 transition-colors"
               title="取消执行"
             >
               <XMarkIcon className="h-4 w-4" />
@@ -159,7 +159,7 @@ export default function ToolCallCard({
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
               onClick={() => onConfirm?.(toolCall.id)}
-              className="flex items-center justify-center rounded-md bg-green-600 px-3 py-2 text-white hover:bg-green-700 dark:bg-green-700 dark:hover:bg-green-600 transition-colors text-sm font-medium"
+              className="flex items-center justify-center rounded-sm bg-green-600 px-3 py-2 text-white hover:bg-green-700 dark:bg-green-700 dark:hover:bg-green-600 transition-colors text-sm font-medium"
               title="确认执行"
             >
               确认执行
@@ -257,7 +257,7 @@ export default function ToolCallCard({
                   <h4 className="text-xs font-medium text-red-700 dark:text-red-300 mb-2">
                     错误信息:
                   </h4>
-                  <div className="rounded-md bg-red-50 p-2 dark:bg-red-900/20">
+                  <div className="rounded-sm bg-red-50 p-2 dark:bg-red-900/20">
                     <pre className="text-xs text-red-800 dark:text-red-200 overflow-x-auto whitespace-pre-wrap">
                       {toolCall.error}
                     </pre>

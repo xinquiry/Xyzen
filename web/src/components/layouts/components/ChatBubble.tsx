@@ -1,14 +1,14 @@
 import ProfileIcon from "@/assets/ProfileIcon";
-import JsonDisplay from "@/components/shared/JsonDisplay";
 import { ChartRenderer } from "@/components/charts/ChartRenderer";
+import JsonDisplay from "@/components/shared/JsonDisplay";
 import Markdown from "@/lib/Markdown";
 import { useXyzen } from "@/store";
 import type { Message, ToolCall } from "@/store/types";
+import { detectChart } from "@/utils/chartDetection";
 import {
   parseToolMessage,
   toolEventToToolCall,
 } from "@/utils/toolMessageParser";
-import { detectChart } from "@/utils/chartDetection";
 import LoadingMessage from "./LoadingMessage";
 import ToolCallCard from "./ToolCallCard";
 
@@ -164,7 +164,7 @@ const ChatBubble: React.FC<ChatBubbleProps> = ({ message }) => {
           )}
 
           {/* Clean Chart Container */}
-          <div className="w-full bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
+          <div className="w-full bg-white dark:bg-gray-800 rounded-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
             <ChartRenderer
               data={chartDetection.data}
               height={450}
@@ -180,17 +180,17 @@ const ChatBubble: React.FC<ChatBubbleProps> = ({ message }) => {
 
   // Different styles for user vs AI messages
   const messageStyles = isUserMessage
-    ? "rounded-xl border-blue-400 bg-blue-50/50 dark:border-blue-600 dark:bg-blue-900/20"
-    : "rounded-xl border-neutral-300 bg-white dark:border-neutral-600 dark:bg-neutral-800/50";
+    ? "rounded-sm border-blue-400 bg-blue-50/50 dark:border-blue-600 dark:bg-blue-900/20"
+    : "rounded-sm border-neutral-300 bg-white dark:border-neutral-600 dark:bg-neutral-800/50";
 
   // Loading state styles
   const loadingStyles = isLoading
-    ? "rounded-xl border-purple-400 bg-purple-50/30 dark:border-purple-500 dark:bg-purple-900/10"
+    ? "rounded-sm border-purple-400 bg-purple-50/30 dark:border-purple-500 dark:bg-purple-900/10"
     : messageStyles;
 
   // Streaming animation styles
   const streamingStyles = isStreaming
-    ? "animate-pulse rounded-xl border-green-400 bg-green-50/30 dark:border-green-500 dark:bg-green-900/10"
+    ? "animate-pulse rounded-sm border-green-400 bg-green-50/30 dark:border-green-500 dark:bg-green-900/10"
     : loadingStyles;
 
   // 渲染头像，使用初始字母作为最后的备用选项

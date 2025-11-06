@@ -5,9 +5,9 @@ import { AnimatePresence, motion } from "framer-motion";
 import {
   ProviderConfigForm,
   ProviderList,
-  UiSettings,
-  ThemeSettings,
   StyleSettings,
+  ThemeSettings,
+  UiSettings,
 } from "./settings";
 
 export function SettingsModal() {
@@ -54,7 +54,7 @@ export function SettingsModal() {
               transition={{ duration: 0.3 }}
               className="w-full max-w-7xl"
             >
-              <DialogPanel className="flex h-[85vh] overflow-hidden rounded-2xl bg-white shadow-2xl dark:bg-neutral-950">
+              <DialogPanel className="flex h-[85vh] overflow-hidden rounded-sm bg-white shadow-2xl dark:bg-neutral-950">
                 {/* Column 1: Category Sidebar */}
                 <div className="w-48 border-r border-neutral-200 bg-neutral-50 dark:border-neutral-800 dark:bg-neutral-900">
                   <div className="flex h-16 items-center justify-between border-b border-neutral-200 px-4 dark:border-neutral-800">
@@ -63,7 +63,7 @@ export function SettingsModal() {
                     </DialogTitle>
                     <button
                       onClick={closeSettingsModal}
-                      className="rounded-lg p-1 text-neutral-500 hover:bg-neutral-200 dark:text-neutral-400 dark:hover:bg-neutral-800"
+                      className="rounded-sm p-1 text-neutral-500 hover:bg-neutral-200 dark:text-neutral-400 dark:hover:bg-neutral-800"
                     >
                       <XMarkIcon className="h-5 w-5" />
                     </button>
@@ -74,7 +74,7 @@ export function SettingsModal() {
                       <button
                         key={category.id}
                         onClick={() => setActiveSettingsCategory(category.id)}
-                        className={`w-full rounded-lg px-3 py-2 text-left text-sm font-medium transition-colors ${
+                        className={`w-full rounded-sm px-3 py-2 text-left text-sm font-medium transition-colors ${
                           activeSettingsCategory === category.id
                             ? "bg-white text-indigo-600 shadow-sm dark:bg-neutral-800 dark:text-indigo-400"
                             : "text-neutral-600 hover:bg-neutral-100 dark:text-neutral-400 dark:hover:bg-neutral-800"

@@ -1,7 +1,7 @@
-import React, { useMemo, useRef, useEffect } from "react";
-import ReactECharts from "echarts-for-react";
-import type { EChartsOption } from "echarts";
 import clsx from "clsx";
+import type { EChartsOption } from "echarts";
+import ReactECharts from "echarts-for-react";
+import React, { useEffect, useMemo, useRef } from "react";
 
 import type { ChartConfig, ChartRendererProps } from "../../types/chartTypes";
 import {
@@ -365,7 +365,7 @@ export const ChartRenderer: React.FC<ChartRendererProps> = ({
       >
         <div
           className="flex flex-col items-center justify-center h-full bg-gradient-to-br from-red-50 to-red-100 dark:from-red-900/20 dark:to-red-900/30
-                        border border-red-200 dark:border-red-800 rounded-lg backdrop-blur-sm"
+                        border border-red-200 dark:border-red-800 rounded-sm backdrop-blur-sm"
         >
           {/* Error Icon */}
           <div className="w-16 h-16 bg-red-100 dark:bg-red-900/40 rounded-full flex items-center justify-center mb-4">

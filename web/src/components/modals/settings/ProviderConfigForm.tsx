@@ -3,7 +3,7 @@ import { LoadingSpinner } from "@/components/base/LoadingSpinner";
 import { useXyzen } from "@/store";
 import type { LlmProviderCreate, LlmProviderUpdate } from "@/types/llmProvider";
 import { Button, Field, Label, Switch } from "@headlessui/react";
-import { useState, useEffect, type ChangeEvent } from "react";
+import { useEffect, useState, type ChangeEvent } from "react";
 
 export const ProviderConfigForm = () => {
   const {
@@ -275,13 +275,13 @@ export const ProviderConfigForm = () => {
         </h2>
 
         {error && (
-          <div className="mb-4 rounded-lg bg-red-50 p-3 text-sm text-red-600 dark:bg-red-900/20 dark:text-red-400">
+          <div className="mb-4 rounded-sm bg-red-50 p-3 text-sm text-red-600 dark:bg-red-900/20 dark:text-red-400">
             {error}
           </div>
         )}
 
         {success && (
-          <div className="mb-4 rounded-lg bg-green-50 p-3 text-sm text-green-600 dark:bg-green-900/20 dark:text-green-400">
+          <div className="mb-4 rounded-sm bg-green-50 p-3 text-sm text-green-600 dark:bg-green-900/20 dark:text-green-400">
             {success}
           </div>
         )}
@@ -289,7 +289,7 @@ export const ProviderConfigForm = () => {
         <div className="space-y-4">
           {/* Provider Type (readonly for existing) */}
           {template && (
-            <div className="rounded-lg bg-neutral-50 p-3 dark:bg-neutral-900">
+            <div className="rounded-sm bg-neutral-50 p-3 dark:bg-neutral-900">
               <div className="text-sm font-medium text-neutral-700 dark:text-neutral-300">
                 Provider Type
               </div>
@@ -458,7 +458,7 @@ export const ProviderConfigForm = () => {
               <Button
                 onClick={handleDelete}
                 disabled={loading}
-                className="rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700 disabled:opacity-50 dark:bg-red-700 dark:hover:bg-red-800"
+                className="rounded-sm bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700 disabled:opacity-50 dark:bg-red-700 dark:hover:bg-red-800"
               >
                 Delete
               </Button>
@@ -469,7 +469,7 @@ export const ProviderConfigForm = () => {
               <Button
                 onClick={handleSave}
                 disabled={loading}
-                className="flex items-center gap-2 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 disabled:opacity-50 dark:bg-indigo-700 dark:hover:bg-indigo-800"
+                className="flex items-center gap-2 rounded-sm bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 disabled:opacity-50 dark:bg-indigo-700 dark:hover:bg-indigo-800"
               >
                 {loading && <LoadingSpinner size="sm" />}
                 {isEditing ? "Save Changes" : "Create Provider"}

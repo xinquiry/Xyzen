@@ -1,5 +1,5 @@
-import { Input } from "@/components/base/Input";
 import { Modal } from "@/components/animate-ui/primitives/headless/modal";
+import { Input } from "@/components/base/Input";
 import { useXyzen } from "@/store";
 import type { McpServerCreate } from "@/types/mcp";
 import { Button, Field, Label } from "@headlessui/react";
@@ -190,7 +190,7 @@ export function AddMcpServerModal() {
                       initial={{ opacity: 0, x: -10 }}
                       animate={{ opacity: 1, x: 0 }}
                       transition={{ delay: index * 0.05 }}
-                      className="group flex items-center justify-between rounded-lg border border-neutral-200 bg-neutral-50 p-2.5 transition-all hover:border-indigo-300 hover:bg-indigo-50/50 dark:border-neutral-700 dark:bg-neutral-800/50 dark:hover:border-indigo-600 dark:hover:bg-indigo-900/20"
+                      className="group flex items-center justify-between rounded-sm border border-neutral-200 bg-neutral-50 p-2.5 transition-all hover:border-indigo-300 hover:bg-indigo-50/50 dark:border-neutral-700 dark:bg-neutral-800/50 dark:hover:border-indigo-600 dark:hover:bg-indigo-900/20"
                     >
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-1.5">
@@ -213,7 +213,7 @@ export function AddMcpServerModal() {
                       <Button
                         onClick={() => handleQuickAdd(server)}
                         disabled={isCreating}
-                        className="ml-2 flex-shrink-0 rounded-md bg-indigo-600 px-2.5 py-1 text-xs font-medium text-white transition-colors hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-50"
+                        className="ml-2 flex-shrink-0 rounded-sm bg-indigo-600 px-2.5 py-1 text-xs font-medium text-white transition-colors hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-50"
                       >
                         Add
                       </Button>
@@ -221,7 +221,7 @@ export function AddMcpServerModal() {
                   ))}
                 </div>
               ) : (
-                <div className="flex flex-1 items-center justify-center rounded-lg border-2 border-dashed border-neutral-200 bg-neutral-50 p-6 dark:border-neutral-700 dark:bg-neutral-800/30">
+                <div className="flex flex-1 items-center justify-center rounded-sm border-2 border-dashed border-neutral-200 bg-neutral-50 p-6 dark:border-neutral-700 dark:bg-neutral-800/30">
                   <div className="text-center">
                     <ServerStackIcon className="mx-auto h-8 w-8 text-neutral-400" />
                     <p className="mt-2 text-sm text-neutral-500 dark:text-neutral-400">
@@ -240,7 +240,7 @@ export function AddMcpServerModal() {
               className="flex flex-col h-full"
             >
               <div className="mb-4 flex items-center space-x-2 border-b border-neutral-200 pb-3 dark:border-neutral-700">
-                <div className="rounded-lg bg-gradient-to-br from-indigo-500 to-purple-600 p-2">
+                <div className="rounded-sm bg-gradient-to-br from-indigo-500 to-purple-600 p-2">
                   <ServerStackIcon className="h-5 w-5 text-white" />
                 </div>
                 <div>
@@ -335,7 +335,7 @@ export function AddMcpServerModal() {
                           <button
                             type="button"
                             onClick={() => setUseCurrentUserToken(true)}
-                            className={`w-full flex items-center justify-between p-3 rounded-lg border-2 transition-all duration-200 ${
+                            className={`w-full flex items-center justify-between p-3 rounded-sm border-2 transition-all duration-200 ${
                               useCurrentUserToken
                                 ? "border-indigo-500 bg-indigo-50 dark:border-indigo-400 dark:bg-indigo-900/20"
                                 : "border-neutral-200 bg-neutral-50 hover:border-neutral-300 dark:border-neutral-700 dark:bg-neutral-800/50 dark:hover:border-neutral-600"
@@ -343,7 +343,7 @@ export function AddMcpServerModal() {
                           >
                             <div className="flex items-center space-x-3">
                               <div
-                                className={`p-2 rounded-lg ${
+                                className={`p-2 rounded-sm ${
                                   useCurrentUserToken
                                     ? "bg-indigo-100 text-indigo-600 dark:bg-indigo-800/50 dark:text-indigo-300"
                                     : "bg-neutral-200 text-neutral-600 dark:bg-neutral-700 dark:text-neutral-400"
@@ -393,10 +393,10 @@ export function AddMcpServerModal() {
                               setUseCurrentUserToken(false);
                             }
                           }}
-                          className="w-full flex items-center justify-between p-3 rounded-lg border-2 border-neutral-200 bg-neutral-50 hover:border-neutral-300 transition-all duration-200 dark:border-neutral-700 dark:bg-neutral-800/50 dark:hover:border-neutral-600"
+                          className="w-full flex items-center justify-between p-3 rounded-sm border-2 border-neutral-200 bg-neutral-50 hover:border-neutral-300 transition-all duration-200 dark:border-neutral-700 dark:bg-neutral-800/50 dark:hover:border-neutral-600"
                         >
                           <div className="flex items-center space-x-3">
-                            <div className="p-2 rounded-lg bg-neutral-200 text-neutral-600 dark:bg-neutral-700 dark:text-neutral-400">
+                            <div className="p-2 rounded-sm bg-neutral-200 text-neutral-600 dark:bg-neutral-700 dark:text-neutral-400">
                               <CogIcon className="h-4 w-4" />
                             </div>
                             <div className="text-left">
@@ -427,7 +427,7 @@ export function AddMcpServerModal() {
                             transition={{ duration: 0.3, ease: "easeInOut" }}
                             className="overflow-hidden"
                           >
-                            <div className="p-4 rounded-lg bg-neutral-100/50 border border-neutral-200 dark:bg-neutral-800/30 dark:border-neutral-700">
+                            <div className="p-4 rounded-sm bg-neutral-100/50 border border-neutral-200 dark:bg-neutral-800/30 dark:border-neutral-700">
                               <div className="flex items-center space-x-2 mb-3">
                                 <KeyIcon className="h-4 w-4 text-neutral-600 dark:text-neutral-400" />
                                 <Label className="text-sm font-medium text-neutral-700 dark:text-neutral-300">
@@ -460,7 +460,7 @@ export function AddMcpServerModal() {
                     initial={{ opacity: 0, height: 0 }}
                     animate={{ opacity: 1, height: "auto" }}
                     exit={{ opacity: 0, height: 0 }}
-                    className="mt-4 flex items-center space-x-2 rounded-lg bg-red-50 p-3 dark:bg-red-900/20"
+                    className="mt-4 flex items-center space-x-2 rounded-sm bg-red-50 p-3 dark:bg-red-900/20"
                   >
                     <ExclamationCircleIcon className="h-4 w-4 text-red-500" />
                     <p className="text-sm text-red-600 dark:text-red-400">
@@ -480,7 +480,7 @@ export function AddMcpServerModal() {
                 <Button
                   onClick={handleClose}
                   disabled={isCreating}
-                  className="inline-flex items-center gap-2 rounded-lg bg-neutral-100 px-4 py-2 text-sm font-medium text-neutral-700 transition-colors hover:bg-neutral-200 focus:outline-none focus:ring-2 focus:ring-neutral-500 focus:ring-offset-2 disabled:opacity-50 dark:bg-neutral-800 dark:text-neutral-200 dark:hover:bg-neutral-700"
+                  className="inline-flex items-center gap-2 rounded-sm bg-neutral-100 px-4 py-2 text-sm font-medium text-neutral-700 transition-colors hover:bg-neutral-200 focus:outline-none focus:ring-2 focus:ring-neutral-500 focus:ring-offset-2 disabled:opacity-50 dark:bg-neutral-800 dark:text-neutral-200 dark:hover:bg-neutral-700"
                 >
                   Cancel
                 </Button>
@@ -491,7 +491,7 @@ export function AddMcpServerModal() {
                     !newServer.name.trim() ||
                     !newServer.url.trim()
                   }
-                  className="inline-flex items-center gap-2 rounded-lg bg-gradient-to-r from-indigo-600 to-indigo-700 px-4 py-2 text-sm font-medium text-white shadow-sm transition-all hover:from-indigo-500 hover:to-indigo-600 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="inline-flex items-center gap-2 rounded-sm bg-gradient-to-r from-indigo-600 to-indigo-700 px-4 py-2 text-sm font-medium text-white shadow-sm transition-all hover:from-indigo-500 hover:to-indigo-600 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {isCreating ? (
                     <>

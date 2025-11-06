@@ -53,7 +53,7 @@ const EmptyChat: React.FC = () => {
         <button
           onClick={() => createDefaultChannel()}
           disabled={isCreating}
-          className={`flex items-center justify-center rounded-md ${
+          className={`flex items-center justify-center rounded-sm ${
             isCreating
               ? "bg-indigo-400 dark:bg-indigo-700"
               : "bg-indigo-600 hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600"

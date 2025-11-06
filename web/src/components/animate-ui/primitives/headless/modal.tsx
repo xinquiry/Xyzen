@@ -1,12 +1,12 @@
 "use client";
 
-import type { ReactNode } from "react";
 import {
   Dialog,
   DialogBackdrop,
   DialogPanel,
   DialogTitle,
 } from "@/components/animate-ui/primitives/headless/dialog";
+import type { ReactNode } from "react";
 
 interface ModalProps {
   isOpen: boolean;
@@ -36,7 +36,7 @@ export function Modal({
       <div className="fixed inset-0 flex w-screen items-center justify-center p-4">
         <DialogPanel
           from="top"
-          className={`w-full ${maxWidth} ${minWidth} ${maxHeight} ${minHeight} space-y-4 rounded-2xl border border-neutral-200/20 bg-white/95 p-8 shadow-2xl shadow-black/20 backdrop-blur-xl dark:border-neutral-700/30 dark:bg-neutral-900/95 dark:shadow-black/40`}
+          className={`w-full ${maxWidth} ${minWidth} ${maxHeight} ${minHeight} space-y-4 rounded-sm border border-neutral-200/20 bg-white/95 p-8 shadow-2xl shadow-black/20 backdrop-blur-xl dark:border-neutral-700/30 dark:bg-neutral-900/95 dark:shadow-black/40`}
         >
           {title && title.trim() !== "" ? (
             <DialogTitle className="text-lg font-bold text-neutral-900 dark:text-neutral-100">

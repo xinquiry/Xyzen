@@ -1,11 +1,20 @@
 "use client";
+import {
+  Tabs,
+  TabsContent,
+  TabsContents,
+  TabsHighlight,
+  TabsHighlightItem,
+  TabsList,
+  TabsTrigger,
+} from "@/components/animate-ui/primitives/radix/tabs";
 import { Badge } from "@/components/base/Badge";
 import { useXyzen } from "@/store";
-import { PlusIcon, PlayIcon, StopIcon } from "@heroicons/react/24/outline";
-import { motion, type Variants } from "framer-motion";
-import React, { useEffect, useState } from "react";
-import type { Agent } from "./XyzenAgent";
 import type { BuiltinMcpServer } from "@/types/mcp";
+import { PlayIcon, PlusIcon, StopIcon } from "@heroicons/react/24/outline";
+import { motion, type Variants } from "framer-motion";
+import React, { useEffect } from "react";
+import type { Agent } from "./XyzenAgent";
 
 // Animation variants
 const itemVariants: Variants = {
@@ -44,7 +53,7 @@ const ExplorerAgentCard: React.FC<{
     <motion.div
       variants={itemVariants}
       whileHover={{ scale: 1.02, transition: { duration: 0.2 } }}
-      className="group relative rounded-lg border border-neutral-200 bg-white p-3 hover:bg-neutral-50 dark:border-neutral-800 dark:bg-neutral-900 dark:hover:bg-neutral-800/60"
+      className="group relative rounded-sm border border-neutral-200 bg-white p-3 hover:bg-neutral-50 dark:border-neutral-800 dark:bg-neutral-900 dark:hover:bg-neutral-800/60"
     >
       <div className="flex items-start justify-between">
         <div className="flex-1 min-w-0">
@@ -88,7 +97,7 @@ const ExplorerAgentCard: React.FC<{
         {agent.agent_type === "graph" && !isInSidebar && (
           <button
             onClick={() => onAddToSidebar(agent)}
-            className="opacity-0 group-hover:opacity-100 transition-opacity rounded-md p-1.5 text-neutral-400 hover:text-indigo-600 hover:bg-indigo-50 dark:hover:text-indigo-400 dark:hover:bg-indigo-900/20"
+            className="opacity-0 group-hover:opacity-100 transition-opacity rounded-sm p-1.5 text-neutral-400 hover:text-indigo-600 hover:bg-indigo-50 dark:hover:text-indigo-400 dark:hover:bg-indigo-900/20"
             title="Add to Sidebar"
           >
             <PlusIcon className="h-4 w-4" />
@@ -105,7 +114,7 @@ const ExplorerMcpCard: React.FC<{ mcp: BuiltinMcpServer }> = ({ mcp }) => {
     <motion.div
       variants={itemVariants}
       whileHover={{ scale: 1.02, transition: { duration: 0.2 } }}
-      className="rounded-lg border border-neutral-200 bg-white p-3 hover:bg-neutral-50 dark:border-neutral-800 dark:bg-neutral-900 dark:hover:bg-neutral-800/60"
+      className="rounded-sm border border-neutral-200 bg-white p-3 hover:bg-neutral-50 dark:border-neutral-800 dark:bg-neutral-900 dark:hover:bg-neutral-800/60"
     >
       <div className="flex items-start justify-between">
         <div className="flex-1 min-w-0">
@@ -149,8 +158,6 @@ export default function Explorer() {
     fetchBuiltinMcpServers,
   } = useXyzen();
 
-  const [activeTab, setActiveTab] = useState<"agents" | "mcp">("agents");
-
   useEffect(() => {
     if (user && backendUrl) {
       fetchAgents();
@@ -174,93 +181,103 @@ export default function Explorer() {
 
   return (
     <div className="h-full flex flex-col">
-      {/* Header with Tabs */}
-      <div className="border-b border-neutral-200 dark:border-neutral-800">
-        <div className="px-4 py-3">
-          <h2 className="text-sm font-semibold text-neutral-900 dark:text-white mb-3">
-            Explorer
-          </h2>
-
-          {/* Tab Navigation */}
-          <div className="flex space-x-1">
-            <button
-              onClick={() => setActiveTab("agents")}
-              className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
-                activeTab === "agents"
-                  ? "bg-indigo-100 text-indigo-700 dark:bg-indigo-900/20 dark:text-indigo-400"
-                  : "text-neutral-600 hover:text-neutral-900 dark:text-neutral-400 dark:hover:text-white"
-              }`}
-            >
-              Graph Agents ({graphAgents.length})
-            </button>
-            <button
-              onClick={() => setActiveTab("mcp")}
-              className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
-                activeTab === "mcp"
-                  ? "bg-indigo-100 text-indigo-700 dark:bg-indigo-900/20 dark:text-indigo-400"
-                  : "text-neutral-600 hover:text-neutral-900 dark:text-neutral-400 dark:hover:text-white"
-              }`}
-            >
-              MCP Market ({builtinMcpServers.length})
-            </button>
+      <Tabs defaultValue="agents" className="h-full flex flex-col">
+        {/* Header with Tabs */}
+        <div className="border-b border-neutral-200 dark:border-neutral-800 bg-gradient-to-r from-white to-neutral-50 dark:from-neutral-950 dark:to-neutral-900">
+          <div className="px-6 pt-6 pb-4">
+            {/* Tab Navigation */}
+            <TabsHighlight className="bg-white dark:bg-neutral-800 absolute z-0 inset-0 rounded-sm shadow-sm">
+              <TabsList className="h-14 inline-flex w-full p-1.5 bg-neutral-50 dark:bg-neutral-900 rounded-sm relative">
+                <TabsHighlightItem value="agents" className="flex-1">
+                  <TabsTrigger
+                    value="agents"
+                    className="h-full px-4 py-2 w-full text-sm font-semibold text-neutral-700 data-[state=active]:text-indigo-600 dark:text-neutral-300 dark:data-[state=active]:text-indigo-400 relative z-10 transition-all"
+                  >
+                    <span className="flex items-center justify-center gap-2">
+                      <span>🎯</span>
+                      <span>Graph Agents</span>
+                      <span className="ml-1 rounded-sm bg-neutral-200 dark:bg-neutral-700 px-2 py-0.5 text-xs font-medium">
+                        {graphAgents.length}
+                      </span>
+                    </span>
+                  </TabsTrigger>
+                </TabsHighlightItem>
+                <TabsHighlightItem value="mcp" className="flex-1">
+                  <TabsTrigger
+                    value="mcp"
+                    className="h-full px-4 py-2 w-full text-sm font-semibold text-neutral-700 data-[state=active]:text-indigo-600 dark:text-neutral-300 dark:data-[state=active]:text-indigo-400 relative z-10 transition-all"
+                  >
+                    <span className="flex items-center justify-center gap-2">
+                      <span>🏪</span>
+                      <span>MCP Market</span>
+                      <span className="ml-1 rounded-sm bg-neutral-200 dark:bg-neutral-700 px-2 py-0.5 text-xs font-medium">
+                        {builtinMcpServers.length}
+                      </span>
+                    </span>
+                  </TabsTrigger>
+                </TabsHighlightItem>
+              </TabsList>
+            </TabsHighlight>
           </div>
         </div>
-      </div>
 
-      {/* Content */}
-      <div className="flex-1 overflow-y-auto">
-        {activeTab === "agents" ? (
-          <motion.div
-            className="space-y-3 p-4"
-            variants={containerVariants}
-            initial="hidden"
-            animate="visible"
-          >
-            {graphAgents.length > 0 ? (
-              graphAgents.map((agent) => (
-                <ExplorerAgentCard
-                  key={agent.id}
-                  agent={agent}
-                  onAddToSidebar={handleAddToChat}
-                />
-              ))
-            ) : (
-              <div className="text-center py-8">
-                <div className="text-4xl mb-4">📊</div>
-                <h3 className="text-lg font-semibold text-neutral-800 dark:text-white mb-2">
-                  No Graph Agents Found
-                </h3>
-                <p className="text-sm text-neutral-500 dark:text-neutral-400">
-                  Graph agents will appear here when available
-                </p>
-              </div>
-            )}
-          </motion.div>
-        ) : (
-          <motion.div
-            className="space-y-3 p-4"
-            variants={containerVariants}
-            initial="hidden"
-            animate="visible"
-          >
-            {builtinMcpServers.length > 0 ? (
-              builtinMcpServers.map((mcp, _index) => (
-                <ExplorerMcpCard key={mcp.module_name} mcp={mcp} />
-              ))
-            ) : (
-              <div className="text-center py-8">
-                <div className="text-4xl mb-4">📦</div>
-                <h3 className="text-lg font-semibold text-neutral-800 dark:text-white mb-2">
-                  MCP Market
-                </h3>
-                <p className="text-sm text-neutral-500 dark:text-neutral-400">
-                  Discover available MCP servers and their capabilities
-                </p>
-              </div>
-            )}
-          </motion.div>
-        )}
-      </div>
+        {/* Content */}
+        <TabsContents mode="auto-height" className="flex-1 overflow-hidden">
+          <TabsContent value="agents" className="h-full overflow-y-auto">
+            <motion.div
+              className="space-y-3 p-4"
+              variants={containerVariants}
+              initial="hidden"
+              animate="visible"
+            >
+              {graphAgents.length > 0 ? (
+                graphAgents.map((agent) => (
+                  <ExplorerAgentCard
+                    key={agent.id}
+                    agent={agent}
+                    onAddToSidebar={handleAddToChat}
+                  />
+                ))
+              ) : (
+                <div className="text-center py-8">
+                  <div className="text-4xl mb-4">📊</div>
+                  <h3 className="text-lg font-semibold text-neutral-800 dark:text-white mb-2">
+                    No Graph Agents Found
+                  </h3>
+                  <p className="text-sm text-neutral-500 dark:text-neutral-400">
+                    Graph agents will appear here when available
+                  </p>
+                </div>
+              )}
+            </motion.div>
+          </TabsContent>
+
+          <TabsContent value="mcp" className="h-full overflow-y-auto">
+            <motion.div
+              className="space-y-3 p-4"
+              variants={containerVariants}
+              initial="hidden"
+              animate="visible"
+            >
+              {builtinMcpServers.length > 0 ? (
+                builtinMcpServers.map((mcp, _index) => (
+                  <ExplorerMcpCard key={mcp.module_name} mcp={mcp} />
+                ))
+              ) : (
+                <div className="text-center py-8">
+                  <div className="text-4xl mb-4">📦</div>
+                  <h3 className="text-lg font-semibold text-neutral-800 dark:text-white mb-2">
+                    MCP Market
+                  </h3>
+                  <p className="text-sm text-neutral-500 dark:text-neutral-400">
+                    Discover available MCP servers and their capabilities
+                  </p>
+                </div>
+              )}
+            </motion.div>
+          </TabsContent>
+        </TabsContents>
+      </Tabs>
     </div>
   );
 }

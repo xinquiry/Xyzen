@@ -1,5 +1,5 @@
-import { Input } from "@/components/base/Input";
 import { Modal } from "@/components/animate-ui/primitives/headless/modal";
+import { Input } from "@/components/base/Input";
 import { useXyzen } from "@/store";
 import { Button, Field, Label } from "@headlessui/react";
 import { PlusIcon } from "@heroicons/react/24/outline";
@@ -85,7 +85,7 @@ const EditAgentModal: React.FC<EditAgentModalProps> = ({
             value={agent.description}
             onChange={handleChange}
             placeholder="A brief description of the agent's purpose"
-            className="w-full rounded-md border-neutral-300 bg-neutral-100 px-3 py-2 text-sm text-neutral-900 placeholder-neutral-400 focus:border-indigo-500 focus:ring-indigo-500 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100 dark:placeholder-neutral-500"
+            className="w-full rounded-sm border-neutral-300 bg-neutral-100 px-3 py-2 text-sm text-neutral-900 placeholder-neutral-400 focus:border-indigo-500 focus:ring-indigo-500 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100 dark:placeholder-neutral-500"
           />
         </Field>
         <Field>
@@ -98,14 +98,14 @@ const EditAgentModal: React.FC<EditAgentModalProps> = ({
             onChange={handleChange}
             placeholder="Define the agent's behavior and personality"
             rows={4}
-            className="w-full rounded-md border-neutral-300 bg-neutral-100 px-3 py-2 text-sm text-neutral-900 placeholder-neutral-400 focus:border-indigo-500 focus:ring-indigo-500 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100 dark:placeholder-neutral-500"
+            className="w-full rounded-sm border-neutral-300 bg-neutral-100 px-3 py-2 text-sm text-neutral-900 placeholder-neutral-400 focus:border-indigo-500 focus:ring-indigo-500 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100 dark:placeholder-neutral-500"
           />
         </Field>
         <Field>
           <Label className="text-sm font-medium text-neutral-700 dark:text-neutral-300">
             Connected MCP Servers
           </Label>
-          <div className="mt-2 max-h-40 space-y-1 overflow-y-auto rounded-md border border-neutral-200 bg-neutral-50 p-2 dark:border-neutral-700 dark:bg-neutral-800/50">
+          <div className="mt-2 max-h-40 space-y-1 overflow-y-auto rounded-sm border border-neutral-200 bg-neutral-50 p-2 dark:border-neutral-700 dark:bg-neutral-800/50">
             {mcpServers.length > 0 ? (
               mcpServers.map((server) => (
                 <McpServerItem
@@ -126,7 +126,7 @@ const EditAgentModal: React.FC<EditAgentModalProps> = ({
                     onClose(); // Close current modal
                     openAddMcpServerModal(); // Open add server modal
                   }}
-                  className="mt-2 inline-flex items-center gap-2 rounded-md bg-indigo-100 py-1.5 px-3 text-sm/6 font-semibold text-indigo-600 focus:outline-none data-[hover]:bg-indigo-200 dark:bg-indigo-900/50 dark:text-indigo-300 dark:data-[hover]:bg-indigo-900"
+                  className="mt-2 inline-flex items-center gap-2 rounded-sm bg-indigo-100 py-1.5 px-3 text-sm/6 font-semibold text-indigo-600 focus:outline-none data-[hover]:bg-indigo-200 dark:bg-indigo-900/50 dark:text-indigo-300 dark:data-[hover]:bg-indigo-900"
                 >
                   <PlusIcon className="h-4 w-4" />
                   Create MCP Server
@@ -139,13 +139,13 @@ const EditAgentModal: React.FC<EditAgentModalProps> = ({
           <Button
             type="button"
             onClick={onClose}
-            className="inline-flex items-center gap-2 rounded-md bg-neutral-100 py-1.5 px-3 text-sm/6 font-semibold text-neutral-700 shadow-sm focus:outline-none data-[hover]:bg-neutral-200 dark:bg-neutral-800 dark:text-neutral-200 dark:data-[hover]:bg-neutral-700"
+            className="inline-flex items-center gap-2 rounded-sm bg-neutral-100 py-1.5 px-3 text-sm/6 font-semibold text-neutral-700 shadow-sm focus:outline-none data-[hover]:bg-neutral-200 dark:bg-neutral-800 dark:text-neutral-200 dark:data-[hover]:bg-neutral-700"
           >
             Cancel
           </Button>
           <Button
             type="submit"
-            className="inline-flex items-center gap-2 rounded-md bg-indigo-600 py-1.5 px-3 text-sm/6 font-semibold text-white shadow-inner shadow-white/10 focus:outline-none data-[hover]:bg-indigo-500 data-[open]:bg-indigo-700 data-[focus]:outline-1 data-[focus]:outline-white dark:bg-indigo-500 dark:data-[hover]:bg-indigo-400"
+            className="inline-flex items-center gap-2 rounded-sm bg-indigo-600 py-1.5 px-3 text-sm/6 font-semibold text-white shadow-inner shadow-white/10 focus:outline-none data-[hover]:bg-indigo-500 data-[open]:bg-indigo-700 data-[focus]:outline-1 data-[focus]:outline-white dark:bg-indigo-500 dark:data-[hover]:bg-indigo-400"
           >
             Save Changes
           </Button>

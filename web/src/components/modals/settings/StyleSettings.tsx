@@ -1,7 +1,7 @@
 import { useXyzen } from "@/store";
+import type { LayoutStyle } from "@/store/types";
 import { Field, Label, Radio, RadioGroup } from "@headlessui/react";
 import { CheckIcon } from "@heroicons/react/24/outline";
-import type { LayoutStyle } from "@/store/types";
 
 export function StyleSettings() {
   const { layoutStyle, setLayoutStyle } = useXyzen();
@@ -58,7 +58,7 @@ export function StyleSettings() {
                 <Radio
                   value={styleOption.value}
                   className={({ checked }) =>
-                    `relative flex cursor-pointer rounded-lg border p-5 transition-all ${
+                    `relative flex cursor-pointer rounded-sm border p-5 transition-all ${
                       checked
                         ? "border-indigo-500 bg-indigo-50 shadow-sm dark:border-indigo-600 dark:bg-indigo-950/30"
                         : "border-neutral-200 bg-white hover:border-neutral-300 hover:bg-neutral-50 dark:border-neutral-800 dark:bg-neutral-900 dark:hover:border-neutral-700 dark:hover:bg-neutral-800"
@@ -69,7 +69,7 @@ export function StyleSettings() {
                     <div className="flex w-full gap-4">
                       {/* Preview Icon */}
                       <div
-                        className={`flex h-16 w-24 flex-shrink-0 items-center justify-center rounded-lg border-2 ${
+                        className={`flex h-16 w-24 flex-shrink-0 items-center justify-center rounded-sm border-2 ${
                           checked
                             ? "border-indigo-300 bg-indigo-100 dark:border-indigo-700 dark:bg-indigo-900/50"
                             : "border-neutral-300 bg-neutral-100 dark:border-neutral-700 dark:bg-neutral-800"
@@ -138,7 +138,7 @@ export function StyleSettings() {
           </div>
         </RadioGroup>
 
-        <div className="mt-6 rounded-lg border border-amber-200 bg-amber-50 p-4 dark:border-amber-900 dark:bg-amber-950/30">
+        <div className="mt-6 rounded-sm border border-amber-200 bg-amber-50 p-4 dark:border-amber-900 dark:bg-amber-950/30">
           <h3 className="text-sm font-medium text-amber-900 dark:text-amber-300">
             💡 Pro Tip
           </h3>

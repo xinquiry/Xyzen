@@ -35,7 +35,7 @@ const ActivityButton: React.FC<ActivityButtonProps> = ({
       whileTap={!isDisabled ? { scale: 0.95 } : {}}
       onClick={isDisabled ? undefined : onClick}
       disabled={isDisabled}
-      className={`relative flex h-12 w-12 items-center justify-center rounded-lg transition-all duration-200 ${
+      className={`relative flex h-12 w-12 items-center justify-center rounded-sm transition-all duration-200 ${
         isActive
           ? "bg-indigo-100 text-indigo-600 shadow-sm dark:bg-indigo-900/30 dark:text-indigo-400"
           : isDisabled
@@ -58,7 +58,7 @@ const ActivityButton: React.FC<ActivityButtonProps> = ({
 
       {/* Disabled overlay */}
       {isDisabled && (
-        <div className="absolute inset-0 rounded-lg bg-neutral-100/50 dark:bg-neutral-800/50" />
+        <div className="absolute inset-0 rounded-sm bg-neutral-100/50 dark:bg-neutral-800/50" />
       )}
     </motion.button>
   );

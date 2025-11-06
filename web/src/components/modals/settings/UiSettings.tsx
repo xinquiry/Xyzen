@@ -41,7 +41,7 @@ export function UiSettings() {
             <button
               key={option.id}
               onClick={() => setActiveUiSetting(option.id)}
-              className={`mb-2 w-full rounded-lg border p-3 text-left transition-all ${
+              className={`mb-2 w-full rounded-sm border p-3 text-left transition-all ${
                 isActive
                   ? "border-indigo-500 bg-indigo-50 dark:border-indigo-600 dark:bg-indigo-950/30"
                   : "border-neutral-200 bg-white hover:border-neutral-300 hover:bg-neutral-50 dark:border-neutral-800 dark:bg-neutral-900 dark:hover:border-neutral-700 dark:hover:bg-neutral-800"
@@ -49,7 +49,7 @@ export function UiSettings() {
             >
               <div className="flex items-start gap-3">
                 <div
-                  className={`rounded-lg p-2 ${
+                  className={`rounded-sm p-2 ${
                     isActive
                       ? "bg-indigo-100 text-indigo-600 dark:bg-indigo-900 dark:text-indigo-400"
                       : "bg-neutral-100 text-neutral-600 dark:bg-neutral-800 dark:text-neutral-400"

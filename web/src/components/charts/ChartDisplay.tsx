@@ -1,10 +1,10 @@
-import React, { useMemo, useState } from "react";
 import clsx from "clsx";
+import React, { useMemo, useState } from "react";
 
-import { ChartRenderer } from "./ChartRenderer";
-import { JsonDisplay } from "../shared/JsonDisplay";
-import { detectChart, validateChartData } from "../../utils/chartDetection";
 import type { ChartDisplayProps } from "../../types/chartTypes";
+import { detectChart, validateChartData } from "../../utils/chartDetection";
+import { JsonDisplay } from "../shared/JsonDisplay";
+import { ChartRenderer } from "./ChartRenderer";
 
 /**
  * High-level component that decides whether to render data as a chart or JSON
@@ -89,7 +89,7 @@ export const ChartDisplay: React.FC<ChartDisplayProps> = ({
           </div>
 
           {/* Chart renderer */}
-          <div className="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
+          <div className="border border-gray-200 dark:border-gray-700 rounded-sm overflow-hidden">
             <ChartRenderer
               data={detection.data}
               height={compact ? 300 : 400}
@@ -186,7 +186,7 @@ export const SimpleChartDisplay: React.FC<{
       <ChartRenderer
         data={chartData}
         height={height}
-        className="border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800"
+        className="border border-gray-200 dark:border-gray-700 rounded-sm bg-white dark:bg-gray-800"
       />
     </div>
   );

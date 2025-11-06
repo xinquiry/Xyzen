@@ -2,6 +2,8 @@
 
 import McpIcon from "@/assets/McpIcon";
 import { useXyzen } from "@/store";
+import { getProviderColor } from "@/utils/providerColors";
+import { getProviderSourceDescription } from "@/utils/providerPreferences";
 import {
   type DragEndEvent,
   type DragMoveEvent,
@@ -12,15 +14,13 @@ import {
   useSensors,
 } from "@dnd-kit/core";
 import {
+  CheckIcon,
   ClockIcon,
+  CpuChipIcon,
   PlusIcon,
   ShieldCheckIcon,
-  CpuChipIcon,
-  CheckIcon,
 } from "@heroicons/react/24/outline";
-import { useMemo, useRef, useState, useEffect, useCallback } from "react";
-import { getProviderColor } from "@/utils/providerColors";
-import { getProviderSourceDescription } from "@/utils/providerPreferences";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 interface ChatToolbarProps {
   onShowHistory: () => void;
@@ -241,7 +241,7 @@ export default function ChatToolbar({
           <div className="flex items-center space-x-1">
             <button
               onClick={handleNewChat}
-              className="flex items-center justify-center rounded-md p-1.5 text-neutral-500 transition-colors hover:bg-neutral-200/60 hover:text-neutral-700 dark:text-neutral-400 dark:hover:bg-neutral-800/60 dark:hover:text-neutral-300"
+              className="flex items-center justify-center rounded-sm p-1.5 text-neutral-500 transition-colors hover:bg-neutral-200/60 hover:text-neutral-700 dark:text-neutral-400 dark:hover:bg-neutral-800/60 dark:hover:text-neutral-300"
               title="新对话"
             >
               <PlusIcon className="h-4 w-4" />
@@ -251,7 +251,7 @@ export default function ChatToolbar({
             {activeChatChannel && (
               <button
                 onClick={handleToggleToolCallConfirmation}
-                className={`flex items-center justify-center rounded-md p-1.5 transition-colors ${
+                className={`flex items-center justify-center rounded-sm p-1.5 transition-colors ${
                   requireToolCallConfirmation
                     ? "bg-indigo-100 text-indigo-600 hover:bg-indigo-200/60 dark:bg-indigo-900/50 dark:text-indigo-400 dark:hover:bg-indigo-800/60"
                     : "text-neutral-500 hover:bg-neutral-200/60 hover:text-neutral-700 dark:text-neutral-400 dark:hover:bg-neutral-800/60 dark:hover:text-neutral-300"
@@ -272,7 +272,7 @@ export default function ChatToolbar({
                 {llmProviders.length > 0 ? (
                   <>
                     <button
-                      className={`flex items-center gap-1.5 rounded-md px-2 py-1.5 text-xs font-medium transition-colors ${
+                      className={`flex items-center gap-1.5 rounded-sm px-2 py-1.5 text-xs font-medium transition-colors ${
                         currentProvider
                           ? `${getProviderColor(true).bg} ${getProviderColor(true).text}`
                           : `${getProviderColor(false).bg} ${getProviderColor(false).text}`
@@ -299,7 +299,7 @@ export default function ChatToolbar({
                     </button>
 
                     {/* Provider Dropdown */}
-                    <div className="hidden group-hover/provider:block absolute bottom-full left-0 mb-2 w-64 rounded-lg border border-neutral-200 bg-white p-2 shadow-lg dark:border-neutral-700 dark:bg-neutral-800 z-50">
+                    <div className="hidden group-hover/provider:block absolute bottom-full left-0 mb-2 w-64 rounded-sm border border-neutral-200 bg-white p-2 shadow-lg dark:border-neutral-700 dark:bg-neutral-800 z-50">
                       <div className="mb-2 px-2 py-1 border-b border-neutral-200 dark:border-neutral-700 pb-2">
                         <div className="text-xs font-medium text-neutral-900 dark:text-neutral-100">
                           选择LLM提供商
@@ -319,7 +319,7 @@ export default function ChatToolbar({
                             <button
                               key={provider.id}
                               onClick={() => handleProviderChange(provider.id)}
-                              className={`w-full rounded-md px-2 py-2 text-left text-sm transition-colors relative ${
+                              className={`w-full rounded-sm px-2 py-2 text-left text-sm transition-colors relative ${
                                 isSelected
                                   ? `${getProviderColor(true).bg} ${getProviderColor(true).text}`
                                   : `${getProviderColor(false).text} hover:bg-neutral-100 dark:hover:bg-neutral-700/50`
@@ -367,7 +367,7 @@ export default function ChatToolbar({
                         <div className="space-y-1">
                           <button
                             onClick={() => setUserDefaultProvider(null)}
-                            className={`w-full rounded-md px-2 py-1.5 text-left text-xs transition-colors ${
+                            className={`w-full rounded-sm px-2 py-1.5 text-left text-xs transition-colors ${
                               !userDefaultProviderId
                                 ? "bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-400"
                                 : "text-neutral-600 dark:text-neutral-400 hover:bg-neutral-100 dark:hover:bg-neutral-700/50"
@@ -383,7 +383,7 @@ export default function ChatToolbar({
                                 onClick={() =>
                                   setUserDefaultProvider(provider.id)
                                 }
-                                className={`w-full rounded-md px-2 py-1.5 text-left text-xs transition-colors ${
+                                className={`w-full rounded-sm px-2 py-1.5 text-left text-xs transition-colors ${
                                   userDefaultProviderId === provider.id
                                     ? "bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-400"
                                     : "text-neutral-600 dark:text-neutral-400 hover:bg-neutral-100 dark:hover:bg-neutral-700/50"
@@ -406,7 +406,7 @@ export default function ChatToolbar({
                   </>
                 ) : (
                   <button
-                    className="flex items-center gap-1.5 rounded-md px-2 py-1.5 text-xs font-medium text-neutral-600 transition-colors hover:bg-neutral-200/60 hover:text-neutral-700 dark:text-neutral-400 dark:hover:bg-neutral-800/60 dark:hover:text-neutral-300"
+                    className="flex items-center gap-1.5 rounded-sm px-2 py-1.5 text-xs font-medium text-neutral-600 transition-colors hover:bg-neutral-200/60 hover:text-neutral-700 dark:text-neutral-400 dark:hover:bg-neutral-800/60 dark:hover:text-neutral-300"
                     title="请先添加LLM提供商"
                   >
                     <CpuChipIcon className="h-4 w-4" />
@@ -420,7 +420,7 @@ export default function ChatToolbar({
             {currentMcpInfo && (
               <div className="relative group/mcp w-fit">
                 <button
-                  className="flex items-center w-fit justify-center rounded-md p-1.5 text-neutral-500 transition-colors hover:bg-neutral-200/60 hover:text-neutral-700 dark:text-neutral-400 dark:hover:bg-neutral-800/60 dark:hover:text-neutral-300"
+                  className="flex items-center w-fit justify-center rounded-sm p-1.5 text-neutral-500 transition-colors hover:bg-neutral-200/60 hover:text-neutral-700 dark:text-neutral-400 dark:hover:bg-neutral-800/60 dark:hover:text-neutral-300"
                   title="当前连接的MCP工具"
                 >
                   <McpIcon className="h-4 w-4" />
@@ -439,7 +439,7 @@ export default function ChatToolbar({
                   className=" transition-opacity
                   overflow-hidden hidden w-80
                   group-hover/mcp:block absolute bottom-full
-                  left-0 mb-2 rounded-lg border
+                  left-0 mb-2 rounded-sm border
                  border-neutral-200 bg-white p-3 shadow-lg
                   dark:border-neutral-700 dark:bg-neutral-800 z-50"
                 >
@@ -459,7 +459,7 @@ export default function ChatToolbar({
                     {currentMcpInfo.servers.map((server) => (
                       <div
                         key={server.id}
-                        className="rounded-md bg-neutral-50 p-2
+                        className="rounded-sm bg-neutral-50 p-2
                          dark:bg-neutral-700/50"
                       >
                         <div className="flex items-center justify-between">
@@ -511,7 +511,7 @@ export default function ChatToolbar({
           </div>
           <button
             onClick={onShowHistory}
-            className="flex items-center justify-center rounded-md p-1.5 text-neutral-500 transition-colors hover:bg-neutral-200/60 hover:text-neutral-700 dark:text-neutral-400 dark:hover:bg-neutral-800/60 dark:hover:text-neutral-300"
+            className="flex items-center justify-center rounded-sm p-1.5 text-neutral-500 transition-colors hover:bg-neutral-200/60 hover:text-neutral-700 dark:text-neutral-400 dark:hover:bg-neutral-800/60 dark:hover:text-neutral-300"
             title="历史记录"
           >
             <ClockIcon className="h-4 w-4" />

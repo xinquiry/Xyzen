@@ -190,7 +190,7 @@ export function AppSide({
                 <div className="flex items-center gap-2">
                   {activePanel === "chat" && activeChatChannel && (
                     <button
-                      className="rounded-md p-1.5 text-neutral-500 hover:bg-neutral-100 dark:text-neutral-400 dark:hover:bg-neutral-800"
+                      className="rounded-sm p-1.5 text-neutral-500 hover:bg-neutral-100 dark:text-neutral-400 dark:hover:bg-neutral-800"
                       title="返回 Assistants"
                       onClick={() => setActiveChatChannel(null)}
                     >
@@ -210,7 +210,7 @@ export function AppSide({
                 <div className="flex items-center space-x-1">
                   <SettingsButton />
                   <button
-                    className="rounded-md p-1.5 text-neutral-500 hover:bg-neutral-100 dark:text-neutral-400 dark:hover:bg-neutral-800"
+                    className="rounded-sm p-1.5 text-neutral-500 hover:bg-neutral-100 dark:text-neutral-400 dark:hover:bg-neutral-800"
                     title="MCP 管理"
                     onClick={openMcpListModal}
                   >
@@ -218,7 +218,7 @@ export function AppSide({
                   </button>
                   {showLlmProvider && (
                     <button
-                      className="rounded-md p-1.5 text-neutral-500 hover:bg-neutral-100 dark:text-neutral-400 dark:hover:bg-neutral-800"
+                      className="rounded-sm p-1.5 text-neutral-500 hover:bg-neutral-100 dark:text-neutral-400 dark:hover:bg-neutral-800"
                       title="LLM 提供商"
                       onClick={() => openSettingsModal("provider")}
                     >
@@ -229,7 +229,7 @@ export function AppSide({
                   <AuthStatus className="ml-2" />
                   <button
                     onClick={closeXyzen}
-                    className="rounded-md p-1.5 text-neutral-500 hover:bg-neutral-100 dark:text-neutral-400 dark:hover:bg-neutral-800"
+                    className="rounded-sm p-1.5 text-neutral-500 hover:bg-neutral-100 dark:text-neutral-400 dark:hover:bg-neutral-800"
                     title="关闭"
                   >
                     <XMarkIcon className="h-5 w-5" />
@@ -302,7 +302,7 @@ export function AppSide({
                   <div className="flex items-center gap-2">
                     {activePanel === "chat" && activeChatChannel && (
                       <button
-                        className="rounded-md p-1.5 text-neutral-500 hover:bg-neutral-100 dark:text-neutral-400 dark:hover:bg-neutral-800"
+                        className="rounded-sm p-1.5 text-neutral-500 hover:bg-neutral-100 dark:text-neutral-400 dark:hover:bg-neutral-800"
                         title="返回 Assistants"
                         onClick={() => setActiveChatChannel(null)}
                       >
@@ -322,7 +322,7 @@ export function AppSide({
                   <div className="flex items-center space-x-1">
                     <SettingsButton />
                     <button
-                      className="rounded-md p-1.5 text-neutral-500 hover:bg-neutral-100 dark:text-neutral-400 dark:hover:bg-neutral-800"
+                      className="rounded-sm p-1.5 text-neutral-500 hover:bg-neutral-100 dark:text-neutral-400 dark:hover:bg-neutral-800"
                       title="MCP 管理"
                       onClick={openMcpListModal}
                     >
@@ -330,7 +330,7 @@ export function AppSide({
                     </button>
                     {showLlmProvider && (
                       <button
-                        className="rounded-md p-1.5 text-neutral-500 hover:bg-neutral-100 dark:text-neutral-400 dark:hover:bg-neutral-800"
+                        className="rounded-sm p-1.5 text-neutral-500 hover:bg-neutral-100 dark:text-neutral-400 dark:hover:bg-neutral-800"
                         title="LLM 提供商"
                         onClick={() => openSettingsModal("provider")}
                       >
@@ -341,7 +341,7 @@ export function AppSide({
                     <AuthStatus className="ml-2" />
                     <button
                       onClick={closeXyzen}
-                      className="rounded-md p-1.5 text-neutral-500 hover:bg-neutral-100 dark:text-neutral-400 dark:hover:bg-neutral-800"
+                      className="rounded-sm p-1.5 text-neutral-500 hover:bg-neutral-100 dark:text-neutral-400 dark:hover:bg-neutral-800"
                       title="关闭"
                     >
                       <XMarkIcon className="h-5 w-5" />

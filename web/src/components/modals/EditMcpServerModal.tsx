@@ -1,5 +1,5 @@
-import { Input } from "@/components/base/Input";
 import { Modal } from "@/components/animate-ui/primitives/headless/modal";
+import { Input } from "@/components/base/Input";
 import { useXyzen } from "@/store";
 import type { McpServer, McpServerUpdate } from "@/types/mcp";
 import { Button, Field, Label } from "@headlessui/react";
@@ -144,7 +144,7 @@ export function EditMcpServerModal() {
             exit={{ opacity: 0 }}
           >
             <div className="mb-6 flex items-center space-x-3">
-              <div className="rounded-lg bg-gradient-to-br from-indigo-500 to-purple-600 p-2">
+              <div className="rounded-sm bg-gradient-to-br from-indigo-500 to-purple-600 p-2">
                 <ServerStackIcon className="h-5 w-5 text-white" />
               </div>
               <div>
@@ -240,7 +240,7 @@ export function EditMcpServerModal() {
                           <button
                             type="button"
                             onClick={() => setUseCurrentUserToken(true)}
-                            className={`w-full flex items-center justify-between p-3 rounded-lg border-2 transition-all duration-200 ${
+                            className={`w-full flex items-center justify-between p-3 rounded-sm border-2 transition-all duration-200 ${
                               useCurrentUserToken
                                 ? "border-indigo-500 bg-indigo-50 dark:border-indigo-400 dark:bg-indigo-900/20"
                                 : "border-neutral-200 bg-neutral-50 hover:border-neutral-300 dark:border-neutral-700 dark:bg-neutral-800/50 dark:hover:border-neutral-600"
@@ -248,7 +248,7 @@ export function EditMcpServerModal() {
                           >
                             <div className="flex items-center space-x-3">
                               <div
-                                className={`p-2 rounded-lg ${
+                                className={`p-2 rounded-sm ${
                                   useCurrentUserToken
                                     ? "bg-indigo-100 text-indigo-600 dark:bg-indigo-800/50 dark:text-indigo-300"
                                     : "bg-neutral-200 text-neutral-600 dark:bg-neutral-700 dark:text-neutral-400"
@@ -298,14 +298,14 @@ export function EditMcpServerModal() {
                               setUseCurrentUserToken(false);
                             }
                           }}
-                          className={`w-full flex items-center justify-between p-3 rounded-lg border-2 transition-all duration-200 ${
+                          className={`w-full flex items-center justify-between p-3 rounded-sm border-2 transition-all duration-200 ${
                             showAdvancedOptions
                               ? "border-neutral-300 bg-neutral-100 dark:border-neutral-600 dark:bg-neutral-800"
                               : "border-neutral-200 bg-neutral-50 hover:border-neutral-300 dark:border-neutral-700 dark:bg-neutral-800/50 dark:hover:border-neutral-600"
                           }`}
                         >
                           <div className="flex items-center space-x-3">
-                            <div className="p-2 rounded-lg bg-neutral-200 text-neutral-600 dark:bg-neutral-700 dark:text-neutral-400">
+                            <div className="p-2 rounded-sm bg-neutral-200 text-neutral-600 dark:bg-neutral-700 dark:text-neutral-400">
                               <CogIcon className="h-4 w-4" />
                             </div>
                             <div className="text-left">
@@ -336,7 +336,7 @@ export function EditMcpServerModal() {
                             transition={{ duration: 0.3, ease: "easeInOut" }}
                             className="overflow-hidden"
                           >
-                            <div className="p-4 rounded-lg bg-neutral-100/50 border border-neutral-200 dark:bg-neutral-800/30 dark:border-neutral-700">
+                            <div className="p-4 rounded-sm bg-neutral-100/50 border border-neutral-200 dark:bg-neutral-800/30 dark:border-neutral-700">
                               <div className="flex items-center space-x-2 mb-3">
                                 <KeyIcon className="h-4 w-4 text-neutral-600 dark:text-neutral-400" />
                                 <Label className="text-sm font-medium text-neutral-700 dark:text-neutral-300">
@@ -370,7 +370,7 @@ export function EditMcpServerModal() {
                   initial={{ opacity: 0, height: 0 }}
                   animate={{ opacity: 1, height: "auto" }}
                   exit={{ opacity: 0, height: 0 }}
-                  className="mt-4 flex items-center space-x-2 rounded-lg bg-red-50 p-3 dark:bg-red-900/20"
+                  className="mt-4 flex items-center space-x-2 rounded-sm bg-red-50 p-3 dark:bg-red-900/20"
                 >
                   <ExclamationCircleIcon className="h-4 w-4 text-red-500" />
                   <p className="text-sm text-red-600 dark:text-red-400">
@@ -389,7 +389,7 @@ export function EditMcpServerModal() {
               <Button
                 onClick={handleClose}
                 disabled={isEditing}
-                className="inline-flex items-center gap-2 rounded-lg bg-neutral-100 px-4 py-2 text-sm font-medium text-neutral-700 transition-colors hover:bg-neutral-200 focus:outline-none focus:ring-2 focus:ring-neutral-500 focus:ring-offset-2 disabled:opacity-50 dark:bg-neutral-800 dark:text-neutral-200 dark:hover:bg-neutral-700"
+                className="inline-flex items-center gap-2 rounded-sm bg-neutral-100 px-4 py-2 text-sm font-medium text-neutral-700 transition-colors hover:bg-neutral-200 focus:outline-none focus:ring-2 focus:ring-neutral-500 focus:ring-offset-2 disabled:opacity-50 dark:bg-neutral-800 dark:text-neutral-200 dark:hover:bg-neutral-700"
               >
                 Cancel
               </Button>
@@ -398,7 +398,7 @@ export function EditMcpServerModal() {
                 disabled={
                   isEditing || !server?.name?.trim() || !server?.url?.trim()
                 }
-                className="inline-flex items-center gap-2 rounded-lg bg-gradient-to-r from-indigo-600 to-indigo-700 px-4 py-2 text-sm font-medium text-white shadow-sm transition-all hover:from-indigo-500 hover:to-indigo-600 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="inline-flex items-center gap-2 rounded-sm bg-gradient-to-r from-indigo-600 to-indigo-700 px-4 py-2 text-sm font-medium text-white shadow-sm transition-all hover:from-indigo-500 hover:to-indigo-600 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {isEditing ? (
                   <>

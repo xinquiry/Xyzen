@@ -1,13 +1,13 @@
-import { useXyzen } from "@/store";
 import useTheme from "@/hooks/useTheme";
+import { useXyzen } from "@/store";
+import type { Theme } from "@/store/types";
 import { Field, Label, Radio, RadioGroup } from "@headlessui/react";
 import {
+  CheckIcon,
   ComputerDesktopIcon,
   MoonIcon,
   SunIcon,
-  CheckIcon,
 } from "@heroicons/react/24/outline";
-import type { Theme } from "@/store/types";
 
 export function ThemeSettings() {
   const { theme: currentTheme } = useXyzen();
@@ -60,7 +60,7 @@ export function ThemeSettings() {
                   <Radio
                     value={themeOption.value}
                     className={({ checked }) =>
-                      `relative flex cursor-pointer rounded-lg border p-4 transition-all ${
+                      `relative flex cursor-pointer rounded-sm border p-4 transition-all ${
                         checked
                           ? "border-indigo-500 bg-indigo-50 shadow-sm dark:border-indigo-600 dark:bg-indigo-950/30"
                           : "border-neutral-200 bg-white hover:border-neutral-300 hover:bg-neutral-50 dark:border-neutral-800 dark:bg-neutral-900 dark:hover:border-neutral-700 dark:hover:bg-neutral-800"
@@ -71,7 +71,7 @@ export function ThemeSettings() {
                       <div className="flex w-full items-center justify-between">
                         <div className="flex items-center gap-3">
                           <div
-                            className={`rounded-lg p-2 ${
+                            className={`rounded-sm p-2 ${
                               checked
                                 ? "bg-indigo-100 text-indigo-600 dark:bg-indigo-900 dark:text-indigo-400"
                                 : "bg-neutral-100 text-neutral-600 dark:bg-neutral-800 dark:text-neutral-400"
@@ -108,7 +108,7 @@ export function ThemeSettings() {
           </div>
         </RadioGroup>
 
-        <div className="mt-6 rounded-lg border border-neutral-200 bg-neutral-50 p-4 dark:border-neutral-800 dark:bg-neutral-900">
+        <div className="mt-6 rounded-sm border border-neutral-200 bg-neutral-50 p-4 dark:border-neutral-800 dark:bg-neutral-900">
           <h3 className="text-sm font-medium text-neutral-900 dark:text-white">
             About Theme
           </h3>
