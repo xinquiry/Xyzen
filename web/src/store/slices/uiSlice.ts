@@ -12,6 +12,9 @@ export interface UiSlice {
   activePanel: ActivityPanel;
   theme: Theme;
   layoutStyle: LayoutStyle;
+  // Global modals
+  isMcpListModalOpen: boolean;
+  isLlmProvidersModalOpen: boolean;
   isAddMcpServerModalOpen: boolean;
   isAddLlmProviderModalOpen: boolean;
   isSettingsModalOpen: boolean;
@@ -29,6 +32,12 @@ export interface UiSlice {
   setTheme: (theme: Theme) => void;
   setLayoutStyle: (style: LayoutStyle) => void;
   setBackendUrl: (url: string) => void;
+  // MCP list modal
+  openMcpListModal: () => void;
+  closeMcpListModal: () => void;
+  // LLM Providers modal
+  openLlmProvidersModal: () => void;
+  closeLlmProvidersModal: () => void;
   openAddMcpServerModal: () => void;
   closeAddMcpServerModal: () => void;
   openAddLlmProviderModal: () => void;
@@ -56,6 +65,8 @@ export const createUiSlice: StateCreator<
   theme: (localStorage.getItem("theme") as Theme) || "system",
   layoutStyle:
     (localStorage.getItem("layoutStyle") as LayoutStyle) || "fullscreen",
+  isMcpListModalOpen: false,
+  isLlmProvidersModalOpen: false,
   isAddMcpServerModalOpen: false,
   isAddLlmProviderModalOpen: false,
   isSettingsModalOpen: false,
@@ -89,6 +100,10 @@ export const createUiSlice: StateCreator<
     set({ backendUrl: url });
     xyzenService.setBackendUrl(url);
   },
+  openMcpListModal: () => set({ isMcpListModalOpen: true }),
+  closeMcpListModal: () => set({ isMcpListModalOpen: false }),
+  openLlmProvidersModal: () => set({ isLlmProvidersModalOpen: true }),
+  closeLlmProvidersModal: () => set({ isLlmProvidersModalOpen: false }),
   openAddMcpServerModal: () => set({ isAddMcpServerModalOpen: true }),
   closeAddMcpServerModal: () => set({ isAddMcpServerModalOpen: false }),
   openAddLlmProviderModal: () => set({ isAddLlmProviderModalOpen: true }),

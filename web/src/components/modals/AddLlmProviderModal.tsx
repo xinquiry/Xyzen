@@ -1,5 +1,5 @@
 import { Input } from "@/components/base/Input";
-import { Modal } from "@/components/base/Modal";
+import { Modal } from "@/components/animate-ui/primitives/headless/modal";
 import { useXyzen } from "@/store";
 import type { LlmProviderCreate } from "@/types/llmProvider";
 import { Button, Field, Label } from "@headlessui/react";

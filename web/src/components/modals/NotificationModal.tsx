@@ -1,6 +1,6 @@
 "use client";
 
-import { Modal } from "@/components/base/Modal";
+import { Modal } from "@/components/animate-ui/primitives/headless/modal";
 import { Button } from "@headlessui/react";
 import {
   ExclamationTriangleIcon,

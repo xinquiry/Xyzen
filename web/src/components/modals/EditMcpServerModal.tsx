@@ -1,5 +1,5 @@
 import { Input } from "@/components/base/Input";
-import { Modal } from "@/components/base/Modal";
+import { Modal } from "@/components/animate-ui/primitives/headless/modal";
 import { useXyzen } from "@/store";
 import type { McpServer, McpServerUpdate } from "@/types/mcp";
 import { Button, Field, Label } from "@headlessui/react";

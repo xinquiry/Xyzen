@@ -2,13 +2,12 @@ import { useXyzen } from "@/store";
 import type { DragEndEvent } from "@dnd-kit/core";
 import { DndContext } from "@dnd-kit/core";
 import { restrictToVerticalAxis } from "@dnd-kit/modifiers";
-import { Fragment, useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { CogIcon } from "@heroicons/react/24/outline";
-import { Dialog, Transition, TransitionChild } from "@headlessui/react";
 
-import { Mcp } from "@/app/Mcp";
-import { LlmProviders } from "@/app/LlmProviders";
+import { McpListModal } from "@/app/McpListModal";
+
 import McpIcon from "@/assets/McpIcon";
 import { AuthStatus, SettingsButton } from "@/components/features";
 import ActivityBar from "@/components/layouts/ActivityBar";
@@ -17,9 +16,9 @@ import Workshop from "@/components/layouts/Workshop";
 import WorkshopChat from "@/components/layouts/WorkshopChat";
 import XyzenAgent from "@/components/layouts/XyzenAgent";
 import XyzenChat from "@/components/layouts/XyzenChat";
-import { AddLlmProviderModal } from "@/components/modals/AddLlmProviderModal";
+
 import { SettingsModal } from "@/components/modals/SettingsModal";
-import { AddMcpServerModal } from "@/components/modals/AddMcpServerModal";
+
 import { DEFAULT_BACKEND_URL } from "@/configs";
 
 export interface AppFullscreenProps {
@@ -39,11 +38,12 @@ export function AppFullscreen({
     setBackendUrl,
     activePanel,
     setActivePanel,
+    // centralized UI actions
+    openMcpListModal,
+    openSettingsModal,
   } = useXyzen();
 
   const [mounted, setMounted] = useState(false);
-  const [isMcpOpen, setIsMcpOpen] = useState(false);
-  const [isLlmProvidersOpen, setIsLlmProvidersOpen] = useState(false);
 
   // Initialize: set backend URL and fetch user
   useEffect(() => {
@@ -107,7 +107,7 @@ export function AppFullscreen({
               <button
                 className="rounded-md p-1.5 text-neutral-500 hover:bg-neutral-100 dark:text-neutral-400 dark:hover:bg-neutral-800"
                 title="MCP Management"
-                onClick={() => setIsMcpOpen(true)}
+                onClick={openMcpListModal}
               >
                 <McpIcon className="h-5 w-5" />
               </button>
@@ -115,7 +115,7 @@ export function AppFullscreen({
                 <button
                   className="rounded-md p-1.5 text-neutral-500 hover:bg-neutral-100 dark:text-neutral-400 dark:hover:bg-neutral-800"
                   title="LLM Providers"
-                  onClick={() => setIsLlmProvidersOpen(true)}
+                  onClick={() => openSettingsModal("provider")}
                 >
                   <CogIcon className="h-5 w-5" />
                 </button>
@@ -190,83 +190,7 @@ export function AppFullscreen({
         </div>
       </DndContext>
 
-      {/* MCP Dialog - Outside main container to avoid aria-hidden conflicts */}
-      <Transition appear show={isMcpOpen} as={Fragment}>
-        <Dialog
-          open={isMcpOpen}
-          onClose={() => setIsMcpOpen(false)}
-          className="relative z-[10000]"
-        >
-          <TransitionChild
-            as={Fragment}
-            enter="ease-out duration-300"
-            enterFrom="opacity-0"
-            enterTo="opacity-100"
-            leave="ease-in duration-200"
-            leaveFrom="opacity-100"
-            leaveTo="opacity-0"
-          >
-            <div className="fixed inset-0 bg-black/30" aria-hidden="true" />
-          </TransitionChild>
-          <div className="fixed inset-0 flex w-screen items-center justify-center p-4">
-            <TransitionChild
-              as={Fragment}
-              enter="ease-out duration-300"
-              enterFrom="opacity-0 scale-95"
-              enterTo="opacity-100 scale-100"
-              leave="ease-in duration-200"
-              leaveFrom="opacity-100 scale-100"
-              leaveTo="opacity-0 scale-95"
-            >
-              <Dialog.Panel className="w-full max-w-4xl rounded-lg bg-white p-6 dark:bg-neutral-900">
-                <Mcp />
-              </Dialog.Panel>
-            </TransitionChild>
-          </div>
-        </Dialog>
-      </Transition>
-
-      {/* LLM Providers Dialog - Outside main container to avoid aria-hidden conflicts */}
-      {showLlmProvider && (
-        <Transition appear show={isLlmProvidersOpen} as={Fragment}>
-          <Dialog
-            open={isLlmProvidersOpen}
-            onClose={() => setIsLlmProvidersOpen(false)}
-            className="relative z-[10000]"
-          >
-            <TransitionChild
-              as={Fragment}
-              enter="ease-out duration-300"
-              enterFrom="opacity-0"
-              enterTo="opacity-100"
-              leave="ease-in duration-200"
-              leaveFrom="opacity-100"
-              leaveTo="opacity-0"
-            >
-              <div className="fixed inset-0 bg-black/30" aria-hidden="true" />
-            </TransitionChild>
-            <div className="fixed inset-0 flex w-screen items-center justify-center p-4">
-              <TransitionChild
-                as={Fragment}
-                enter="ease-out duration-300"
-                enterFrom="opacity-0 scale-95"
-                enterTo="opacity-100 scale-100"
-                leave="ease-in duration-200"
-                leaveFrom="opacity-100 scale-100"
-                leaveTo="opacity-0 scale-95"
-              >
-                <Dialog.Panel className="w-full max-w-2xl rounded-lg bg-white p-6 dark:bg-neutral-900">
-                  <LlmProviders />
-                </Dialog.Panel>
-              </TransitionChild>
-            </div>
-          </Dialog>
-        </Transition>
-      )}
-
-      {/* Modals - Outside main container */}
-      <AddMcpServerModal />
-      {showLlmProvider && <AddLlmProviderModal />}
+      <McpListModal />
       <SettingsModal />
     </>
   );

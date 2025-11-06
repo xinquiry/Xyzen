@@ -1,5 +1,5 @@
 import { LoadingSpinner } from "@/components/base/LoadingSpinner";
-import { Modal } from "@/components/base/Modal";
+import { Modal } from "@/components/animate-ui/primitives/headless/modal";
 import { useXyzen } from "@/store";
 import type { McpServer } from "@/types/mcp";
 import { Button } from "@headlessui/react";
