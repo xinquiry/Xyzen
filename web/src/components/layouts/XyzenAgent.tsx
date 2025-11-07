@@ -10,38 +10,15 @@ import ConfirmationModal from "@/components/modals/ConfirmationModal";
 import EditAgentModal from "@/components/modals/EditAgentModal";
 import { useXyzen } from "@/store";
 
-export type Agent = {
-  id: string;
-  name: string;
-  description: string;
-  prompt?: string;
-  mcp_servers?: { id: string }[];
-  mcp_server_ids?: string[];
-  user_id: string;
-  require_tool_confirmation?: boolean;
-  provider_id?: string | null;
-  // New fields for unified agent support
-  agent_type: "regular" | "graph" | "builtin" | "system";
-  avatar?: string | null;
-  tags?: string[] | null;
-  model?: string | null;
-  temperature?: number | null;
-  is_active?: boolean;
-  created_at: string;
-  updated_at: string;
-  // Graph-specific fields
-  state_schema?: Record<string, unknown>;
-  node_count?: number;
-  edge_count?: number;
-  is_published?: boolean;
-  is_official?: boolean;
-};
+// Import types from separate file
+import type { Agent } from "@/types/agents";
 
 interface AgentCardProps {
   agent: Agent;
   onClick?: (agent: Agent) => void;
   onEdit?: (agent: Agent) => void;
   onDelete?: (agent: Agent) => void;
+  hiddenGraphAgentIds?: string[];
 }
 
 // 定义动画变体
@@ -152,6 +129,7 @@ const AgentCard: React.FC<AgentCardProps> = ({
   onClick,
   onEdit,
   onDelete,
+  hiddenGraphAgentIds = [],
 }) => {
   const [contextMenu, setContextMenu] = useState<{
     x: number;
@@ -216,6 +194,17 @@ const AgentCard: React.FC<AgentCardProps> = ({
                 📊 {agent.node_count || 0} nodes
               </Badge>
             )}
+
+            {/* Graph agent sidebar status badge */}
+            {agent.agent_type === "graph" &&
+              !hiddenGraphAgentIds.includes(agent.id) && (
+                <Badge
+                  variant="green"
+                  className="flex items-center gap-1 flex-shrink-0"
+                >
+                  ✓ Added
+                </Badge>
+              )}
 
             {/* MCP servers badge */}
             {agent.mcp_servers && agent.mcp_servers.length > 0 && (
@@ -286,19 +275,49 @@ export default function XyzenAgent({
     channels,
     activateChannel,
     hiddenGraphAgentIds,
+    fetchMcpServers,
+    syncSystemAgentMcps,
   } = useXyzen();
 
   useEffect(() => {
     fetchAgents();
   }, [fetchAgents]);
 
+  // Ensure MCP servers are loaded first, then fetch system agents and sync their MCPs
   useEffect(() => {
-    fetchSystemAgents();
-  }, [fetchSystemAgents]);
+    const loadAgentsWithMcps = async () => {
+      try {
+        // First, load MCP servers
+        await fetchMcpServers();
+        // Then load system agents (which will now have their default MCPs attached)
+        await fetchSystemAgents();
+        // Finally, sync system agents with backend to ensure MCPs are stored
+        await syncSystemAgentMcps();
+      } catch (error) {
+        console.error("Failed to load agents with MCPs:", error);
+      }
+    };
+
+    loadAgentsWithMcps();
+  }, [fetchMcpServers, fetchSystemAgents, syncSystemAgentMcps]);
 
   const handleAgentClick = async (agent: Agent) => {
     // 使用实际的 agent ID（系统助手和普通助手都有真实的 ID）
     const agentId = agent.id;
+
+    // Debug: Log agent MCP server info
+    if (agent.agent_type === "builtin" || agent.agent_type === "system") {
+      console.log(`System agent clicked: ${agent.name} (${agentId})`);
+      console.log(
+        `  - MCP servers attached: ${agent.mcp_servers?.length || 0}`,
+      );
+      if (agent.mcp_servers?.length) {
+        console.log(
+          `  - MCP server IDs:`,
+          agent.mcp_servers.map((s) => s.id),
+        );
+      }
+    }
 
     // 1. 从 chatHistory 中找到该 agent 的所有 topics
     const agentTopics = chatHistory.filter((topic) => {
@@ -382,6 +401,8 @@ export default function XyzenAgent({
     ...visibleGraphAgents,
   ];
 
+  // Clean sidebar with auto-loaded MCPs for system agents
+
   return (
     <motion.div
       className="space-y-2 px-4 custom-scrollbar overflow-y-auto h-full"
@@ -396,6 +417,7 @@ export default function XyzenAgent({
           onClick={handleAgentClick}
           onEdit={handleEditClick}
           onDelete={handleDeleteClick}
+          hiddenGraphAgentIds={hiddenGraphAgentIds}
         />
       ))}
       <button

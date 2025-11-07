@@ -1,7 +1,12 @@
-import type { Agent } from "@/components/layouts/XyzenAgent";
+import type { Agent } from "@/types/agents";
 import { authService } from "@/service/authService";
 import type { StateCreator } from "zustand";
 import type { XyzenState } from "../types";
+import {
+  getDefaultMcpsForSystemAgent,
+  isSystemAgentWithDefaultMcps,
+  findMcpServerIdsByNames,
+} from "@/constants/defaultMcps";
 
 export interface AgentSlice {
   agents: Agent[];
@@ -19,6 +24,7 @@ export interface AgentSlice {
   fetchSystemAgents: () => Promise<void>;
   getSystemChatAgent: () => Promise<Agent>;
   getSystemWorkshopAgent: () => Promise<Agent>;
+  syncSystemAgentMcps: () => Promise<void>;
   createAgent: (agent: Omit<Agent, "id">) => Promise<void>;
   createGraphAgent: (graphAgent: GraphAgentCreate) => Promise<void>;
   updateAgent: (agent: Agent) => Promise<void>;
@@ -38,6 +44,15 @@ export interface AgentSlice {
   getRegularAgents: () => Agent[];
   getGraphAgents: () => Agent[];
   getSystemAgents: () => Agent[];
+  // Debug helper
+  getAgentStats: () => {
+    total: number;
+    regular: number;
+    graph: number;
+    system: number;
+    regularAgents: { id: string; name: string }[];
+    graphAgents: { id: string; name: string; is_published?: boolean }[];
+  };
 }
 
 // Graph agent creation interface
@@ -82,6 +97,72 @@ const saveHiddenGraphAgentIds = (hiddenIds: string[]): void => {
   }
 };
 
+// Helper function to attach default MCPs to system agents
+const attachDefaultMcpsToAgent = (
+  agent: Agent,
+  mcpServers: Array<{ id: string; name: string; url?: string }>,
+): Agent => {
+  console.log(
+    `\n🔧 MCP Auto-Loading Debug for Agent: ${agent.name} (${agent.id})`,
+  );
+  console.log(`  - Agent type: ${agent.agent_type}`);
+
+  if (!isSystemAgentWithDefaultMcps(agent.id)) {
+    console.log(`  - ❌ Not a system agent with default MCPs`);
+    return agent;
+  }
+
+  const defaultMcpNames = getDefaultMcpsForSystemAgent(agent.id);
+  console.log(`  - 🎯 Should have MCPs: [${defaultMcpNames.join(", ")}]`);
+
+  if (defaultMcpNames.length === 0) {
+    console.log(`  - ❌ No default MCPs defined for this agent`);
+    return agent;
+  }
+
+  console.log(`  - 📋 Available MCP servers (${mcpServers.length} total):`);
+  mcpServers.forEach((server) => {
+    console.log(
+      `    • ${server.name} (${server.id})${server.url ? ` - ${server.url}` : ""}`,
+    );
+  });
+
+  const mcpServerIds = findMcpServerIdsByNames(mcpServers, defaultMcpNames);
+  console.log(
+    `  - 🔍 Pattern matching results: found ${mcpServerIds.length} matching servers`,
+  );
+
+  if (mcpServerIds.length === 0) {
+    console.log(
+      `  - ❌ No matching MCP servers found! Looking for: ${defaultMcpNames.join(", ")}`,
+    );
+    console.log(
+      `  - 💡 Available server names: [${mcpServers.map((s) => s.name).join(", ")}]`,
+    );
+    return agent;
+  }
+
+  const mcpServerObjects = mcpServerIds.map((id) => ({ id }));
+
+  console.log(
+    `  - ✅ Successfully attached ${mcpServerIds.length} MCP servers`,
+  );
+  console.log(`  - 📎 Attached MCP IDs: [${mcpServerIds.join(", ")}]`);
+
+  const enhancedAgent = {
+    ...agent,
+    agent_type: agent.agent_type || "system", // Ensure system agents have proper type
+    mcp_servers: mcpServerObjects,
+    mcp_server_ids: mcpServerIds,
+  };
+
+  console.log(
+    `  - 🎉 Agent ${agent.name} now has ${enhancedAgent.mcp_servers?.length || 0} MCP servers attached\n`,
+  );
+
+  return enhancedAgent;
+};
+
 export const createAgentSlice: StateCreator<
   XyzenState,
   [["zustand/immer", never]],
@@ -100,28 +181,43 @@ export const createAgentSlice: StateCreator<
   fetchAgents: async () => {
     set({ agentsLoading: true });
     try {
-      // Use unified endpoint that returns both regular and graph agents
-      const response = await fetch(
-        `${get().backendUrl}/xyzen/api/v1/agents/all/unified`,
-        {
+      // Fetch regular agents and graph agents separately
+      const [regularResponse, graphResponse] = await Promise.all([
+        fetch(`${get().backendUrl}/xyzen/api/v1/agents/`, {
           headers: createAuthHeaders(),
-        },
-      );
-      if (!response.ok) {
-        throw new Error("Failed to fetch agents");
+        }),
+        fetch(`${get().backendUrl}/xyzen/api/v1/graph-agents/`, {
+          headers: createAuthHeaders(),
+        }),
+      ]);
+
+      if (!regularResponse.ok) {
+        throw new Error("Failed to fetch regular agents");
       }
-      const allAgents: Agent[] = await response.json();
+      if (!graphResponse.ok) {
+        throw new Error("Failed to fetch graph agents");
+      }
 
-      // Filter out hidden graph agents
-      const { hiddenGraphAgentIds } = get();
-      const visibleAgents = allAgents.filter((agent) => {
-        // Keep all regular and graph agents
-        if (agent.agent_type === "regular") return true;
-        // Keep graph agents that are not hidden
-        return !hiddenGraphAgentIds.includes(agent.id);
-      });
+      const regularAgents: Agent[] = await regularResponse.json();
+      const graphAgents: Agent[] = await graphResponse.json();
 
-      set({ agents: visibleAgents, agentsLoading: false });
+      // Add agent_type markers to ensure proper typing
+      const typedRegularAgents = regularAgents.map((agent) => ({
+        ...agent,
+        agent_type: "regular" as const,
+      }));
+
+      const typedGraphAgents = graphAgents.map((agent) => ({
+        ...agent,
+        agent_type: "graph" as const,
+      }));
+
+      // Combine all agents (don't filter here, let components filter as needed)
+      const allAgents = [...typedRegularAgents, ...typedGraphAgents];
+
+      // Debug: Combined agents total: ${allAgents.length} (${typedRegularAgents.length} regular + ${typedGraphAgents.length} graph)
+
+      set({ agents: allAgents, agentsLoading: false });
     } catch (error) {
       console.error("Failed to fetch agents:", error);
       set({ agentsLoading: false });
@@ -141,7 +237,19 @@ export const createAgentSlice: StateCreator<
         throw new Error("Failed to fetch published graph agents");
       }
       const publishedAgents: Agent[] = await response.json();
-      set({ publishedAgents, publishedAgentsLoading: false });
+
+      // Add agent_type marker to ensure proper typing
+      const typedPublishedAgents = publishedAgents.map((agent) => ({
+        ...agent,
+        agent_type: "graph" as const,
+        is_published: true, // Ensure published flag is set
+      }));
+
+      // Published graph agents fetched: ${typedPublishedAgents.length}
+      set({
+        publishedAgents: typedPublishedAgents,
+        publishedAgentsLoading: false,
+      });
     } catch (error) {
       console.error("Failed to fetch published graph agents:", error);
       set({ publishedAgentsLoading: false });
@@ -161,7 +269,19 @@ export const createAgentSlice: StateCreator<
         throw new Error("Failed to fetch official graph agents");
       }
       const officialAgents: Agent[] = await response.json();
-      set({ officialAgents, officialAgentsLoading: false });
+
+      // Add agent_type marker to ensure proper typing
+      const typedOfficialAgents = officialAgents.map((agent) => ({
+        ...agent,
+        agent_type: "graph" as const,
+        is_official: true, // Ensure official flag is set
+      }));
+
+      // Official graph agents fetched: ${typedOfficialAgents.length}
+      set({
+        officialAgents: typedOfficialAgents,
+        officialAgentsLoading: false,
+      });
     } catch (error) {
       console.error("Failed to fetch official graph agents:", error);
       set({ officialAgentsLoading: false });
@@ -395,16 +515,37 @@ export const createAgentSlice: StateCreator<
     saveHiddenGraphAgentIds(get().hiddenGraphAgentIds);
   },
   addGraphAgentToSidebar: (id: string) => {
-    // Remove from hidden list and refresh agents
+    // Remove from hidden list and add agent to main array
     set((state) => {
       state.hiddenGraphAgentIds = state.hiddenGraphAgentIds.filter(
         (hiddenId) => hiddenId !== id,
       );
+
+      // Check if this is an official or published agent that needs to be added to the main agents array
+      const officialAgent = state.officialAgents.find((a) => a.id === id);
+      const publishedAgent = state.publishedAgents.find((a) => a.id === id);
+
+      if (officialAgent && !state.agents.some((a) => a.id === id)) {
+        // Ensure official agent has proper type markers for sidebar display
+        const agentToAdd = {
+          ...officialAgent,
+          agent_type: "graph" as const,
+          is_official: true,
+        };
+        state.agents.push(agentToAdd);
+      } else if (publishedAgent && !state.agents.some((a) => a.id === id)) {
+        // Ensure published agent has proper type markers for sidebar display
+        const agentToAdd = {
+          ...publishedAgent,
+          agent_type: "graph" as const,
+          is_published: true,
+        };
+        state.agents.push(agentToAdd);
+      }
     });
     // Persist to localStorage
     saveHiddenGraphAgentIds(get().hiddenGraphAgentIds);
-    // Refresh agents to show the newly unhidden agent
-    get().fetchAgents();
+    // Note: Don't call fetchAgents() here as it might override our changes
   },
   fetchSystemAgents: async () => {
     set({ systemAgentsLoading: true });
@@ -419,7 +560,14 @@ export const createAgentSlice: StateCreator<
         throw new Error("Failed to fetch system agents");
       }
       const systemAgents: Agent[] = await response.json();
-      set({ systemAgents, systemAgentsLoading: false });
+
+      // Attach default MCPs to system agents
+      const { mcpServers } = get();
+      const enhancedSystemAgents = systemAgents.map((agent) =>
+        attachDefaultMcpsToAgent(agent, mcpServers),
+      );
+
+      set({ systemAgents: enhancedSystemAgents, systemAgentsLoading: false });
     } catch (error) {
       console.error("Failed to fetch system agents:", error);
       set({ systemAgentsLoading: false });
@@ -437,7 +585,13 @@ export const createAgentSlice: StateCreator<
       if (!response.ok) {
         throw new Error("Failed to fetch system chat agent");
       }
-      return await response.json();
+      const agent = await response.json();
+
+      // Attach default MCPs to system chat agent
+      const { mcpServers } = get();
+      const enhancedAgent = attachDefaultMcpsToAgent(agent, mcpServers);
+
+      return enhancedAgent;
     } catch (error) {
       console.error("Failed to fetch system chat agent:", error);
       throw error;
@@ -454,10 +608,107 @@ export const createAgentSlice: StateCreator<
       if (!response.ok) {
         throw new Error("Failed to fetch system workshop agent");
       }
-      return await response.json();
+      const agent = await response.json();
+
+      // Attach default MCPs to system workshop agent
+      const { mcpServers } = get();
+      const enhancedAgent = attachDefaultMcpsToAgent(agent, mcpServers);
+
+      return enhancedAgent;
     } catch (error) {
       console.error("Failed to fetch system workshop agent:", error);
       throw error;
+    }
+  },
+  // Sync system agents with their default MCPs in the backend
+  syncSystemAgentMcps: async () => {
+    console.log(`\n🔄 Syncing System Agent MCPs with Backend...`);
+
+    try {
+      const state = get();
+
+      if (state.mcpServers.length === 0) {
+        console.log(`  - ❌ No MCP servers loaded yet, skipping sync`);
+        return;
+      }
+
+      // Process each system agent that should have default MCPs
+      for (const systemAgent of state.systemAgents) {
+        if (!isSystemAgentWithDefaultMcps(systemAgent.id)) {
+          continue;
+        }
+
+        const expectedMcpNames = getDefaultMcpsForSystemAgent(systemAgent.id);
+        const expectedMcpIds = findMcpServerIdsByNames(
+          state.mcpServers,
+          expectedMcpNames,
+        );
+
+        console.log(
+          `  - 🤖 Processing ${systemAgent.name} (${systemAgent.id})`,
+        );
+        console.log(`    Expected MCPs: [${expectedMcpNames.join(", ")}]`);
+        console.log(`    Found MCP IDs: [${expectedMcpIds.join(", ")}]`);
+
+        // Check if agent already has the expected MCPs in backend
+        const currentMcpIds = systemAgent.mcp_server_ids || [];
+        const needsUpdate =
+          expectedMcpIds.length > 0 &&
+          (currentMcpIds.length === 0 ||
+            !expectedMcpIds.every((id) => currentMcpIds.includes(id)));
+
+        if (!needsUpdate) {
+          console.log(`    ✅ Agent already has correct MCPs in backend`);
+          continue;
+        }
+
+        console.log(`    🔧 Updating agent in backend with MCP servers...`);
+
+        // Update the system agent in the backend
+        const response = await fetch(
+          `${get().backendUrl}/xyzen/api/v1/agents/system/${systemAgent.id}`,
+          {
+            method: "PATCH",
+            headers: createAuthHeaders(),
+            body: JSON.stringify({
+              mcp_server_ids: expectedMcpIds,
+            }),
+          },
+        );
+
+        if (response.ok) {
+          console.log(
+            `    ✅ Successfully updated ${systemAgent.name} with ${expectedMcpIds.length} MCP servers`,
+          );
+
+          // Update the local system agent as well
+          set((state) => {
+            const agentIndex = state.systemAgents.findIndex(
+              (a) => a.id === systemAgent.id,
+            );
+            if (agentIndex !== -1) {
+              state.systemAgents[agentIndex].mcp_server_ids = expectedMcpIds;
+              state.systemAgents[agentIndex].mcp_servers = expectedMcpIds.map(
+                (id) => ({ id }),
+              );
+            }
+          });
+        } else {
+          const errorText = await response.text();
+          console.log(
+            `    ❌ Failed to update ${systemAgent.name}: ${errorText}`,
+          );
+
+          // If PATCH fails, maybe the endpoint doesn't exist, try PUT or different approach
+          console.log(
+            `    💡 Backend might not support system agent MCP updates`,
+          );
+        }
+      }
+
+      console.log(`🔄 System Agent MCP sync completed!\n`);
+    } catch (error) {
+      console.error("Failed to sync system agent MCPs:", error);
     }
   },
   // Helper methods for filtering by agent type
@@ -469,5 +720,28 @@ export const createAgentSlice: StateCreator<
   },
   getSystemAgents: () => {
     return get().systemAgents;
+  },
+  // Debug helper to verify agent types and counts
+  getAgentStats: () => {
+    const { agents } = get();
+    const regular = agents.filter((agent) => agent.agent_type === "regular");
+    const graph = agents.filter((agent) => agent.agent_type === "graph");
+    const system = agents.filter(
+      (agent) =>
+        agent.agent_type === "builtin" || agent.agent_type === "system",
+    );
+
+    return {
+      total: agents.length,
+      regular: regular.length,
+      graph: graph.length,
+      system: system.length,
+      regularAgents: regular.map((a) => ({ id: a.id, name: a.name })),
+      graphAgents: graph.map((a) => ({
+        id: a.id,
+        name: a.name,
+        is_published: a.agent_type === "graph" ? a.is_published : undefined,
+      })),
+    };
   },
 });
