@@ -1,110 +1,187 @@
-# 如何使用 Xyzen
+# Xyzen React Component
 
-Xyzen 是一个现代化、轻量级且可扩展的 React 聊天组件。它提供了一个功能齐全的侧边栏，可以轻松集成到任何 React 应用中。
+Xyzen is a modern, lightweight, and extensible chat component for React. It provides a full-featured sidebar that can be easily integrated into any React application.
 
-## 安装
+## Getting Started with Integration
 
-使用 yarn 或 npm 安装 Xyzen：
+To use the Xyzen component in your own project, you need to deploy the backend service first, then integrate the frontend component.
 
-```bash
-yarn add @sciol/xyzen@latest
-```
+### Step 1: Deploy the Backend
 
-或者
+The Xyzen component requires a running backend service to handle chat logic and LLM connections.
 
-```bash
-npm install @sciol/xyzen
-```
+1. Clone the Xyzen repository:
 
-## 快速上手
+   ```bash
+   git clone https://github.com/ScienceOL/Xyzen.git
+   cd Xyzen
+   ```
 
-`Xyzen` 组件开箱即用。它通过 `zustand` store 管理自己的状态。你可以通过 `useXyzen` hook 与其进行交互。
+2. Deploy the backend using the one-click setup script:
 
-以下是如何将其集成到你的应用中的基本示例：
+   **On Unix/Linux/macOS:**
 
-1.  **在你的应用布局中添加 `Xyzen` 组件**
+   ```bash
+   ./launch/dev.sh
+   ```
 
-    在你的根布局文件（例如 `App.tsx` 或 `Layout.tsx`）中，导入并渲染 `Xyzen` 组件。
+   **On Windows (PowerShell):**
 
-    ```tsx
-    // src/App.tsx
-    import { Xyzen, useXyzen } from "@sciol/xyzen";
+   ```powershell
+   .\launch\dev.ps1
+   ```
 
-    function App() {
-      const { openXyzen } = useXyzen();
+   This script will automatically set up all required services (PostgreSQL, Mosquitto, Casdoor) and start the backend.
 
-      return (
-        <div>
-          <header>
-            <h1>我的应用</h1>
-            <button onClick={openXyzen}>打开聊天</button>
-          </header>
-          <main>{/* 你的应用内容 */}</main>
-          <Xyzen />
-        </div>
-      );
-    }
+3. Configure LLM provider settings by creating a `.env.dev` file in the `docker` directory with the following keys:
 
-    export default App;
-    ```
+   ```env
+   XYZEN_LLM_PROVIDER=azure_openai
+   XYZEN_LLM_KEY=<Your-LLM-API-Key>
+   XYZEN_LLM_ENDPOINT=<Your-LLM-Endpoint>
+   XYZEN_LLM_VERSION=<Your-LLM-API-Version>
+   XYZEN_LLM_DEPLOYMENT=<Your-LLM-Deployment-Name>
+   ```
 
-2.  **控制 Xyzen 面板**
+   The backend will be available at `http://localhost:48196` by default, with API endpoints under `/xyzen/api`, `/xyzen/ws`, and `/xyzen/mcp`.
 
-    使用 `useXyzen` hook 来控制侧边栏的可见性。
+### Step 2: Install and Integrate the Frontend Component
 
-    ```tsx
-    import { useXyzen } from "@sciol/xyzen";
+1. Install the Xyzen component in your React project:
 
-    function MyComponent() {
-      const { isXyzenOpen, toggleXyzen, openXyzen, closeXyzen } = useXyzen();
+   ```bash
+   yarn add @sciol/xyzen
+   ```
 
-      return (
-        <div>
-          <p>聊天面板当前是 {isXyzenOpen ? "打开" : "关闭"} 状态。</p>
-          <button onClick={toggleXyzen}>切换聊天</button>
-          <button onClick={openXyzen}>打开聊天</button>
-          <button onClick={closeXyzen}>关闭聊天</button>
-        </div>
-      );
-    }
-    ```
+   or
+
+   ```bash
+   npm install @sciol/xyzen
+   ```
+
+2. Add the `Xyzen` component to your application layout:
+
+   In your root layout file (e.g., `App.tsx` or `Layout.tsx`), import and render the `Xyzen` component with the `backendUrl` prop pointing to your deployed backend:
+
+   ```tsx
+   // src/App.tsx
+   import { Xyzen, useXyzen } from "@sciol/xyzen";
+   import "@sciol/xyzen/dist/style.css"; // Import the CSS
+
+   function App() {
+     const { openXyzen } = useXyzen();
+
+     return (
+       <div>
+         <header>
+           <h1>My Application</h1>
+           <button onClick={openXyzen}>Open Chat</button>
+         </header>
+         <main>{/* Your application content */}</main>
+         <Xyzen backendUrl="http://localhost:48196" />
+       </div>
+     );
+   }
+
+   export default App;
+   ```
+
+   **Note:** The `backendUrl` should point to the base URL of your Xyzen backend deployment. The component will automatically handle endpoints like `/xyzen/api`, `/xyzen/ws`, and `/xyzen/mcp`.
+
+3. Control the Xyzen panel from any component:
+
+   Use the `useXyzen` hook to control the sidebar's visibility:
+
+   ```tsx
+   import { useXyzen } from "@sciol/xyzen";
+
+   function MyComponent() {
+     const { isXyzenOpen, toggleXyzen, openXyzen, closeXyzen } = useXyzen();
+
+     return (
+       <div>
+         <p>The chat panel is currently {isXyzenOpen ? "open" : "closed"}.</p>
+         <button onClick={toggleXyzen}>Toggle Chat</button>
+         <button onClick={openXyzen}>Open Chat</button>
+         <button onClick={closeXyzen}>Close Chat</button>
+       </div>
+     );
+   }
+   ```
+
+## Local Development
+
+To contribute to or modify the Xyzen web client source code, follow these steps.
+
+### Prerequisites
+
+- Node.js with Yarn (via Corepack)
+- A running instance of the Xyzen backend service (see "Deploy the Backend" above)
+
+### Setup
+
+1. Navigate to the web directory:
+
+   ```bash
+   cd web
+   ```
+
+2. Enable Corepack to manage Yarn:
+
+   ```bash
+   corepack enable
+   ```
+
+3. Install dependencies using Yarn:
+
+   ```bash
+   yarn install
+   ```
+
+4. Run the development server:
+
+   ```bash
+   yarn dev
+   ```
+
+   The frontend will be available at `http://localhost:32233` and will connect to the local backend service.
 
 ## `useXyzen` Store API
 
-`useXyzen` hook 提供了访问 Xyzen 状态和操作的接口。
+The `useXyzen` hook provides access to the Xyzen state and actions.
 
-### 状态 (State)
+### State
 
-- `isXyzenOpen: boolean`: 侧边栏是否打开。
-- `panelWidth: number`: 侧边栏的当前宽度。
-- `activeChatChannel: string | null`: 当前活动的聊天频道 ID。
-- `user: User | null`: 当前用户信息。
-- `activeTabIndex: number`: 当前活动的标签页索引。
-- `theme: 'light' | 'dark' | 'system'`: 当前主题。
-- `chatHistory: ChatHistoryItem[]`: 聊天历史记录列表。
-- `chatHistoryLoading: boolean`: 聊天历史是否正在加载。
-- `channels: Record<string, ChatChannel>`: 聊天频道的映射表。
-- `assistants: Assistant[]`: 可用的助手列表。
+- `isXyzenOpen: boolean`: Whether the sidebar is open.
+- `panelWidth: number`: The current width of the sidebar.
+- `activeChatChannel: string | null`: The ID of the currently active chat channel.
+- `user: User | null`: The current user information.
+- `activeTabIndex: number`: The index of the currently active tab.
+- `theme: 'light' | 'dark' | 'system'`: The current theme.
+- `chatHistory: ChatHistoryItem[]`: The list of chat history items.
+- `chatHistoryLoading: boolean`: Whether the chat history is being loaded.
+- `channels: Record<string, ChatChannel>`: A map of chat channels.
+- `assistants: Assistant[]`: The list of available assistants.
 
-### 操作 (Actions)
+### Actions
 
-- `toggleXyzen()`: 切换侧边栏的打开/关闭状态。
-- `openXyzen()`: 打开侧边栏。
-- `closeXyzen()`: 关闭侧边栏。
-- `setPanelWidth(width: number)`: 设置侧边栏的宽度。
-- `setActiveChatChannel(channelUUID: string | null)`: 设置当前活动的聊天频道。
-- `setTabIndex(index: number)`: 设置活动的标签页。
-- `setTheme(theme: Theme)`: 设置主题。
-- `fetchChatHistory(): Promise<void>`: 异步获取聊天历史记录。
-- `togglePinChat(chatId: string)`: 切换聊天的置顶状态。
-- `sendMessage(payload: { channelUUID: string; message: string })`: 发送消息到指定频道。
-- `createDefaultChannel()`: 创建一个新的默认聊天频道。
+- `toggleXyzen()`: Toggles the open/closed state of the sidebar.
+- `openXyzen()`: Opens the sidebar.
+- `closeXyzen()`: Closes the sidebar.
+- `setPanelWidth(width: number)`: Sets the width of the sidebar.
+- `setActiveChatChannel(channelUUID: string | null)`: Sets the currently active chat channel.
+- `setTabIndex(index: number)`: Sets the active tab.
+- `setTheme(theme: Theme)`: Sets the theme.
+- `fetchChatHistory(): Promise<void>`: Fetches the chat history asynchronously.
+- `togglePinChat(chatId: string)`: Toggles the pinned state of a chat.
+- `sendMessage(payload: { channelUUID: string; message: string })`: Sends a message to a specified channel.
+- `createDefaultChannel()`: Creates a new default chat channel。
 
-## 自定义
+## Customization
 
-Xyzen 设计为易于扩展。你可以利用 `useXyzen` store 中的状态和操作来构建自定义功能或与其他组件集成。
+Xyzen is designed to be extensible. You can leverage the state and actions in the `useXyzen` store to build custom functionality or integrate with other components.
 
-例如，你可以创建一个按钮，不仅可以打开 Xyzen，还可以切换到特定的标签页：
+For example, you could create a button that not only opens Xyzen but also switches to a specific tab:
 
 ```tsx
 import { useXyzen } from "@sciol/xyzen";
