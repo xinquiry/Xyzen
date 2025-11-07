@@ -5,7 +5,9 @@ import { useEffect, useState } from "react";
 import { CenteredInput } from "@/components/features";
 import { SettingsModal } from "@/components/modals/SettingsModal";
 import { DEFAULT_BACKEND_URL } from "@/configs";
+import { MOBILE_BREAKPOINT } from "@/configs/constants";
 import useTheme from "@/hooks/useTheme";
+import { LAYOUT_STYLE } from "@/store/slices/uiSlice/types";
 import { McpListModal } from "../components/layouts/McpListModal";
 import { AppFullscreen } from "./AppFullscreen";
 import { AppSide } from "./AppSide";
@@ -48,10 +50,10 @@ export function Xyzen({
   if (!mounted) return null;
 
   // 手机阈值：512px 以下强制 Sidebar（不可拖拽，全宽）
-  const MOBILE_BREAKPOINT = 512;
+
   const isMobile = viewportWidth < MOBILE_BREAKPOINT;
 
-  if (!isXyzenOpen) {
+  if (layoutStyle === LAYOUT_STYLE.Sidebar && !isXyzenOpen && !isMobile) {
     return (
       <QueryClientProvider client={queryClient}>
         <CenteredInput />
@@ -68,7 +70,7 @@ export function Xyzen({
           showLlmProvider={showLlmProvider}
           isMobile
         />
-      ) : layoutStyle === "sidebar" ? (
+      ) : layoutStyle === LAYOUT_STYLE.Sidebar ? (
         // 大于等于阈值：尊重设置为 Sidebar，桌面可拖拽
         <AppSide backendUrl={backendUrl} showLlmProvider={showLlmProvider} />
       ) : (

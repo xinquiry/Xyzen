@@ -5,4 +5,4 @@ export * from "./loadingSlice";
 export * from "./mcpSlice";
 export * from "./mcpToolSlice";
 export * from "./providerSlice";
-export * from "./uiSlice";
+export * from "./uiSlice/";

@@ -16,11 +16,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import Explorer from "@/app/explore/page";
 import McpIcon from "@/assets/McpIcon";
-import {
-  AuthStatus,
-  CenteredInput,
-  SettingsButton,
-} from "@/components/features";
+import { AuthStatus, SettingsButton } from "@/components/features";
 import ActivityBar from "@/components/layouts/ActivityBar";
 import Workshop from "@/components/layouts/Workshop";
 import XyzenAgent from "@/components/layouts/XyzenAgent";
@@ -228,13 +224,15 @@ export function AppSide({
                   )}
                   <div className="mx-2 h-6 w-px bg-neutral-200 dark:bg-neutral-700"></div>
                   <AuthStatus className="ml-2" />
-                  <button
-                    onClick={closeXyzen}
-                    className="rounded-sm p-1.5 text-neutral-500 hover:bg-neutral-100 dark:text-neutral-400 dark:hover:bg-neutral-800"
-                    title="关闭"
-                  >
-                    <XMarkIcon className="h-5 w-5" />
-                  </button>
+                  {!isMobile && (
+                    <button
+                      onClick={closeXyzen}
+                      className="rounded-sm p-1.5 text-neutral-500 hover:bg-neutral-100 dark:text-neutral-400 dark:hover:bg-neutral-800"
+                      title="关闭"
+                    >
+                      <XMarkIcon className="h-5 w-5" />
+                    </button>
+                  )}
                 </div>
               </div>
 
@@ -385,7 +383,6 @@ export function AppSide({
       {/* Keep quick actions and input overlays consistent with original sidebar */}
       <AddMcpServerModal />
       {showLlmProvider && <AddLlmProviderModal />}
-      <CenteredInput />
     </>
   );
 }

@@ -1,6 +1,12 @@
 import xyzenService from "@/service/xyzenService";
 import type { StateCreator } from "zustand";
-import type { Theme, XyzenState, LayoutStyle, UiSettingType } from "../types";
+import type {
+  LayoutStyle,
+  Theme,
+  UiSettingType,
+  XyzenState,
+} from "../../types";
+import { LAYOUT_STYLE } from "./types";
 
 export type ActivityPanel = "chat" | "explorer" | "workshop";
 
@@ -64,7 +70,8 @@ export const createUiSlice: StateCreator<
   activePanel: "chat",
   theme: (localStorage.getItem("theme") as Theme) || "system",
   layoutStyle:
-    (localStorage.getItem("layoutStyle") as LayoutStyle) || "fullscreen",
+    (localStorage.getItem("layoutStyle") as LayoutStyle) ||
+    LAYOUT_STYLE.Fullscreen,
   isMcpListModalOpen: false,
   isLlmProvidersModalOpen: false,
   isAddMcpServerModalOpen: false,
