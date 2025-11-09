@@ -1,7 +1,10 @@
+import { Progress } from "@/components/animate-ui/components/radix/progress";
+import { Button } from "@/components/ui/button";
 import { autoLogin } from "@/core/auth";
+import { useAuth } from "@/hooks/useAuth";
 import { useXyzen } from "@/store";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 import { CenteredInput } from "@/components/features";
 import { SettingsModal } from "@/components/modals/SettingsModal";
@@ -33,6 +36,7 @@ export function Xyzen({
   showLlmProvider = false,
 }: XyzenProps) {
   const { isXyzenOpen, layoutStyle, setBackendUrl } = useXyzen();
+  const { status } = useAuth();
 
   // Initialize theme at the top level so it works for both layouts
   useTheme();
@@ -40,6 +44,7 @@ export function Xyzen({
   const [viewportWidth, setViewportWidth] = useState<number>(
     typeof window !== "undefined" ? window.innerWidth : 1920,
   );
+  const [progress, setProgress] = useState(0);
 
   useEffect(() => {
     setMounted(true);
@@ -54,41 +59,109 @@ export function Xyzen({
     void autoLogin();
   }, [backendUrl, setBackendUrl]);
 
+  // Simulate progressive loading feedback while authentication status is pending.
+  useEffect(() => {
+    let intervalId: number | undefined;
+
+    if (status === "idle" || status === "loading") {
+      setProgress(10);
+      intervalId = window.setInterval(() => {
+        setProgress((prev) => {
+          if (prev >= 90) return prev;
+          const increment = Math.random() * 12 + 4;
+          return Math.min(prev + increment, 90);
+        });
+      }, 280);
+    }
+
+    return () => {
+      if (intervalId !== undefined) {
+        window.clearInterval(intervalId);
+      }
+    };
+  }, [status]);
+
+  useEffect(() => {
+    if (status === "succeeded" || status === "failed") {
+      setProgress(100);
+    }
+  }, [status]);
+
+  const handleRetry = useCallback(() => {
+    void autoLogin();
+  }, []);
+
+  const isAuthenticating = status === "idle" || status === "loading";
+  const authFailed = status === "failed";
+
   if (!mounted) return null;
 
   // 手机阈值：512px 以下强制 Sidebar（不可拖拽，全宽）
 
   const isMobile = viewportWidth < MOBILE_BREAKPOINT;
 
-  if (layoutStyle === LAYOUT_STYLE.Sidebar && !isXyzenOpen && !isMobile) {
-    return (
-      <QueryClientProvider client={queryClient}>
-        <CenteredInput />
-      </QueryClientProvider>
-    );
-  }
+  const shouldShowCompactInput =
+    layoutStyle === LAYOUT_STYLE.Sidebar && !isXyzenOpen && !isMobile;
+
+  const mainLayout = shouldShowCompactInput ? (
+    <CenteredInput />
+  ) : isMobile ? (
+    // 小于阈值：强制 Sidebar，全宽且不可拖拽
+    <AppSide
+      backendUrl={backendUrl}
+      showLlmProvider={showLlmProvider}
+      isMobile
+    />
+  ) : layoutStyle === LAYOUT_STYLE.Sidebar ? (
+    // 大于等于阈值：尊重设置为 Sidebar，桌面可拖拽
+    <AppSide backendUrl={backendUrl} showLlmProvider={showLlmProvider} />
+  ) : (
+    // 大于等于阈值：默认/设置为 fullscreen
+    <AppFullscreen backendUrl={backendUrl} showLlmProvider={showLlmProvider} />
+  );
+
+  const gatedContent = isAuthenticating ? (
+    <AuthLoadingScreen progress={progress} />
+  ) : authFailed ? (
+    <AuthErrorScreen onRetry={handleRetry} />
+  ) : (
+    <>
+      {mainLayout}
+      <McpListModal />
+      <SettingsModal />
+    </>
+  );
 
   return (
     <QueryClientProvider client={queryClient}>
-      {isMobile ? (
-        // 小于阈值：强制 Sidebar，全宽且不可拖拽
-        <AppSide
-          backendUrl={backendUrl}
-          showLlmProvider={showLlmProvider}
-          isMobile
-        />
-      ) : layoutStyle === LAYOUT_STYLE.Sidebar ? (
-        // 大于等于阈值：尊重设置为 Sidebar，桌面可拖拽
-        <AppSide backendUrl={backendUrl} showLlmProvider={showLlmProvider} />
-      ) : (
-        // 大于等于阈值：默认/设置为 fullscreen
-        <AppFullscreen
-          backendUrl={backendUrl}
-          showLlmProvider={showLlmProvider}
-        />
-      )}
-      <McpListModal />
-      <SettingsModal />
+      {gatedContent}
     </QueryClientProvider>
+  );
+}
+
+function AuthLoadingScreen({ progress }: { progress: number }) {
+  return (
+    <div className="flex min-h-screen flex-col items-center justify-center gap-6 bg-background p-6 text-center">
+      <Progress value={progress} className="w-56" />
+    </div>
+  );
+}
+
+function AuthErrorScreen({ onRetry }: { onRetry: () => void }) {
+  return (
+    <div className="flex min-h-screen flex-col items-center justify-center gap-6 bg-background p-6 text-center">
+      <div className="space-y-2">
+        <h1 className="text-lg font-medium text-foreground">自动登录失败</h1>
+        <p className="text-sm text-muted-foreground">
+          无法确认当前的登陆信息，请重试或刷新页面。
+        </p>
+      </div>
+      <div className="flex items-center gap-3">
+        <Button onClick={onRetry}>重试自动登录</Button>
+        <Button variant="outline" onClick={() => window.location.reload()}>
+          刷新页面
+        </Button>
+      </div>
+    </div>
   );
 }
