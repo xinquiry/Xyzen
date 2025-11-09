@@ -3,6 +3,7 @@
  * 封装 Bohrium 平台 API 调用
  */
 
+import { DEFAULT_BACKEND_URL } from "@/configs";
 import { useXyzen } from "@/store";
 import type {
   BohriumApiResponse,
@@ -13,7 +14,7 @@ import type {
 } from "../types/bohrium";
 
 const getBohriumBseUrl = () => {
-  const backendUrl = useXyzen.getState().backendUrl;
+  const backendUrl = useXyzen.getState().backendUrl || DEFAULT_BACKEND_URL;
   if (!backendUrl) {
     throw new Error(
       "backendUrl is not set. Configure it via UI settings before using Bohrium.",

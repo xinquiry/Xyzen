@@ -32,7 +32,7 @@ export function Xyzen({
   backendUrl = DEFAULT_BACKEND_URL,
   showLlmProvider = false,
 }: XyzenProps) {
-  const { isXyzenOpen, layoutStyle } = useXyzen();
+  const { isXyzenOpen, layoutStyle, setBackendUrl } = useXyzen();
 
   // Initialize theme at the top level so it works for both layouts
   useTheme();
@@ -48,10 +48,11 @@ export function Xyzen({
     return () => window.removeEventListener("resize", onResize);
   }, []);
 
-  // Initialize auth once at app root to avoid duplicate triggers from hooks
+  // Ensure backend URL is configured in the store before attempting auto-login.
   useEffect(() => {
-    autoLogin();
-  }, []);
+    setBackendUrl(backendUrl);
+    void autoLogin();
+  }, [backendUrl, setBackendUrl]);
 
   if (!mounted) return null;
 

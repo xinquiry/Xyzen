@@ -1,3 +1,4 @@
+import { DEFAULT_BACKEND_URL } from "@/configs";
 import xyzenService from "@/service/xyzenService";
 import type { StateCreator } from "zustand";
 import type {
@@ -7,6 +8,9 @@ import type {
   XyzenState,
 } from "../../types";
 import { LAYOUT_STYLE } from "./types";
+
+// Ensure xyzen service is aware of the default backend on startup
+xyzenService.setBackendUrl(DEFAULT_BACKEND_URL);
 
 export type ActivityPanel = "chat" | "explorer" | "workshop";
 
@@ -63,7 +67,7 @@ export const createUiSlice: StateCreator<
   [],
   UiSlice
 > = (set) => ({
-  backendUrl: "",
+  backendUrl: DEFAULT_BACKEND_URL,
   isXyzenOpen: false,
   panelWidth: 380,
   activeTabIndex: 0,
