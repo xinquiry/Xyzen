@@ -17,6 +17,14 @@ export interface AuthStatus {
   message: string;
 }
 
+export interface AuthProviderConfig {
+  provider: string;
+  issuer?: string;
+  audience?: string;
+  jwks_uri?: string;
+  algorithm?: string;
+}
+
 export interface UserInfo {
   id: string;
   username: string;
@@ -90,6 +98,14 @@ class AuthService {
       throw new Error(`HTTP error! status: ${response.status}`);
     }
 
+    return response.json();
+  }
+
+  async getAuthConfig(): Promise<AuthProviderConfig> {
+    const response = await fetch(`${getBackendUrl()}/xyzen/api/v1/auth/config`);
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
     return response.json();
   }
 

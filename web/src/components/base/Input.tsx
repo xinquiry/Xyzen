@@ -10,7 +10,11 @@ export function Input({
 }: { className?: string } & InputProps) {
   return (
     <span className={clsx(className, "relative")}>
-      <HeadlessInput className={clsx(formClasses, "pr-8")} {...props} />
+      <HeadlessInput
+        autoComplete="off"
+        className={clsx(formClasses, "pr-8")}
+        {...props}
+      />
     </span>
   );
 }

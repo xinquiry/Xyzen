@@ -1,4 +1,5 @@
 import { DEFAULT_BACKEND_URL } from "@/configs";
+import { DEFAULT_WIDTH } from "@/configs/common";
 import xyzenService from "@/service/xyzenService";
 import type { StateCreator } from "zustand";
 import type {
@@ -69,13 +70,13 @@ export const createUiSlice: StateCreator<
 > = (set) => ({
   backendUrl: DEFAULT_BACKEND_URL,
   isXyzenOpen: false,
-  panelWidth: 380,
+  panelWidth: DEFAULT_WIDTH,
   activeTabIndex: 0,
   activePanel: "chat",
   theme: (localStorage.getItem("theme") as Theme) || "system",
   layoutStyle:
     (localStorage.getItem("layoutStyle") as LayoutStyle) ||
-    LAYOUT_STYLE.Fullscreen,
+    LAYOUT_STYLE.Sidebar,
   isMcpListModalOpen: false,
   isLlmProvidersModalOpen: false,
   isAddMcpServerModalOpen: false,

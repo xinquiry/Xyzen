@@ -1,21 +1,25 @@
+import {
+  FlipButton,
+  FlipButtonBack,
+  FlipButtonFront,
+} from "@/components/animate-ui/components/buttons/flip";
 import { Modal } from "@/components/animate-ui/primitives/headless/modal";
 import { Input } from "@/components/base/Input";
 import { useXyzen } from "@/store";
 import type { McpServerCreate } from "@/types/mcp";
-import { Button, Field, Label } from "@headlessui/react";
+import { Button, Field, Label, Radio, RadioGroup } from "@headlessui/react";
 import {
   CheckCircleIcon,
-  ChevronDownIcon,
   CogIcon,
   ExclamationCircleIcon,
   KeyIcon,
-  LockClosedIcon,
   ServerStackIcon,
   SparklesIcon,
   UserIcon,
 } from "@heroicons/react/24/outline";
 import { AnimatePresence, motion } from "framer-motion";
-import { useEffect, useState, type ChangeEvent } from "react";
+import { Fragment, useEffect, useState, type ChangeEvent } from "react";
+import NeedAuthBadge from "../features/NeedAuthBadge";
 
 export function AddMcpServerModal() {
   const {
@@ -37,8 +41,11 @@ export function AddMcpServerModal() {
   });
   const [error, setError] = useState<string | null>(null);
   const [isSuccess, setIsSuccess] = useState(false);
-  const [useCurrentUserToken, setUseCurrentUserToken] = useState(false);
-  const [showAdvancedOptions, setShowAdvancedOptions] = useState(false);
+  // Auth controls
+  const [authEnabled, setAuthEnabled] = useState(false);
+  const [authMode, setAuthMode] = useState<"current" | "custom">(
+    user && token ? "current" : "custom",
+  );
 
   const isCreating = getLoading("mcpServerCreate");
 
@@ -66,7 +73,11 @@ export function AddMcpServerModal() {
     try {
       const serverToCreate = {
         ...newServer,
-        token: useCurrentUserToken ? token || "" : newServer.token,
+        token: authEnabled
+          ? authMode === "current"
+            ? token || ""
+            : newServer.token
+          : "",
       };
 
       await addMcpServer(serverToCreate);
@@ -74,8 +85,8 @@ export function AddMcpServerModal() {
       setTimeout(() => {
         setNewServer({ name: "", description: "", url: "", token: "" });
         setIsSuccess(false);
-        setUseCurrentUserToken(true);
-        setShowAdvancedOptions(false);
+        setAuthEnabled(false);
+        setAuthMode(user && token ? "current" : "custom");
         // The modal is closed from the store action on success
       }, 1500);
     } catch (err) {
@@ -103,8 +114,8 @@ export function AddMcpServerModal() {
       setNewServer({ name: "", description: "", url: "", token: "" });
       setError(null);
       setIsSuccess(false);
-      setUseCurrentUserToken(true);
-      setShowAdvancedOptions(false);
+      setAuthEnabled(false);
+      setAuthMode(user && token ? "current" : "custom");
       closeAddMcpServerModal();
     }
   };
@@ -197,14 +208,7 @@ export function AddMcpServerModal() {
                           <p className="text-sm font-medium text-neutral-900 dark:text-white truncate">
                             {server.name}
                           </p>
-                          {server.data.requires_auth && (
-                            <div className="flex-shrink-0 flex items-center gap-1 rounded-full bg-amber-100 px-1.5 py-0.5 dark:bg-amber-900/30">
-                              <LockClosedIcon className="h-3 w-3 text-amber-600 dark:text-amber-400" />
-                              <span className="text-[10px] font-medium text-amber-700 dark:text-amber-300">
-                                Auth
-                              </span>
-                            </div>
-                          )}
+                          {server.data.requires_auth && <NeedAuthBadge />}
                         </div>
                         <p className="text-xs text-neutral-500 dark:text-neutral-400 truncate">
                           {server.description}
@@ -319,137 +323,241 @@ export function AddMcpServerModal() {
                   transition={{ delay: 0.4 }}
                 >
                   <Field>
-                    <Label className="text-sm font-medium text-neutral-700 dark:text-neutral-300">
-                      Authentication Token
-                    </Label>
+                    <div className="flex items-center justify-between gap-3">
+                      <Label className="text-sm font-medium text-neutral-700 dark:text-neutral-300">
+                        Authentication
+                      </Label>
 
-                    {/* Token Options */}
-                    <div className="mt-2 space-y-3">
-                      {/* Current User Token Option */}
-                      {user && token && (
-                        <motion.div
-                          initial={{ opacity: 0, scale: 0.98 }}
-                          animate={{ opacity: 1, scale: 1 }}
-                          transition={{ delay: 0.1 }}
+                      {/* Enable authentication toggle using FlipButton */}
+                      <FlipButton
+                        from="top"
+                        onClick={() =>
+                          setAuthEnabled((v) => {
+                            const next = !v;
+                            if (!next) {
+                              setNewServer((prev) => ({ ...prev, token: "" }));
+                            } else {
+                              setAuthMode(user && token ? "current" : "custom");
+                            }
+                            return next;
+                          })
+                        }
+                      >
+                        <FlipButtonFront
+                          variant={authEnabled ? "secondary" : "outline"}
+                          size="sm"
+                          className={`w-56 ${
+                            authEnabled
+                              ? "bg-amber-100 text-amber-800 hover:bg-amber-200 dark:bg-amber-900/40 dark:text-amber-200 dark:hover:bg-amber-900/50"
+                              : ""
+                          }`}
                         >
-                          <button
-                            type="button"
-                            onClick={() => setUseCurrentUserToken(true)}
-                            className={`w-full flex items-center justify-between p-3 rounded-sm border-2 transition-all duration-200 ${
-                              useCurrentUserToken
-                                ? "border-indigo-500 bg-indigo-50 dark:border-indigo-400 dark:bg-indigo-900/20"
-                                : "border-neutral-200 bg-neutral-50 hover:border-neutral-300 dark:border-neutral-700 dark:bg-neutral-800/50 dark:hover:border-neutral-600"
-                            }`}
-                          >
-                            <div className="flex items-center space-x-3">
-                              <div
-                                className={`p-2 rounded-sm ${
-                                  useCurrentUserToken
-                                    ? "bg-indigo-100 text-indigo-600 dark:bg-indigo-800/50 dark:text-indigo-300"
-                                    : "bg-neutral-200 text-neutral-600 dark:bg-neutral-700 dark:text-neutral-400"
-                                }`}
-                              >
-                                <UserIcon className="h-4 w-4" />
+                          <span className="inline-flex items-center gap-2">
+                            <span
+                              className={`${
+                                authEnabled
+                                  ? "bg-amber-500"
+                                  : "bg-neutral-400 dark:bg-neutral-500"
+                              } h-2 w-2 rounded-full`}
+                            />
+                            <span className="text-sm">
+                              {authEnabled
+                                ? "Authentication Enabled"
+                                : "Enable Authentication"}
+                            </span>
+                          </span>
+                        </FlipButtonFront>
+                        <FlipButtonBack
+                          variant={authEnabled ? "secondary" : "default"}
+                          size="sm"
+                          className={`w-56 ${
+                            authEnabled
+                              ? "bg-amber-200 text-amber-900 hover:bg-amber-300 dark:bg-amber-900/60 dark:text-amber-100 dark:hover:bg-amber-900/70"
+                              : ""
+                          }`}
+                        >
+                          <span className="inline-flex items-center gap-2">
+                            <span
+                              className={`${
+                                authEnabled ? "bg-amber-500" : "bg-emerald-500"
+                              } h-2 w-2 rounded-full`}
+                            />
+                            <span className="text-sm">
+                              {authEnabled ? "Disable Auth" : "Enable Now"}
+                            </span>
+                          </span>
+                        </FlipButtonBack>
+                      </FlipButton>
+                    </div>
+
+                    {/* Auth options when enabled */}
+                    <AnimatePresence initial={false}>
+                      {authEnabled && (
+                        <motion.div
+                          initial={{ opacity: 0, height: 0, y: -10 }}
+                          animate={{ opacity: 1, height: "auto", y: 0 }}
+                          exit={{ opacity: 0, height: 0, y: -10 }}
+                          transition={{ duration: 0.25 }}
+                          className="overflow-hidden"
+                        >
+                          <div className="mt-3 space-y-2">
+                            <RadioGroup value={authMode} onChange={setAuthMode}>
+                              <div className="space-y-2">
+                                {/* Use current user token */}
+                                {user && token && (
+                                  <Radio value="current" as={Fragment}>
+                                    {({ checked }: { checked: boolean }) => (
+                                      <button
+                                        type="button"
+                                        onClick={() => setAuthMode("current")}
+                                        className={`w-full flex items-center justify-between p-3 rounded-sm border-2 transition-all duration-200 ${
+                                          checked
+                                            ? "border-indigo-500 bg-indigo-50 dark:border-indigo-400 dark:bg-indigo-900/20"
+                                            : "border-neutral-200 bg-neutral-50 hover:border-neutral-300 dark:border-neutral-700 dark:bg-neutral-800/50 dark:hover:border-neutral-600"
+                                        }`}
+                                      >
+                                        <div className="flex items-center space-x-3">
+                                          <div
+                                            className={`p-2 rounded-sm ${
+                                              checked
+                                                ? "bg-indigo-100 text-indigo-600 dark:bg-indigo-800/50 dark:text-indigo-300"
+                                                : "bg-neutral-200 text-neutral-600 dark:bg-neutral-700 dark:text-neutral-400"
+                                            }`}
+                                          >
+                                            <UserIcon className="h-4 w-4" />
+                                          </div>
+                                          <div className="text-left">
+                                            <p className="text-sm font-medium text-neutral-900 dark:text-white">
+                                              Use current user token
+                                            </p>
+                                            <p className="text-xs text-neutral-500 dark:text-neutral-400 truncate max-w-48">
+                                              Authenticated as {user.username}
+                                            </p>
+                                          </div>
+                                        </div>
+                                        <div
+                                          className={`h-4 w-4 rounded-full border-2 transition-colors ${
+                                            checked
+                                              ? "border-indigo-500 bg-indigo-500"
+                                              : "border-neutral-300 dark:border-neutral-600"
+                                          }`}
+                                        >
+                                          {checked && (
+                                            <motion.div
+                                              initial={{ scale: 0 }}
+                                              animate={{ scale: 1 }}
+                                              className="h-full w-full rounded-full bg-white scale-50"
+                                            />
+                                          )}
+                                        </div>
+                                      </button>
+                                    )}
+                                  </Radio>
+                                )}
+
+                                {/* Advanced: custom token */}
+                                <Radio value="custom" as={Fragment}>
+                                  {({ checked }: { checked: boolean }) => (
+                                    <div>
+                                      <button
+                                        type="button"
+                                        onClick={() => setAuthMode("custom")}
+                                        className={`w-full flex items-center justify-between p-3 rounded-sm border-2 transition-all duration-200 ${
+                                          checked
+                                            ? "border-indigo-500 bg-indigo-50 dark:border-indigo-400 dark:bg-indigo-900/20"
+                                            : "border-neutral-200 bg-neutral-50 hover:border-neutral-300 dark:border-neutral-700 dark:bg-neutral-800/50 dark:hover:border-neutral-600"
+                                        }`}
+                                      >
+                                        <div className="flex items-center space-x-3">
+                                          <div
+                                            className={`p-2 rounded-sm ${
+                                              checked
+                                                ? "bg-indigo-100 text-indigo-600 dark:bg-indigo-800/50 dark:text-indigo-300"
+                                                : "bg-neutral-200 text-neutral-600 dark:bg-neutral-700 dark:text-neutral-400"
+                                            }`}
+                                          >
+                                            <CogIcon className="h-4 w-4" />
+                                          </div>
+                                          <div className="text-left">
+                                            <p className="text-sm font-medium text-neutral-900 dark:text-white">
+                                              Advanced options
+                                            </p>
+                                            <p className="text-xs text-neutral-500 dark:text-neutral-400">
+                                              Provide a custom token
+                                            </p>
+                                          </div>
+                                        </div>
+                                        <div
+                                          className={`h-4 w-4 rounded-full border-2 transition-colors ${
+                                            checked
+                                              ? "border-indigo-500 bg-indigo-500"
+                                              : "border-neutral-300 dark:border-neutral-600"
+                                          }`}
+                                        >
+                                          {checked && (
+                                            <motion.div
+                                              initial={{ scale: 0 }}
+                                              animate={{ scale: 1 }}
+                                              className="h-full w-full rounded-full bg-white scale-50"
+                                            />
+                                          )}
+                                        </div>
+                                      </button>
+
+                                      {/* Custom token input collapses under this card */}
+                                      <AnimatePresence initial={false}>
+                                        {checked && (
+                                          <motion.div
+                                            initial={{
+                                              opacity: 0,
+                                              height: 0,
+                                              y: -8,
+                                            }}
+                                            animate={{
+                                              opacity: 1,
+                                              height: "auto",
+                                              y: 0,
+                                            }}
+                                            exit={{
+                                              opacity: 0,
+                                              height: 0,
+                                              y: -8,
+                                            }}
+                                            transition={{ duration: 0.25 }}
+                                            className="overflow-hidden"
+                                          >
+                                            <div className="mt-2 p-4 rounded-sm bg-neutral-100/50 border border-neutral-200 dark:bg-neutral-800/30 dark:border-neutral-700">
+                                              <div className="flex items-center space-x-2 mb-3">
+                                                <KeyIcon className="h-4 w-4 text-neutral-600 dark:text-neutral-400" />
+                                                <Label className="text-sm font-medium text-neutral-700 dark:text-neutral-300">
+                                                  Custom Token
+                                                </Label>
+                                              </div>
+                                              <Input
+                                                name="token"
+                                                value={newServer.token}
+                                                onChange={handleInputChange}
+                                                placeholder="Enter custom authentication token"
+                                                type="password"
+                                                className="bg-white dark:bg-neutral-900"
+                                              />
+                                              <p className="mt-2 text-xs text-neutral-500 dark:text-neutral-400">
+                                                Leave empty if the server
+                                                doesn't require auth
+                                              </p>
+                                            </div>
+                                          </motion.div>
+                                        )}
+                                      </AnimatePresence>
+                                    </div>
+                                  )}
+                                </Radio>
                               </div>
-                              <div className="text-left">
-                                <p className="text-sm font-medium text-neutral-900 dark:text-white">
-                                  Use Current User Token
-                                </p>
-                                <p className="text-xs text-neutral-500 dark:text-neutral-400 truncate max-w-48">
-                                  Authenticated as {user.username}
-                                </p>
-                              </div>
-                            </div>
-                            <div
-                              className={`h-4 w-4 rounded-full border-2 transition-colors ${
-                                useCurrentUserToken
-                                  ? "border-indigo-500 bg-indigo-500"
-                                  : "border-neutral-300 dark:border-neutral-600"
-                              }`}
-                            >
-                              {useCurrentUserToken && (
-                                <motion.div
-                                  initial={{ scale: 0 }}
-                                  animate={{ scale: 1 }}
-                                  className="h-full w-full rounded-full bg-white scale-50"
-                                />
-                              )}
-                            </div>
-                          </button>
+                            </RadioGroup>
+                          </div>
                         </motion.div>
                       )}
-
-                      {/* Advanced Options Toggle */}
-                      <motion.div
-                        initial={{ opacity: 0, scale: 0.98 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        transition={{ delay: 0.2 }}
-                      >
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setShowAdvancedOptions(!showAdvancedOptions);
-                            if (!showAdvancedOptions) {
-                              setUseCurrentUserToken(false);
-                            }
-                          }}
-                          className="w-full flex items-center justify-between p-3 rounded-sm border-2 border-neutral-200 bg-neutral-50 hover:border-neutral-300 transition-all duration-200 dark:border-neutral-700 dark:bg-neutral-800/50 dark:hover:border-neutral-600"
-                        >
-                          <div className="flex items-center space-x-3">
-                            <div className="p-2 rounded-sm bg-neutral-200 text-neutral-600 dark:bg-neutral-700 dark:text-neutral-400">
-                              <CogIcon className="h-4 w-4" />
-                            </div>
-                            <div className="text-left">
-                              <p className="text-sm font-medium text-neutral-900 dark:text-white">
-                                Advanced Options
-                              </p>
-                              <p className="text-xs text-neutral-500 dark:text-neutral-400">
-                                Custom token configuration
-                              </p>
-                            </div>
-                          </div>
-                          <motion.div
-                            animate={{ rotate: showAdvancedOptions ? 180 : 0 }}
-                            transition={{ duration: 0.2 }}
-                          >
-                            <ChevronDownIcon className="h-4 w-4 text-neutral-500" />
-                          </motion.div>
-                        </button>
-                      </motion.div>
-
-                      {/* Custom Token Input */}
-                      <AnimatePresence>
-                        {showAdvancedOptions && (
-                          <motion.div
-                            initial={{ opacity: 0, height: 0, y: -10 }}
-                            animate={{ opacity: 1, height: "auto", y: 0 }}
-                            exit={{ opacity: 0, height: 0, y: -10 }}
-                            transition={{ duration: 0.3, ease: "easeInOut" }}
-                            className="overflow-hidden"
-                          >
-                            <div className="p-4 rounded-sm bg-neutral-100/50 border border-neutral-200 dark:bg-neutral-800/30 dark:border-neutral-700">
-                              <div className="flex items-center space-x-2 mb-3">
-                                <KeyIcon className="h-4 w-4 text-neutral-600 dark:text-neutral-400" />
-                                <Label className="text-sm font-medium text-neutral-700 dark:text-neutral-300">
-                                  Custom Token
-                                </Label>
-                              </div>
-                              <Input
-                                name="token"
-                                value={newServer.token}
-                                onChange={handleInputChange}
-                                placeholder="Enter custom authentication token"
-                                type="password"
-                                className="bg-white dark:bg-neutral-900"
-                              />
-                              <p className="mt-2 text-xs text-neutral-500 dark:text-neutral-400">
-                                Leave empty if no authentication is required
-                              </p>
-                            </div>
-                          </motion.div>
-                        )}
-                      </AnimatePresence>
-                    </div>
+                    </AnimatePresence>
                   </Field>
                 </motion.div>
               </div>

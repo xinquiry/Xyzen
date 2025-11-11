@@ -116,7 +116,7 @@ export function AppFullscreen({
           {/* Main Content: VSCode-like Layout */}
           <main className="flex flex-1 overflow-hidden">
             {/* Activity Bar - Leftmost Column */}
-            <div className="w-16 flex-shrink-0 border-r border-neutral-200 bg-neutral-50 dark:border-neutral-800 dark:bg-neutral-900">
+            <div className="w-16 flex-shrink-0 border-r border-neutral-200 bg-neutral-50 dark:border-neutral-800 dark:bg-neutral-950">
               <ActivityBar
                 activePanel={activePanel}
                 onPanelChange={setActivePanel}

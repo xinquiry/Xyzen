@@ -20,6 +20,16 @@ class AuthStatusResponse(BaseModel):
     message: str
 
 
+class AuthProviderConfigResponse(BaseModel):
+    """当前后端所使用的认证提供商配置 (前端用于动态展示 OAuth 入口)"""
+
+    provider: str
+    issuer: Optional[str] = None
+    audience: Optional[str] = None
+    jwks_uri: Optional[str] = None
+    algorithm: Optional[str] = None
+
+
 class UserInfoResponse(BaseModel):
     """用户信息响应"""
 
@@ -51,6 +61,28 @@ async def get_auth_status() -> AuthStatusResponse:
         is_configured=True,
         provider=provider.get_provider_name(),
         message=f"认证服务已配置 ({provider.get_provider_name()})",
+    )
+
+
+@router.get("/config", response_model=AuthProviderConfigResponse)
+async def get_auth_config() -> AuthProviderConfigResponse:
+    """返回当前认证提供商的关键配置 (不含敏感密钥), 供前端构造登录入口
+
+    字段说明:
+    - provider: 当前使用的鉴权类型 (casdoor | bohrium | bohr_app)
+    - issuer: OIDC / userinfo 根地址, Casdoor/Bohrium 用于拼装授权链接或 userinfo
+    - audience: 对应客户端 ID (Casdoor 用作 client_id)
+    - jwks_uri: 若为 JWT 提供商用于验证签名
+    - algorithm: JWT 算法 (展示/调试用途)
+    """
+    provider = AuthProvider
+    # BaseAuthProvider 暴露的字段
+    return AuthProviderConfigResponse(
+        provider=provider.get_provider_name(),
+        issuer=getattr(provider, "issuer", None),
+        audience=getattr(provider, "audience", None),
+        jwks_uri=getattr(provider, "jwks_uri", None),
+        algorithm=getattr(provider, "algorithm", None),
     )
 
 
@@ -118,7 +150,9 @@ async def validate_token(
 
 
 @router.get("/me", response_model=UserInfoResponse)
-async def get_current_user(authorization: Optional[str] = Header(None, description="Bearer token")) -> UserInfoResponse:
+async def get_current_user(
+    authorization: Optional[str] = Header(None, description="Bearer token"),
+) -> UserInfoResponse:
     """获取当前用户信息（需要有效的 token）"""
 
     # 先验证 token
