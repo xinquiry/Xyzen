@@ -1,14 +1,9 @@
-import { DEFAULT_BACKEND_URL } from "@/configs";
+import { DEFAULT_BACKEND_URL, DEFAULT_LAYOUT_STYLE } from "@/configs";
 import { DEFAULT_WIDTH } from "@/configs/common";
 import xyzenService from "@/service/xyzenService";
 import type { StateCreator } from "zustand";
-import type {
-  LayoutStyle,
-  Theme,
-  UiSettingType,
-  XyzenState,
-} from "../../types";
-import { LAYOUT_STYLE } from "./types";
+import type { Theme, UiSettingType, XyzenState } from "../../types";
+import { type LayoutStyle } from "./types";
 
 // Ensure xyzen service is aware of the default backend on startup
 xyzenService.setBackendUrl(DEFAULT_BACKEND_URL);
@@ -74,9 +69,7 @@ export const createUiSlice: StateCreator<
   activeTabIndex: 0,
   activePanel: "chat",
   theme: (localStorage.getItem("theme") as Theme) || "system",
-  layoutStyle:
-    (localStorage.getItem("layoutStyle") as LayoutStyle) ||
-    LAYOUT_STYLE.Sidebar,
+  layoutStyle: DEFAULT_LAYOUT_STYLE,
   isMcpListModalOpen: false,
   isLlmProvidersModalOpen: false,
   isAddMcpServerModalOpen: false,

@@ -1,5 +1,6 @@
 import { useXyzen } from "@/store";
-import type { LayoutStyle } from "@/store/types";
+import type { LayoutStyle } from "@/store/slices/uiSlice/types";
+
 import { Field, Label, Radio, RadioGroup } from "@headlessui/react";
 import { CheckIcon } from "@heroicons/react/24/outline";
 
