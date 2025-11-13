@@ -10,6 +10,7 @@ import remarkGfm from "remark-gfm";
 import remarkMath from "remark-math";
 
 import { useXyzen } from "@/store";
+import { LAYOUT_STYLE } from "@/store/slices/uiSlice/types";
 import "katex/dist/katex.css";
 
 interface MarkdownProps {
@@ -18,7 +19,7 @@ interface MarkdownProps {
 }
 
 const Markdown: React.FC<MarkdownProps> = function Markdown(props) {
-  const { panelWidth } = useXyzen();
+  const { panelWidth, layoutStyle } = useXyzen();
   const { content = "", className } = props;
   const [copiedCode, setCopiedCode] = useState<string | null>(null);
 
@@ -165,7 +166,7 @@ const Markdown: React.FC<MarkdownProps> = function Markdown(props) {
     <article
       className={clsx("prose", "markdown", "w-full", "max-w-full", className)}
       style={{
-        width: panelWidth - 164,
+        width: layoutStyle === LAYOUT_STYLE.Sidebar ? panelWidth - 164 : "100%",
       }}
     >
       <ReactMarkdown
