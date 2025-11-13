@@ -285,6 +285,7 @@ export const createChatSlice: StateCreator<
 
               return {
                 id: topic.id,
+                sessionId: session.id,
                 title: topic.name,
                 updatedAt: topic.updated_at,
                 assistantTitle: "通用助理",
@@ -843,6 +844,7 @@ export const createChatSlice: StateCreator<
 
           const newHistoryItem: ChatHistoryItem = {
             id: newTopic.id,
+            sessionId: existingSession.id,
             title: newTopic.name,
             updatedAt: newTopic.updated_at,
             assistantTitle: "通用助理",
@@ -935,6 +937,7 @@ export const createChatSlice: StateCreator<
 
         const newHistoryItem: ChatHistoryItem = {
           id: newTopic.id,
+          sessionId: newSession.id,
           title: newTopic.name,
           updatedAt: newTopic.updated_at,
           assistantTitle: "通用助理",
@@ -996,6 +999,7 @@ export const createChatSlice: StateCreator<
 
         const newHistoryItem: ChatHistoryItem = {
           id: newTopic.id,
+          sessionId: newSession.id,
           title: newTopic.name,
           updatedAt: newTopic.updated_at,
           assistantTitle: "通用助理",

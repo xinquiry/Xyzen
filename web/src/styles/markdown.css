@@ -1,4 +1,8 @@
 .markdown {
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+  overflow-x: hidden;
   font-feature-settings:
     "lnum" 1,
     "tnum" 1;

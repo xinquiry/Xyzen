@@ -190,7 +190,7 @@ const ChatBubble: React.FC<ChatBubbleProps> = ({ message }) => {
 
   // Streaming animation styles
   const streamingStyles = isStreaming
-    ? "animate-pulse rounded-sm border-green-400 bg-green-50/30 dark:border-green-500 dark:bg-green-900/10"
+    ? "rounded-sm border-green-400 bg-green-50/30 dark:border-green-500 dark:bg-green-900/10"
     : loadingStyles;
 
   // 渲染头像，使用初始字母作为最后的备用选项

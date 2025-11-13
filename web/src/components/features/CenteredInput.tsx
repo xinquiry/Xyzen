@@ -1,7 +1,7 @@
-import React, { useEffect, useRef } from "react";
 import { useXyzen } from "@/store";
-import clsx from "clsx";
 import { ChevronUpIcon } from "@heroicons/react/24/outline";
+import clsx from "clsx";
+import React, { useEffect, useRef } from "react";
 
 export function CenteredInput() {
   const {
@@ -100,7 +100,7 @@ export function CenteredInput() {
             onFocus={handleFocus}
             placeholder="Type your message..."
             className={clsx(
-              "w-full appearance-none rounded-full border border-neutral-200/50 bg-white/60 backdrop-blur-md py-2.5 px-5 pr-10 text-sm text-neutral-950 placeholder:text-neutral-500",
+              "w-full appearance-none focus:outline-none rounded-full border border-neutral-200/50 bg-white/60 backdrop-blur-md py-2.5 px-5 pr-10 text-sm text-neutral-950 placeholder:text-neutral-500",
               "shadow-lg transition-all duration-300 ease-out origin-right",
               "focus:outline-none focus:ring-2 focus:ring-indigo-400/50 focus:border-indigo-300 focus:bg-white/80 focus:shadow-xl focus:scale-x-110 focus:scale-y-105 focus:backdrop-blur-lg",
               "hover:scale-[1.01] hover:shadow-xl hover:bg-white/70 hover:backdrop-blur-lg",

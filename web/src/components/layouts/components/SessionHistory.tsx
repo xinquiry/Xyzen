@@ -17,7 +17,7 @@ import {
   UserIcon,
   XMarkIcon,
 } from "@heroicons/react/24/outline";
-import { useEffect, useMemo, useState } from "react";
+import { memo, useEffect, useMemo, useState } from "react";
 
 interface SessionHistoryProps {
   context?: "chat" | "workshop";
@@ -26,7 +26,7 @@ interface SessionHistoryProps {
   onSelectTopic?: (topicId: string) => void;
 }
 
-export default function SessionHistory({
+function SessionHistory({
   context = "chat",
   isOpen,
   onClose,
@@ -39,31 +39,38 @@ export default function SessionHistory({
   const [searchQuery, setSearchQuery] = useState("");
   const [isClearConfirmOpen, setIsClearConfirmOpen] = useState(false);
 
-  const {
-    // Chat state
-    chatHistory,
-    chatHistoryLoading,
-    activeChatChannel,
-    channels,
-    activateChannel,
-    togglePinChat,
-    fetchChatHistory,
-    updateTopicName,
-    deleteTopic,
-    clearSessionTopics,
-    // Workshop state
-    workshopHistory,
-    workshopHistoryLoading,
-    activeWorkshopChannel,
-    workshopChannels,
-    activateWorkshopChannel,
-    togglePinWorkshopChat,
-    updateWorkshopTopicName,
-    deleteWorkshopTopic,
-    clearWorkshopSessionTopics,
-    // Common
-    user,
-  } = useXyzen();
+  // Select only what we need to minimize re-renders
+  const user = useXyzen((s) => s.user);
+  const chatHistory = useXyzen((s) => s.chatHistory);
+  const chatHistoryLoading = useXyzen((s) => s.chatHistoryLoading);
+  const workshopHistory = useXyzen((s) => s.workshopHistory);
+  const workshopHistoryLoading = useXyzen((s) => s.workshopHistoryLoading);
+
+  const activateChannel = useXyzen((s) => s.activateChannel);
+  const activateWorkshopChannel = useXyzen((s) => s.activateWorkshopChannel);
+  const togglePinChat = useXyzen((s) => s.togglePinChat);
+  const togglePinWorkshopChat = useXyzen((s) => s.togglePinWorkshopChat);
+  const fetchChatHistory = useXyzen((s) => s.fetchChatHistory);
+  const updateTopicName = useXyzen((s) => s.updateTopicName);
+  const updateWorkshopTopicName = useXyzen((s) => s.updateWorkshopTopicName);
+  const deleteTopic = useXyzen((s) => s.deleteTopic);
+  const deleteWorkshopTopic = useXyzen((s) => s.deleteWorkshopTopic);
+  const clearSessionTopics = useXyzen((s) => s.clearSessionTopics);
+  const clearWorkshopSessionTopics = useXyzen(
+    (s) => s.clearWorkshopSessionTopics,
+  );
+
+  // Active channel topic id
+  const activeChatChannel = useXyzen((s) => s.activeChatChannel);
+  const activeWorkshopChannel = useXyzen((s) => s.activeWorkshopChannel);
+
+  // Subscribe only to the primitive sessionId of the active channel to avoid message-driven re-renders
+  const activeSessionId = useXyzen((s) => {
+    const topicId =
+      context === "workshop" ? s.activeWorkshopChannel : s.activeChatChannel;
+    const map = context === "workshop" ? s.workshopChannels : s.channels;
+    return topicId ? (map[topicId]?.sessionId ?? null) : null;
+  });
 
   // Use appropriate state based on context
   const isWorkshop = context === "workshop";
@@ -72,7 +79,6 @@ export default function SessionHistory({
     ? workshopHistoryLoading
     : chatHistoryLoading;
   const activeChannel = isWorkshop ? activeWorkshopChannel : activeChatChannel;
-  const channelsData = isWorkshop ? workshopChannels : channels;
   const activateChannelFn = isWorkshop
     ? activateWorkshopChannel
     : activateChannel;
@@ -86,9 +92,11 @@ export default function SessionHistory({
   // 当组件打开时获取历史记录
   useEffect(() => {
     if (isOpen) {
-      fetchHistoryFn();
+      // fetch once on open; workshop view syncs from chat
+      void fetchHistoryFn();
     }
-  }, [isOpen, fetchHistoryFn]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOpen]);
 
   // 检查用户是否已登录
   const isUserLoggedIn = useMemo(() => {
@@ -99,20 +107,9 @@ export default function SessionHistory({
 
   // 获取当前session的topics
   const currentSessionTopics = useMemo(() => {
-    if (!activeChannel || !channelsData[activeChannel]) {
-      return [];
-    }
-
-    const currentSessionId = channelsData[activeChannel].sessionId;
-
-    const topics = history.filter((chat) => {
-      const channel = channelsData[chat.id];
-      const belongs = channel && channel.sessionId === currentSessionId;
-      return belongs;
-    });
-
-    return topics;
-  }, [activeChannel, channelsData, history]);
+    if (!activeChannel || !activeSessionId) return [];
+    return history.filter((chat) => chat.sessionId === activeSessionId);
+  }, [activeChannel, activeSessionId, history]);
 
   // 过滤搜索结果
   const filteredTopics = useMemo(() => {
@@ -129,13 +126,15 @@ export default function SessionHistory({
   }, [currentSessionTopics, searchQuery]);
 
   // 根据置顶状态对聊天记录进行排序
-  const sortedHistory = [...filteredTopics].sort((a, b) => {
-    if (a.isPinned && !b.isPinned) return -1;
-    if (!a.isPinned && b.isPinned) return 1;
-    const dateA = new Date(a.updatedAt);
-    const dateB = new Date(b.updatedAt);
-    return dateB.getTime() - dateA.getTime();
-  });
+  const sortedHistory = useMemo(() => {
+    return [...filteredTopics].sort((a, b) => {
+      if (a.isPinned && !b.isPinned) return -1;
+      if (!a.isPinned && b.isPinned) return 1;
+      const dateA = new Date(a.updatedAt);
+      const dateB = new Date(b.updatedAt);
+      return dateB.getTime() - dateA.getTime();
+    });
+  }, [filteredTopics]);
 
   // 清空所有对话
   const handleClearAllTopics = () => {
@@ -143,9 +142,8 @@ export default function SessionHistory({
   };
 
   const confirmClearAll = async () => {
-    if (activeChannel && channelsData[activeChannel]) {
-      const sessionId = channelsData[activeChannel].sessionId;
-      await clearSessionFn(sessionId);
+    if (activeChannel && activeSessionId) {
+      await clearSessionFn(activeSessionId);
       setIsClearConfirmOpen(false);
     }
   };
@@ -381,14 +379,6 @@ export default function SessionHistory({
       <div className="h-full bg-white dark:bg-neutral-900">
         {/* Simple container without overlay/positioning */}
         {(() => {
-          console.log("SessionHistory: Render decision", {
-            isUserLoggedIn,
-            chatHistoryLoading,
-            activeChatChannel,
-            channels,
-            sortedHistoryLength: sortedHistory.length,
-          });
-
           if (!isUserLoggedIn) {
             return renderLoginPrompt();
           }
@@ -431,3 +421,5 @@ export default function SessionHistory({
     </>
   );
 }
+
+export default memo(SessionHistory);

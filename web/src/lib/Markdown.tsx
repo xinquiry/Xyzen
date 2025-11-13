@@ -9,6 +9,7 @@ import rehypeRaw from "rehype-raw";
 import remarkGfm from "remark-gfm";
 import remarkMath from "remark-math";
 
+import { useXyzen } from "@/store";
 import "katex/dist/katex.css";
 
 interface MarkdownProps {
@@ -17,6 +18,7 @@ interface MarkdownProps {
 }
 
 const Markdown: React.FC<MarkdownProps> = function Markdown(props) {
+  const { panelWidth } = useXyzen();
   const { content = "", className } = props;
   const [copiedCode, setCopiedCode] = useState<string | null>(null);
 
@@ -69,32 +71,47 @@ const Markdown: React.FC<MarkdownProps> = function Markdown(props) {
       const lang = match?.[1] ?? "";
 
       return !inline && match ? (
-        <div className="code-block-container group">
-          <div className="code-block-header">
+        <div
+          className={clsx(
+            // container
+            "group relative my-5 w-full min-w-0 overflow-hidden rounded-xl border border-white/10 bg-[#1a1a1b] shadow",
+            "flex flex-col",
+            // avoid typography styles interfering with code block
+            "not-prose",
+          )}
+        >
+          <div className="flex h-10 items-center justify-between border-b border-white/10 bg-white/5 px-4">
             {lang ? (
-              <span className="code-block-header__label">{lang}</span>
+              <span className="font-mono text-xs text-zinc-400">{lang}</span>
             ) : (
-              <span className="code-block-header__label">code</span>
+              <span className="font-mono text-xs text-zinc-400">code</span>
             )}
           </div>
-          <div className="code-block-content">
+          <div className="relative flex-1 min-h-0 p-5">
             <button
               onClick={() => copyToClipboard(code)}
               className={clsx(
-                "code-block-copy-button",
-                copiedCode === code && "copied",
+                "absolute right-3 top-3 inline-flex h-8 w-8 items-center justify-center rounded-md border text-zinc-300 transition",
+                "opacity-0 border-white/10 bg-white/5 backdrop-blur-sm",
+                "group-hover:opacity-100 focus-visible:opacity-100",
+                "hover:bg-white/15 hover:border-white/20 active:scale-95",
+                copiedCode === code &&
+                  "text-emerald-500 bg-emerald-500/10 border-emerald-500/30",
               )}
               aria-label={copiedCode === code ? "Copied" : "Copy"}
               title={copiedCode === code ? "Copied" : "Copy"}
             >
               {copiedCode === code ? (
-                <CheckIcon className="icon icon-check" />
+                <CheckIcon className="h-4 w-4" />
               ) : (
-                <ClipboardIcon className="icon" />
+                <ClipboardIcon className="h-4 w-4" />
               )}
             </button>
             <div
-              className={clsx("syntax-highlighter-wrapper", isDark && "dark")}
+              className={clsx(
+                `h-full min-w-0 overflow-x-auto custom-scrollbar`,
+                isDark && "dark",
+              )}
             >
               <SyntaxHighlighter
                 style={vscDarkPlus}
@@ -105,6 +122,9 @@ const Markdown: React.FC<MarkdownProps> = function Markdown(props) {
                   margin: 0,
                   padding: 0,
                   fontSize: "0.875rem",
+                  width: "100%",
+                  maxWidth: "100%",
+                  boxSizing: "border-box",
                 }}
                 showLineNumbers
                 wrapLines={true}
@@ -135,14 +155,19 @@ const Markdown: React.FC<MarkdownProps> = function Markdown(props) {
           </div>
         </div>
       ) : (
-        <code className={className} {...props}>
+        <div className={clsx("overflow-x-auto", className)} {...props}>
           {children}
-        </code>
+        </div>
       );
     },
   };
   return (
-    <article className={clsx("prose", "markdown", className)}>
+    <article
+      className={clsx("prose", "markdown", "w-full", "max-w-full", className)}
+      style={{
+        width: panelWidth - 164,
+      }}
+    >
       <ReactMarkdown
         components={MarkdownComponents}
         remarkPlugins={[remarkMath, remarkGfm]}

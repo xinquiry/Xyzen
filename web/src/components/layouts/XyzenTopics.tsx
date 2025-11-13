@@ -32,25 +32,31 @@ export default function XyzenTopics() {
   const [searchQuery, setSearchQuery] = useState("");
   const [isClearConfirmOpen, setIsClearConfirmOpen] = useState(false);
 
-  const {
-    chatHistory,
-    chatHistoryLoading,
-    activeChatChannel,
-    channels,
-    activateChannel,
-    togglePinChat,
-    user,
-    fetchChatHistory,
-    updateTopicName,
-    deleteTopic,
-    createDefaultChannel,
-    clearSessionTopics,
-  } = useXyzen();
+  // Select fine-grained pieces to avoid re-renders on message streaming
+  const chatHistory = useXyzen((s) => s.chatHistory);
+  const chatHistoryLoading = useXyzen((s) => s.chatHistoryLoading);
+  const activeChatChannel = useXyzen((s) => s.activeChatChannel);
+  const user = useXyzen((s) => s.user);
+  const activateChannel = useXyzen((s) => s.activateChannel);
+  const togglePinChat = useXyzen((s) => s.togglePinChat);
+  const fetchChatHistory = useXyzen((s) => s.fetchChatHistory);
+  const updateTopicName = useXyzen((s) => s.updateTopicName);
+  const deleteTopic = useXyzen((s) => s.deleteTopic);
+  const createDefaultChannel = useXyzen((s) => s.createDefaultChannel);
+  const clearSessionTopics = useXyzen((s) => s.clearSessionTopics);
+
+  // Subscribe only to primitive active sessionId to avoid re-renders on message changes
+  const activeSessionId = useXyzen((s) =>
+    s.activeChatChannel
+      ? (s.channels[s.activeChatChannel]?.sessionId ?? null)
+      : null,
+  );
 
   // Load chat history on mount
   useEffect(() => {
-    fetchChatHistory();
-  }, [fetchChatHistory]);
+    void fetchChatHistory();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Check if user is logged in
   const isUserLoggedIn = useMemo(() => {
@@ -60,16 +66,9 @@ export default function XyzenTopics() {
 
   // Get current session topics
   const currentSessionTopics = useMemo(() => {
-    if (!activeChatChannel || !channels[activeChatChannel]) {
-      return [];
-    }
-
-    const currentSessionId = channels[activeChatChannel].sessionId;
-    return chatHistory.filter((chat) => {
-      const channel = channels[chat.id];
-      return channel && channel.sessionId === currentSessionId;
-    });
-  }, [activeChatChannel, channels, chatHistory]);
+    if (!activeChatChannel || !activeSessionId) return [];
+    return chatHistory.filter((chat) => chat.sessionId === activeSessionId);
+  }, [activeChatChannel, activeSessionId, chatHistory]);
 
   // Filter topics by search query
   const filteredTopics = useMemo(() => {
@@ -86,13 +85,15 @@ export default function XyzenTopics() {
   }, [currentSessionTopics, searchQuery]);
 
   // Sort topics by pinned status and update time
-  const sortedTopics = [...filteredTopics].sort((a, b) => {
-    if (a.isPinned && !b.isPinned) return -1;
-    if (!a.isPinned && b.isPinned) return 1;
-    const dateA = new Date(a.updatedAt);
-    const dateB = new Date(b.updatedAt);
-    return dateB.getTime() - dateA.getTime();
-  });
+  const sortedTopics = useMemo(() => {
+    return [...filteredTopics].sort((a, b) => {
+      if (a.isPinned && !b.isPinned) return -1;
+      if (!a.isPinned && b.isPinned) return 1;
+      const dateA = new Date(a.updatedAt);
+      const dateB = new Date(b.updatedAt);
+      return dateB.getTime() - dateA.getTime();
+    });
+  }, [filteredTopics]);
 
   // Activate a topic
   const handleActivateTopic = async (topicId: string) => {
@@ -134,8 +135,10 @@ export default function XyzenTopics() {
 
   // Create new topic
   const handleCreateNewTopic = async () => {
-    if (!activeChatChannel || !channels[activeChatChannel]) return;
-    const currentAgent = channels[activeChatChannel].agentId;
+    if (!activeChatChannel) return;
+    // Read agentId from state snapshot when needed to avoid subscribing to channels
+    const state = useXyzen.getState();
+    const currentAgent = state.channels[activeChatChannel]?.agentId;
     await createDefaultChannel(currentAgent);
   };
 
@@ -145,9 +148,8 @@ export default function XyzenTopics() {
   };
 
   const confirmClearAll = async () => {
-    if (activeChatChannel && channels[activeChatChannel]) {
-      const sessionId = channels[activeChatChannel].sessionId;
-      await clearSessionTopics(sessionId);
+    if (activeChatChannel && activeSessionId) {
+      await clearSessionTopics(activeSessionId);
       setIsClearConfirmOpen(false);
     }
   };

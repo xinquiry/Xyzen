@@ -56,6 +56,8 @@ export interface ChatChannel {
 
 export interface ChatHistoryItem {
   id: string;
+  // The session this topic belongs to (used to avoid subscribing to channels state)
+  sessionId: string;
   title: string;
   updatedAt: string;
   assistantTitle: string;
