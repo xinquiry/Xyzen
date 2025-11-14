@@ -49,7 +49,7 @@ const getLayoutStyle = (): LayoutStyle => {
   if (import.meta.env.VITE_XYZEN_LAYOUT_STYLE) {
     return import.meta.env.VITE_XYZEN_LAYOUT_STYLE as LayoutStyle;
   }
-  return LAYOUT_STYLE.Fullscreen;
+  return LAYOUT_STYLE.Sidebar;
 };
 
 export const DEFAULT_LAYOUT_STYLE = getLayoutStyle();
