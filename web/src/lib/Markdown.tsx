@@ -75,7 +75,7 @@ const Markdown: React.FC<MarkdownProps> = function Markdown(props) {
         <div
           className={clsx(
             // container
-            "group relative my-5 w-full min-w-0 overflow-hidden rounded-xl border border-white/10 bg-[#1a1a1b] shadow",
+            "group relative my-5 w-full min-w-0 overflow-hidden rounded-sm border border-white/10 bg-[#1a1a1b] shadow",
             "flex flex-col",
             // avoid typography styles interfering with code block
             "not-prose",

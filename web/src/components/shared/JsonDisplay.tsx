@@ -1,11 +1,10 @@
+import useTheme from "@/hooks/useTheme";
 import { CheckIcon, ClipboardIcon } from "@heroicons/react/24/outline";
 import clsx from "clsx";
 import React, { useState } from "react";
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
-import { oneLight } from "react-syntax-highlighter/dist/esm/styles/prism";
+import { vscDarkPlus } from "react-syntax-highlighter/dist/esm/styles/prism";
 import { ChartDisplay } from "../charts/ChartDisplay";
-import useTheme from "@/hooks/useTheme";
-import { oneDark } from "react-syntax-highlighter/dist/esm/styles/prism";
 
 interface JsonDisplayProps {
   data: unknown;
@@ -57,10 +56,10 @@ export const JsonDisplay: React.FC<JsonDisplayProps> = ({
       case "success":
         return {
           container: compact
-            ? "rounded-sm bg-white dark:bg-green-900/10 border border-green-300 dark:border-green-700/60"
-            : "w-full min-w-0 overflow-hidden rounded-xl border border-green-300 dark:border-green-700/60 bg-white dark:bg-green-900/10 shadow flex flex-col not-prose",
+            ? "rounded-sm bg-neutral-950/80 dark:bg-green-900/10 border border-green-300 dark:border-green-700/60"
+            : "w-full min-w-0 overflow-hidden rounded-sm border border-green-300 dark:border-green-700/60 bg-white dark:bg-green-900/10 shadow flex flex-col not-prose",
           header: compact
-            ? "flex items-center justify-between px-2 py-1 bg-green-50 dark:bg-green-800/30 border-b border-green-300 dark:border-green-600/60 rounded-t-md"
+            ? "flex items-center justify-between px-2 py-1 bg-green-50 dark:bg-green-800/30 border-b border-green-300 dark:border-green-600/60 rounded-t-sm"
             : "flex h-10 items-center justify-between px-4 border-b border-green-300 dark:border-green-600/60 bg-green-50 dark:bg-green-800/30",
           text: compact
             ? "text-xs font-mono text-green-800 dark:text-green-300"
@@ -70,9 +69,9 @@ export const JsonDisplay: React.FC<JsonDisplayProps> = ({
         return {
           container: compact
             ? "rounded-sm bg-white dark:bg-red-900/20 border border-red-300 dark:border-red-700"
-            : "w-full min-w-0 overflow-hidden rounded-xl border border-red-300 dark:border-red-700 bg-white dark:bg-red-900/20 shadow flex flex-col not-prose",
+            : "w-full min-w-0 overflow-hidden rounded-sm border border-red-300 dark:border-red-700 bg-white dark:bg-red-900/20 shadow flex flex-col not-prose",
           header: compact
-            ? "flex items-center justify-between px-2 py-1 bg-red-50 dark:bg-red-800/50 border-b border-red-300 dark:border-red-600 rounded-t-md"
+            ? "flex items-center justify-between px-2 py-1 bg-red-50 dark:bg-red-800/50 border-b border-red-300 dark:border-red-600 rounded-t-sm"
             : "flex h-10 items-center justify-between px-4 border-b border-red-300 dark:border-red-600 bg-red-50 dark:bg-red-800/50",
           text: compact
             ? "text-xs font-mono text-red-800 dark:text-red-300"
@@ -82,9 +81,9 @@ export const JsonDisplay: React.FC<JsonDisplayProps> = ({
         return {
           container: compact
             ? "rounded-sm bg-neutral-100 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700"
-            : "w-full min-w-0 overflow-hidden rounded-xl border border-neutral-200 dark:border-white/10 bg-white dark:bg-[#1a1a1b] shadow flex flex-col not-prose",
+            : "w-full min-w-0 overflow-hidden rounded-sm border border-neutral-200 dark:border-white/10 bg-white dark:bg-[#1a1a1b] shadow flex flex-col not-prose",
           header: compact
-            ? "flex items-center justify-between px-2 py-1 bg-neutral-50 dark:bg-neutral-700/50 border-b border-neutral-200 dark:border-neutral-600 rounded-t-md"
+            ? "flex items-center justify-between px-2 py-1 bg-neutral-50 dark:bg-neutral-700/50 border-b border-neutral-200 dark:border-neutral-600 rounded-t-sm"
             : "flex h-10 items-center justify-between px-4 border-b border-neutral-200 dark:border-white/10 bg-neutral-50 dark:bg-white/5",
           text: compact
             ? "text-xs font-mono text-neutral-600 dark:text-neutral-400"
@@ -149,11 +148,10 @@ export const JsonDisplay: React.FC<JsonDisplayProps> = ({
         <div
           className={clsx(
             "h-full w-full min-w-0 overflow-x-auto custom-scrollbar",
-            isDark && "dark",
           )}
         >
           <SyntaxHighlighter
-            style={isDark ? oneDark : oneLight}
+            style={vscDarkPlus}
             language="json"
             PreTag="div"
             customStyle={{
