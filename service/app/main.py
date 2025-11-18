@@ -16,7 +16,6 @@ from middleware.database import create_db_and_tables
 from middleware.logger import LOGGING_CONFIG
 
 
-# TODO: 自动化 MCP Server 发现并自动挂载到 FastAPI 主路由
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     # Create database tables

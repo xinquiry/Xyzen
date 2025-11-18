@@ -36,7 +36,7 @@ class CasdoorAuthProvider(BaseAuthProvider):
         logger.info("Casdoor: 认证服务已配置，开始通过 API 验证token...")
         try:
             # 使用 Casdoor 的 userinfo 接口获取用户信息
-            userinfo_url = f"{self.issuer}/api/userinfo"
+            userinfo_url = f"{self.issuer}/api/user"
             logger.info(f"Casdoor: 调用用户信息接口: {userinfo_url}")
 
             headers = {"Authorization": f"Bearer {access_token}", "Content-Type": "application/json"}

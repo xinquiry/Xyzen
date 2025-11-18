@@ -202,12 +202,12 @@ export function AppSide({
               />
             )}
             {/* Activity Bar */}
-            <div className="w-16 flex-shrink-0 border-r border-neutral-200 bg-neutral-50 dark:border-neutral-800 dark:bg-neutral-950">
+            {/* <div className="w-16 flex-shrink-0 border-r border-neutral-200 bg-neutral-50 dark:border-neutral-800 dark:bg-neutral-950">
               <ActivityBar
                 activePanel={activePanel}
                 onPanelChange={setActivePanel}
               />
-            </div>
+            </div> */}
             {/* Main Content */}
             <div className="flex flex-1 flex-col relative">
               {/* Header */}
@@ -289,8 +289,8 @@ export function AppSide({
                       </div>
                     </div>
                   ))}
-                {activePanel === "explorer" && <Explorer />}
-                {activePanel === "workshop" && <Workshop />}
+                {/* {activePanel === "explorer" && <Explorer />}
+                {activePanel === "workshop" && <Workshop />} */}
               </div>
               {showAuthError && (
                 <div className="absolute inset-0 z-50 bg-background/80 backdrop-blur-sm flex items-center justify-center">

@@ -167,9 +167,9 @@ const AgentCard: React.FC<AgentCardProps> = ({
             agent.avatar ||
             (agent.agent_type === "builtin"
               ? agent.id === "00000000-0000-0000-0000-000000000001"
-                ? "https://avatars.githubusercontent.com/u/176685?v=4" // Chat agent fallback
-                : "https://cdn1.deepmd.net/static/img/affb038eChatGPT Image 2025年8月6日 10_33_07.png" // Workshop agent fallback
-              : "https://cdn1.deepmd.net/static/img/affb038eChatGPT Image 2025年8月6日 10_33_07.png") // Regular agent fallback
+                ? "/defaults/agents/avatar1.png" // Chat agent fallback
+                : "/defaults/agents/avatar4.png" // Workshop agent fallback
+              : "/defaults/agents/avatar2.png") // Regular agent fallback
           }
           alt={agent.name}
           className="h-10 w-10 flex-shrink-0 rounded-full border border-neutral-200 object-cover dark:border-neutral-700"
