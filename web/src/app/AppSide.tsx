@@ -14,13 +14,10 @@ import { restrictToHorizontalAxis } from "@dnd-kit/modifiers";
 import { ChevronLeftIcon, CogIcon } from "@heroicons/react/24/outline";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
-import Explorer from "@/app/explore/page";
 import McpIcon from "@/assets/McpIcon";
 import { AuthStatus, SettingsButton } from "@/components/features";
 import ToggleSidePanelShortcutHint from "@/components/features/ToggleSidePanelShortcutHint";
-import ActivityBar from "@/components/layouts/ActivityBar";
 import { McpListModal } from "@/components/layouts/McpListModal";
-import Workshop from "@/components/layouts/Workshop";
 import XyzenAgent from "@/components/layouts/XyzenAgent";
 import XyzenChat from "@/components/layouts/XyzenChat";
 import { SettingsModal } from "@/components/modals/SettingsModal";
@@ -213,24 +210,29 @@ export function AppSide({
               {/* Header */}
               <div className="flex h-16 flex-shrink-0 items-center justify-between border-b border-neutral-200 px-4 dark:border-neutral-800">
                 <div className="flex items-center gap-2">
-                  {activePanel === "chat" && activeChatChannel && (
+                  {activePanel === "chat" && activeChatChannel ? (
                     <button
-                      className="rounded-sm p-1.5 text-neutral-500 hover:bg-neutral-100 dark:text-neutral-400 dark:hover:bg-neutral-800"
+                      className="rounded-sm flex items-center gap-2 p-1.5 text-neutral-500 hover:bg-neutral-100 dark:text-neutral-400 dark:hover:bg-neutral-800"
                       title="返回 Assistants"
                       onClick={() => setActiveChatChannel(null)}
                     >
-                      <ChevronLeftIcon className="h-5 w-5" />
+                      <ChevronLeftIcon className="size-4" />
+                      <h3 className="text-sm font-medium text-neutral-700 dark:text-neutral-300">
+                        {activePanel === "chat"
+                          ? activeChatChannel
+                            ? "Chat"
+                            : "Assistants"
+                          : activePanel === "explorer"
+                            ? "Explorer"
+                            : "Workshop"}
+                      </h3>
                     </button>
+                  ) : (
+                    <h1 className="text-base sm:text-lg font-semibold tracking-tight bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 dark:from-indigo-400 dark:via-purple-400 dark:to-pink-400 bg-clip-text text-transparent">
+                      Xyzen
+                    </h1>
                   )}
-                  <h3 className="text-sm font-medium text-neutral-700 dark:text-neutral-300">
-                    {activePanel === "chat"
-                      ? activeChatChannel
-                        ? "Chat"
-                        : "Assistants"
-                      : activePanel === "explorer"
-                        ? "Explorer"
-                        : "Workshop"}
-                  </h3>
+
                   {/* Shortcut hint (only in sidebar mode) */}
                   {!isMobile && <ToggleSidePanelShortcutHint />}
                 </div>

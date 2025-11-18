@@ -53,9 +53,6 @@ export default function LoadingMessage({
           }}
         />
       </motion.div>
-      <span className="ml-2 text-sm text-neutral-500 dark:text-neutral-400">
-        AI正在思考...
-      </span>
     </div>
   );
 }

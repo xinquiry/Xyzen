@@ -224,9 +224,9 @@ function BaseChat({ config, historyEnabled = false }: BaseChatProps) {
                   currentAgent.avatar ||
                   (currentAgent.agent_type === "builtin"
                     ? currentAgent.id === "00000000-0000-0000-0000-000000000001"
-                      ? "https://avatars.githubusercontent.com/u/176685?v=4" // Chat agent fallback
-                      : "https://cdn1.deepmd.net/static/img/affb038eChatGPT Image 2025年8月6日 10_33_07.png" // Workshop agent fallback
-                    : "https://cdn1.deepmd.net/static/img/affb038eChatGPT Image 2025年8月6日 10_33_07.png") // Regular agent fallback
+                      ? "/defaults/agents/avatar1.png" // Chat agent fallback
+                      : "/defaults/agents/avatar4.png" // Workshop agent fallback
+                    : "/defaults/agents/avatar2.png") // Regular agent fallback
                 }
                 alt={currentAgent.name}
                 className={`mt-1 h-8 w-8 flex-shrink-0 rounded-full border-2 ${themeStyles.agentBorder} object-cover shadow-sm`}

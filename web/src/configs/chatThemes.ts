@@ -1,5 +1,5 @@
-import type { XyzenChatConfig } from "@/hooks/useXyzenChat";
 import type { WorkShopChatConfig } from "@/hooks/useWorkShopChat";
+import type { XyzenChatConfig } from "@/hooks/useXyzenChat";
 
 // Union type to handle both chat configurations
 type ChatConfig = XyzenChatConfig | WorkShopChatConfig;
@@ -22,8 +22,8 @@ export const XYZEN_CHAT_CONFIG: XyzenChatConfig = {
     retrying: "重试连接",
   },
   responseMessages: {
-    generating: "AI 正在回复…",
-    creating: "AI 正在回复…",
+    generating: "",
+    creating: "",
   },
   emptyState: {
     title: "Xyzen Chat",
