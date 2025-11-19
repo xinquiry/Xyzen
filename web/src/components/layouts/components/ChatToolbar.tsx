@@ -554,7 +554,7 @@ export default function ChatToolbar({
             <SheetContent
               showCloseButton={false}
               side="right"
-              className="w-[450px] p-0 h-full"
+              className="w-11/12 max-w-md p-0 h-full"
             >
               <VisuallyHidden>
                 <SheetTitle>会话历史</SheetTitle>
