@@ -97,20 +97,23 @@ export const useScreenshot = (
 
       if (isOffscreen) {
         // 将元素移到视口内，使用 z-index 隐藏（让 snapdom 能捕获但用户看不到）
-        element.style.position = "fixed";
-        element.style.left = "0";
-        element.style.top = "0";
-        element.style.right = "auto";
-        element.style.bottom = "auto";
+        // 注意：如果元素已经是 fixed 且在视口内（通过 z-index 隐藏），则不需要移动
+        // 这里我们假设如果元素是 fixed 且 top/left 不是 0，可能是为了隐藏在特定位置
+        // 但为了保险起见，我们还是强制移动到 (0,0) 并使用极低的 z-index
+
+        // 修改：不要强制移动位置，信任调用方已经正确放置了元素（即使在屏幕外）
+        // 强制移动会导致闪烁
+        // 只需要确保它可见（对于截图工具）
+
         element.style.opacity = "1"; // 必须可见，让 snapdom 能捕获
         element.style.visibility = "visible"; // 必须可见
-        element.style.zIndex = "-9999"; // 放在所有内容下方，用户看不到
+        // element.style.zIndex = "-9999"; // 不需要强制 z-index，保持原样或由调用方控制
         element.style.maxHeight = "none";
         element.style.height = "auto";
-        element.style.transform = "none"; // 移除 transform，确保元素在正常位置
+        // element.style.transform = "none"; // 移除 transform，确保元素在正常位置 -> 不要移除 transform
 
         // 等待布局重新计算
-        await new Promise((resolve) => setTimeout(resolve, 100));
+        await new Promise((resolve) => setTimeout(resolve, 500));
 
         // 获取真实尺寸
         const realHeight = Math.max(

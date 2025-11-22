@@ -214,6 +214,7 @@ const CodeBlock = React.memo(({ language, code, isDark }: CodeBlockProps) => {
                   try {
                     return new Function("return " + code)();
                   } catch (e) {
+                    console.warn("ECharts option parse error:", e);
                     return {};
                   }
                 })()}
@@ -247,7 +248,7 @@ const CodeBlock = React.memo(({ language, code, isDark }: CodeBlockProps) => {
                 </pre>
               ) : (
                 <div
-                  className="shiki-container [&>pre]:!bg-transparent [&>pre]:!p-0 [&>pre]:!m-0 [&_code]:!font-mono [&_code]:!text-sm"
+                  className="shiki-container [&>pre]:!bg-transparent [&>pre]:!p-0 [&>pre]:!m-0 [&_code]:!bg-transparent [&_code]:!font-mono [&_code]:!text-sm [&_code>span:first-child]:!pl-[3px]"
                   dangerouslySetInnerHTML={{ __html: highlightedHtml }}
                 />
               )}

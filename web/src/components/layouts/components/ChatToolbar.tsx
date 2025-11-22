@@ -8,7 +8,6 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@/components/animate-ui/components/radix/sheet";
-import { ShareButton } from "@/components/modals/ShareModal";
 import { useXyzen } from "@/store";
 import { getProviderColor } from "@/utils/providerColors";
 import { getProviderSourceDescription } from "@/utils/providerPreferences";
@@ -37,7 +36,6 @@ interface ChatToolbarProps {
   showHistory: boolean;
   handleCloseHistory: () => void;
   handleSelectTopic: (topic: string) => void;
-  onShowShareModal?: () => void;
 }
 
 // Draggable resize handle component
@@ -63,7 +61,6 @@ export default function ChatToolbar({
   showHistory,
   handleCloseHistory,
   handleSelectTopic,
-  onShowShareModal,
 }: ChatToolbarProps) {
   const {
     createDefaultChannel,
@@ -527,7 +524,6 @@ export default function ChatToolbar({
             )}
           </div>
           <div className="flex items-center space-x-1">
-            {onShowShareModal && <ShareButton onClick={onShowShareModal} />}
             <Sheet
               open={showHistory}
               onOpenChange={(open) => {

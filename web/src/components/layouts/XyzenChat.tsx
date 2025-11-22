@@ -5,7 +5,7 @@ import NotificationModal from "@/components/modals/NotificationModal";
 import { ShareModal } from "@/components/modals/ShareModal";
 import type { XyzenChatConfig } from "@/hooks/useXyzenChat";
 import { useXyzenChat } from "@/hooks/useXyzenChat";
-import { ArrowPathIcon } from "@heroicons/react/24/outline";
+import { ArrowPathIcon, ShareIcon } from "@heroicons/react/24/outline";
 
 import { AnimatePresence, motion } from "framer-motion";
 import { useState } from "react";
@@ -212,7 +212,6 @@ function BaseChat({ config, historyEnabled = false }: BaseChatProps) {
             showHistory={showHistory}
             handleCloseHistory={handleCloseHistory}
             handleSelectTopic={handleSelectTopic}
-            onShowShareModal={handleShowShareModal}
           />
         </div>
       </div>
@@ -291,6 +290,14 @@ function BaseChat({ config, historyEnabled = false }: BaseChatProps) {
                   {currentAgent.description}
                 </p>
               </div>
+              <button
+                onClick={handleShowShareModal}
+                className="flex items-center gap-1.5 rounded-sm px-2 py-1 text-xs font-medium text-neutral-600 transition-colors hover:bg-neutral-100 dark:text-neutral-400 dark:hover:bg-neutral-800"
+                title="分享对话"
+              >
+                <ShareIcon className="h-3.5 w-3.5" />
+                <span>分享</span>
+              </button>
             </div>
           </div>
         ) : (
@@ -411,7 +418,6 @@ function BaseChat({ config, historyEnabled = false }: BaseChatProps) {
             showHistory={showHistory}
             handleCloseHistory={handleCloseHistory}
             handleSelectTopic={handleSelectTopic}
-            onShowShareModal={handleShowShareModal}
           />
           {sendBlocked && (
             <div className="mx-4 mb-1 rounded-sm bg-amber-50 px-3 py-1.5 text-xs text-amber-700 ring-1 ring-inset ring-amber-200 dark:bg-amber-900/20 dark:text-amber-200 dark:ring-amber-800/40">

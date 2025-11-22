@@ -145,6 +145,36 @@
     }
   }
 
+  pre {
+    width: 100%;
+    max-width: 100%;
+    overflow-x: auto;
+    margin: 1rem 0;
+    border-radius: 0.5rem;
+
+    /* 滚动条样式 */
+    scrollbar-width: thin;
+    scrollbar-color: rgba(156, 163, 175, 0.5) transparent;
+
+    &::-webkit-scrollbar {
+      height: 6px;
+      width: 6px;
+    }
+
+    &::-webkit-scrollbar-track {
+      background: transparent;
+    }
+
+    &::-webkit-scrollbar-thumb {
+      background-color: rgba(156, 163, 175, 0.5);
+      border-radius: 3px;
+    }
+
+    &::-webkit-scrollbar-thumb:hover {
+      background-color: rgba(156, 163, 175, 0.8);
+    }
+  }
+
   code {
     overflow: hidden;
     transition: all 0.15s ease-in-out;
@@ -154,6 +184,8 @@
     background-color: #f0f0f0;
     border-radius: 3px;
     color: #000;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(156, 163, 175, 0.5) transparent;
   }
 
   /* 代码块第一行有一个奇怪的缩进 */

@@ -54,11 +54,13 @@ export function useXyzenChat(config: XyzenChatConfig) {
     closeNotification,
     pendingInput,
     setPendingInput,
+    chatHistoryLoading,
   } = useXyzen();
 
   // Refs
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
+  const isCreatingChannelRef = useRef(false);
 
   // State
   const [autoScroll, setAutoScroll] = useState(true);
@@ -211,6 +213,8 @@ export function useXyzenChat(config: XyzenChatConfig) {
 
   // Auto-switch to correct system agent channel for this panel
   useEffect(() => {
+    if (chatHistoryLoading) return;
+
     if (systemAgents.length > 0) {
       const targetSystemAgent = systemAgents.find(
         (agent) => agent.id === config.systemAgentId,
@@ -244,15 +248,21 @@ export function useXyzenChat(config: XyzenChatConfig) {
             });
           } else {
             // Create new channel for this system agent
+            if (isCreatingChannelRef.current) return;
+            isCreatingChannelRef.current = true;
             console.log(
               `Creating new channel for system agent: ${config.systemAgentId}`,
             );
-            createDefaultChannel(config.systemAgentId).catch((error) => {
-              console.error(
-                "Failed to create default channel with system agent:",
-                error,
-              );
-            });
+            createDefaultChannel(config.systemAgentId)
+              .catch((error) => {
+                console.error(
+                  "Failed to create default channel with system agent:",
+                  error,
+                );
+              })
+              .finally(() => {
+                isCreatingChannelRef.current = false;
+              });
           }
         }
       }
@@ -265,6 +275,7 @@ export function useXyzenChat(config: XyzenChatConfig) {
     currentChannel,
     channels,
     activateChannel,
+    chatHistoryLoading,
   ]);
 
   useEffect(() => {

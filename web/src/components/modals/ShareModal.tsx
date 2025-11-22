@@ -64,14 +64,21 @@ export const ShareModal: React.FC<ShareModalProps> = ({
     backgroundColor: "#ffffff",
   });
 
-  // 确保在模态框打开时重置状态
+  // 确保在模态框打开时重置状态并自动开始生成
   useEffect(() => {
     if (isOpen) {
-      console.log("模态框打开，重置状态");
+      console.log("模态框打开，重置状态并自动开始生成");
       setShowPreview(false);
       setImageUrl(null);
       setError(null);
       resetScreenshot();
+
+      // 自动开始生成，稍微延迟以确保 DOM 渲染完成
+      const timer = setTimeout(() => {
+        generateLongImage();
+      }, 500);
+
+      return () => clearTimeout(timer);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen]); // 移除 resetScreenshot 依赖，避免不必要的重置
@@ -218,7 +225,46 @@ export const ShareModal: React.FC<ShareModalProps> = ({
           -ms-overflow-style: none;
           scrollbar-width: none;
         }
+        /* 截图容器内的代码块强制换行 */
+        .screenshot-container pre,
+        .screenshot-container code {
+          white-space: pre-wrap !important;
+          word-break: break-all !important;
+          overflow: visible !important;
+          max-width: 100% !important;
+        }
       `}</style>
+      <div
+        ref={screenshotRef}
+        aria-hidden="true"
+        className="bg-white dark:bg-neutral-800 pointer-events-none screenshot-container"
+        style={{
+          maxWidth: "600px",
+          width: "600px",
+          position: "fixed",
+          left: "-9999px", // Move off-screen to prevent flashing
+          top: "0",
+          zIndex: -1, // Behind everything
+          opacity: 0, // Initially hidden
+          visibility: "hidden", // Initially hidden
+          borderRadius: "12px",
+          overflow: "hidden",
+        }}
+      >
+        <ChatPreview
+          messages={messages.map((msg) => ({
+            ...msg,
+            created_at: String(
+              typeof msg.timestamp === "number" ? msg.timestamp : Date.now(),
+            ),
+          }))}
+          currentAgent={
+            currentAgent as import("@/types/agents").Agent | undefined
+          }
+          currentUser={currentUser}
+        />
+      </div>
+
       <Dialog
         open={isOpen}
         onOpenChange={(open) => {
@@ -241,81 +287,14 @@ export const ShareModal: React.FC<ShareModalProps> = ({
 
           <div className="p-6">
             {!showPreview ? (
-              <div className="space-y-4">
-                <div className="rounded-lg border border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-950 p-4 text-sm text-neutral-600 dark:text-neutral-400">
-                  点击下方按钮生成对话长图，生成后可以预览、下载或复制到剪贴板。
+              <div className="flex flex-col items-center justify-center py-12 space-y-4">
+                <div className="relative">
+                  <div className="h-12 w-12 rounded-full border-4 border-neutral-200 dark:border-neutral-700"></div>
+                  <div className="absolute top-0 left-0 h-12 w-12 rounded-full border-4 border-blue-500 border-t-transparent animate-spin"></div>
                 </div>
-
-                <div
-                  ref={screenshotRef}
-                  aria-hidden="true"
-                  className="bg-white dark:bg-neutral-800 pointer-events-none"
-                  style={{
-                    maxWidth: "600px",
-                    width: "600px",
-                    margin: "0 auto",
-                    position: "fixed",
-                    left: "0",
-                    top: "0",
-                    zIndex: -9999,
-                    opacity: 0, // 默认隐藏，截图时会临时显示
-                    visibility: "hidden", // 默认隐藏
-                    borderRadius: "12px", // 圆角
-                    overflow: "hidden", // 确保圆角生效
-                  }}
-                >
-                  <ChatPreview
-                    messages={messages.map((msg) => ({
-                      ...msg,
-                      created_at: String(
-                        typeof msg.timestamp === "number"
-                          ? msg.timestamp
-                          : Date.now(),
-                      ),
-                    }))}
-                    currentAgent={
-                      currentAgent as import("@/types/agents").Agent | undefined
-                    }
-                    currentUser={currentUser}
-                  />
-                </div>
-
-                <Button
-                  className="w-full"
-                  onClick={generateLongImage}
-                  disabled={isGenerating}
-                >
-                  {isGenerating ? (
-                    <>
-                      <svg
-                        className="animate-spin -ml-1 mr-2 h-4 w-4 text-white"
-                        xmlns="http://www.w3.org/2000/svg"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                      >
-                        <circle
-                          className="opacity-25"
-                          cx="12"
-                          cy="12"
-                          r="10"
-                          stroke="currentColor"
-                          strokeWidth="4"
-                        ></circle>
-                        <path
-                          className="opacity-75"
-                          fill="currentColor"
-                          d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                        ></path>
-                      </svg>
-                      生成中...
-                    </>
-                  ) : (
-                    <>
-                      <Share2Icon className="h-4 w-4 mr-2" />
-                      生成对话长图
-                    </>
-                  )}
-                </Button>
+                <p className="text-sm text-neutral-500 dark:text-neutral-400 animate-pulse">
+                  正在生成分享...
+                </p>
               </div>
             ) : (
               <div className="space-y-4">
@@ -345,7 +324,7 @@ export const ShareModal: React.FC<ShareModalProps> = ({
                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 gap-3">
                   <Button
                     variant="default"
                     className="flex justify-center gap-2"
@@ -353,25 +332,6 @@ export const ShareModal: React.FC<ShareModalProps> = ({
                   >
                     <DownloadIcon className="h-4 w-4" />
                     下载图片
-                  </Button>
-
-                  <Button
-                    variant="secondary"
-                    className="flex justify-center gap-2"
-                    onClick={handleCopyToClipboard}
-                    title={isCopying ? "已复制!" : "复制到剪贴板"}
-                  >
-                    {isCopying ? (
-                      <>
-                        <CheckIcon className="h-4 w-4" />
-                        已复制
-                      </>
-                    ) : (
-                      <>
-                        <CopyIcon className="h-4 w-4" />
-                        复制
-                      </>
-                    )}
                   </Button>
                 </div>
               </div>

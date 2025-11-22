@@ -1,7 +1,9 @@
-import React from "react";
-
+import { BubbleBackground } from "@/components/animate-ui/components/backgrounds/bubble";
+import Markdown from "@/lib/Markdown";
 import type { Message, User } from "@/store/types";
 import type { Agent } from "@/types/agents";
+import { User as UserIcon } from "lucide-react";
+import React from "react";
 
 interface ChatPreviewProps {
   messages: Message[];
@@ -21,58 +23,72 @@ const ChatPreview: React.FC<ChatPreviewProps> = ({
   const MessageBubble = ({ message }: { message: Message }) => {
     const isUser = message.role === "user";
 
-    // AI 机器人头像（使用 emoji 或 SVG）
-    const robotAvatar = (
-      <div className="w-9 h-9 bg-teal-100 dark:bg-teal-900 flex items-center justify-center text-xl flex-shrink-0">
-        🤖
-      </div>
-    );
-
-    // 用户默认头像
-    const userAvatar = (
-      <div className="w-9 h-9 bg-neutral-300 dark:bg-neutral-600 flex items-center justify-center text-xl flex-shrink-0">
-        👤
-      </div>
-    );
+    // AI 机器人头像
+    const robotAvatarUrl =
+      currentAgent?.avatar ||
+      (currentAgent?.agent_type === "builtin"
+        ? currentAgent.id === "00000000-0000-0000-0000-000000000001"
+          ? "/defaults/agents/avatar1.png"
+          : "/defaults/agents/avatar4.png"
+        : "/defaults/agents/avatar2.png");
 
     // 用户名
     const userName = currentUser?.username || "用户";
 
     return (
       <div
-        className={`mb-3 px-4`}
+        className={`mb-4 px-2`}
         style={{
           // 确保在截图时消息气泡正确显示
           breakInside: "avoid",
         }}
       >
         <div
-          className={`flex ${isUser ? "justify-end" : "justify-start"} items-start gap-2`}
+          className={`flex ${isUser ? "justify-end" : "justify-start"} items-start gap-3`}
         >
-          {/* AI 头像（左侧，顶部对齐） */}
-          {!isUser && robotAvatar}
-
           <div
-            className={`max-w-[75%] px-4 py-3 rounded ${
+            className={`max-w-11/12 px-5 py-4 rounded-2xl shadow-md backdrop-blur-xl transition-all ${
               isUser
-                ? "bg-teal-600 text-white"
-                : "bg-neutral-100 dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 border border-neutral-200 dark:border-neutral-700"
+                ? "bg-gradient-to-br from-blue-500/60 to-indigo-600/60 text-white rounded-tr-sm border border-white/20 shadow-[inset_0_1px_1px_rgba(255,255,255,0.3)]"
+                : "bg-white/60 dark:bg-neutral-800/60 text-neutral-900 dark:text-neutral-100 rounded-tl-sm border border-white/40 dark:border-white/10 shadow-[inset_0_1px_1px_rgba(255,255,255,0.4)]"
             }`}
           >
-            {!isUser && currentAgent && (
-              <div className="text-xs font-semibold mb-1.5 text-teal-600 dark:text-teal-400">
-                {currentAgent.name}
-              </div>
-            )}
-            <div className="whitespace-pre-wrap text-[15px] leading-relaxed">
-              {message.content}
+            {/* 头部信息：头像和名字 */}
+            <div
+              className={`flex items-center gap-2 mb-2 ${isUser ? "flex-row-reverse justify-start" : "justify-start"}`}
+            >
+              {/* 头像 */}
+              {isUser ? (
+                <div className="w-6 h-6 rounded-full bg-gradient-to-tr from-blue-400 to-indigo-500 flex items-center justify-center shadow-sm flex-shrink-0 border border-white/20">
+                  <UserIcon className="w-3.5 h-3.5 text-white" />
+                </div>
+              ) : (
+                <img
+                  src={robotAvatarUrl}
+                  alt="AI"
+                  className="w-5 h-5 object-cover rounded-full shadow-sm flex-shrink-0 border border-white/20 bg-white/10"
+                />
+              )}
+
+              {/* 名字 */}
+              <span
+                className={`text-xs font-bold opacity-90 ${
+                  isUser ? "text-blue-50" : "text-blue-600 dark:text-blue-400"
+                }`}
+              >
+                {isUser ? userName : currentAgent?.name}
+              </span>
+            </div>
+
+            <div className="text-[15px] leading-relaxed">
+              <Markdown content={message.content} />
             </div>
             {message.timestamp && (
               <div
-                className={`text-[11px] mt-2 ${
+                className={`text-[10px] mt-2 font-medium ${
                   isUser
-                    ? "text-teal-100"
-                    : "text-neutral-500 dark:text-neutral-500"
+                    ? "text-blue-100/80"
+                    : "text-neutral-500/80 dark:text-neutral-400/80"
                 }`}
               >
                 {new Date(message.timestamp).toLocaleTimeString([], {
@@ -82,127 +98,139 @@ const ChatPreview: React.FC<ChatPreviewProps> = ({
               </div>
             )}
           </div>
-
-          {/* 用户头像和用户名（右侧） */}
-          {isUser && (
-            <div className="flex flex-col items-center gap-0.5">
-              <span className="text-[10px] text-neutral-600 dark:text-neutral-400 font-medium">
-                {userName}
-              </span>
-              {userAvatar}
-            </div>
-          )}
         </div>
       </div>
     );
   };
 
   return (
-    <div className="bg-white dark:bg-neutral-900 overflow-hidden">
-      {/* 聊天标题栏 - 扁平化设计 - 青绿色主题 */}
-      <div className="bg-teal-600 text-white p-5 border-b-4 border-teal-700">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-3">
-            <div className="w-10 h-10 bg-teal-700 flex items-center justify-center">
-              <svg
-                className="w-6 h-6 text-white"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"
-                />
-              </svg>
+    <div className="relative overflow-hidden bg-neutral-100 dark:bg-neutral-900">
+      {/* 动态气泡背景 */}
+      <BubbleBackground
+        className="absolute inset-0 w-full h-full opacity-40 pointer-events-none"
+        colors={{
+          first: "18,113,255",
+          second: "221,74,255",
+          third: "0,220,255",
+          fourth: "200,50,50",
+          fifth: "180,180,50",
+          sixth: "140,100,255",
+        }}
+      />
+
+      {/* 玻璃拟态容器 */}
+      <div className="relative z-10 m-6 overflow-hidden rounded-3xl border border-white/40 bg-white/30 shadow-2xl backdrop-blur-xl dark:border-white/10 dark:bg-black/40">
+        {/* 聊天标题栏 - 玻璃拟态 */}
+        <div className="border-b border-white/20 bg-white/40 p-6 backdrop-blur-md dark:bg-black/40">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-4">
+              <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-500 to-purple-600 shadow-lg text-white">
+                <svg
+                  className="w-7 h-7"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2.5}
+                    d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"
+                  />
+                </svg>
+              </div>
+              <div>
+                <h2 className="text-xl font-bold text-neutral-900 dark:text-white tracking-tight">
+                  Xyzen AI
+                </h2>
+                <p className="text-xs font-medium text-neutral-600 dark:text-neutral-300 mt-0.5 uppercase tracking-wider opacity-80">
+                  {new Date().toLocaleDateString("zh-CN", {
+                    year: "numeric",
+                    month: "long",
+                    day: "numeric",
+                  })}
+                </p>
+              </div>
             </div>
-            <div>
-              <h2 className="text-lg font-bold">Xyzen</h2>
-              <p className="text-xs text-teal-100 mt-0.5">
-                {new Date().toLocaleDateString("zh-CN", {
-                  year: "numeric",
-                  month: "long",
-                  day: "numeric",
-                })}
+            {/* 二维码 */}
+            <div className="flex flex-col items-center gap-1">
+              <div className="rounded-xl bg-white p-2 shadow-sm">
+                <img
+                  src={qrCodeUrl}
+                  alt="扫码体验"
+                  className="w-14 h-14"
+                  crossOrigin="anonymous"
+                />
+              </div>
+              <span className="text-[10px] font-medium text-neutral-600 dark:text-neutral-300 opacity-80">
+                扫码开启 AI 对话
+              </span>
+            </div>
+          </div>
+        </div>
+
+        {/* 聊天内容 */}
+        <div className="p-6 min-h-[200px]">
+          {messages.length === 0 ? (
+            <div className="text-center py-20 text-neutral-500 dark:text-neutral-400">
+              <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-white/50 dark:bg-white/10 flex items-center justify-center backdrop-blur-sm">
+                <svg
+                  className="w-10 h-10 opacity-60"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={1.5}
+                    d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"
+                  />
+                </svg>
+              </div>
+              <p className="font-medium">暂无聊天记录</p>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {messages.map((message) => (
+                <MessageBubble key={message.id} message={message} />
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* 底部信息 - 玻璃拟态 */}
+        <div className="border-t border-white/20 bg-white/40 p-5 backdrop-blur-md dark:bg-black/40">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <div className="h-8 w-8 rounded-full bg-gradient-to-tr from-blue-400 to-purple-500 flex items-center justify-center text-white text-xs font-bold">
+                AI
+              </div>
+              <div className="flex flex-col">
+                <span className="text-xs font-bold text-neutral-800 dark:text-white">
+                  Xyzen Assistant
+                </span>
+                <span className="text-[10px] text-neutral-500 dark:text-neutral-400">
+                  Intelligent Conversation
+                </span>
+              </div>
+            </div>
+
+            <div className="text-right">
+              <p className="text-xs font-medium text-neutral-700 dark:text-neutral-300 whitespace-nowrap">
+                由{" "}
+                <span className="font-bold">
+                  {currentUser?.username || "用户"}
+                </span>{" "}
+                导出
+              </p>
+              <p className="text-[10px] text-neutral-500 dark:text-neutral-400 mt-0.5 flex items-center justify-end gap-1">
+                <span>AI 生成内容</span>
+                <span className="w-1 h-1 rounded-full bg-neutral-400"></span>
+                <span>仅供参考</span>
               </p>
             </div>
           </div>
-          {/* 二维码移到右上角 */}
-          <div className="flex flex-col items-center">
-            <div className="bg-white p-1.5 border-2 border-teal-100">
-              <img
-                src={qrCodeUrl}
-                alt="扫码体验"
-                className="w-16 h-16"
-                crossOrigin="anonymous"
-              />
-            </div>
-            <p className="text-[9px] text-teal-100 mt-1 font-medium">
-              扫码体验
-            </p>
-          </div>
-        </div>
-      </div>
-
-      {/* 聊天内容 - 扁平化背景 */}
-      <div className="p-5 bg-neutral-50 dark:bg-neutral-900 min-h-[200px]">
-        {messages.length === 0 ? (
-          <div className="text-center py-16 text-neutral-400">
-            <div className="w-16 h-16 mx-auto mb-4 bg-neutral-200 dark:bg-neutral-800 flex items-center justify-center">
-              <svg
-                className="w-8 h-8 text-neutral-400"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"
-                />
-              </svg>
-            </div>
-            暂无聊天记录
-          </div>
-        ) : (
-          <div className="space-y-2">
-            {messages.map((message) => (
-              <MessageBubble key={message.id} message={message} />
-            ))}
-          </div>
-        )}
-      </div>
-
-      {/* 底部信息 - 扁平化设计 - 青绿色主题 */}
-      <div className="bg-white dark:bg-neutral-800 border-t-2 border-neutral-200 dark:border-neutral-700 p-5">
-        <div className="text-center">
-          <p className="text-base font-semibold text-teal-600 dark:text-teal-400 mb-2">
-            一键开启AI对话
-          </p>
-          <div className="flex items-center justify-center gap-1 text-xs text-neutral-500 dark:text-neutral-400 mb-2">
-            <span>由</span>
-            <span className="font-medium text-neutral-700 dark:text-neutral-300">
-              {currentUser?.username || "用户"}
-            </span>
-            <span>导出 · {new Date().toLocaleDateString("zh-CN")}</span>
-          </div>
-          <p className="text-xs text-amber-600 dark:text-amber-500 flex items-center justify-center gap-1">
-            <svg
-              className="w-3 h-3 flex-shrink-0"
-              fill="currentColor"
-              viewBox="0 0 20 20"
-            >
-              <path
-                fillRule="evenodd"
-                d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z"
-                clipRule="evenodd"
-              />
-            </svg>
-            <span>内容由AI生成，请注意甄别</span>
-          </p>
         </div>
       </div>
     </div>
