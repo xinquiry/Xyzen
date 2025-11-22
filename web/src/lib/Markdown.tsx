@@ -248,7 +248,7 @@ const CodeBlock = React.memo(({ language, code, isDark }: CodeBlockProps) => {
                 </pre>
               ) : (
                 <div
-                  className="shiki-container [&>pre]:!bg-transparent [&>pre]:!p-0 [&>pre]:!m-0 [&_code]:!bg-transparent [&_code]:!font-mono [&_code]:!text-sm [&_code>span:first-child]:!pl-[3px]"
+                  className="shiki-container [&_pre]:!bg-transparent [&_pre]:!p-0 [&_pre]:!m-0 [&_code]:!bg-transparent [&_code]:!font-mono [&_code]:!text-sm [&_code>span:first-child]:!pl-[2px]"
                   dangerouslySetInnerHTML={{ __html: highlightedHtml }}
                 />
               )}

@@ -217,23 +217,6 @@ export const ShareModal: React.FC<ShareModalProps> = ({
 
   return (
     <>
-      <style>{`
-        .hide-scrollbar::-webkit-scrollbar {
-          display: none;
-        }
-        .hide-scrollbar {
-          -ms-overflow-style: none;
-          scrollbar-width: none;
-        }
-        /* 截图容器内的代码块强制换行 */
-        .screenshot-container pre,
-        .screenshot-container code {
-          white-space: pre-wrap !important;
-          word-break: break-all !important;
-          overflow: visible !important;
-          max-width: 100% !important;
-        }
-      `}</style>
       <div
         ref={screenshotRef}
         aria-hidden="true"
@@ -251,6 +234,41 @@ export const ShareModal: React.FC<ShareModalProps> = ({
           overflow: "hidden",
         }}
       >
+        <style>{`
+          .hide-scrollbar::-webkit-scrollbar {
+            display: none;
+          }
+          .hide-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+          }
+          /* 截图容器内的代码块强制换行与去背景 */
+          .screenshot-container pre,
+          .screenshot-container code,
+          .screenshot-container .shiki,
+          .screenshot-container .shiki-container pre {
+            white-space: pre-wrap !important;
+            word-break: break-all !important;
+            overflow: visible !important;
+            max-width: 100% !important;
+            background-color: transparent !important;
+            height: auto !important;
+          }
+
+          /* 强制移除滚动条容器的滚动属性 */
+          .screenshot-container .overflow-x-auto,
+          .screenshot-container .custom-scrollbar {
+            overflow: visible !important;
+            height: auto !important;
+          }
+
+          /* 隐藏滚动条本身 */
+          .screenshot-container ::-webkit-scrollbar {
+            display: none !important;
+            width: 0 !important;
+            height: 0 !important;
+          }
+        `}</style>
         <ChatPreview
           messages={messages.map((msg) => ({
             ...msg,
