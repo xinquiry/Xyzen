@@ -5,17 +5,10 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { useImgToClipboard } from "@/hooks/useImgToClipboard";
 import { useScreenshot } from "@/hooks/useScreenshot";
 import { useXyzen } from "@/store";
 import type { Message } from "@/store/types";
-import {
-  CheckIcon,
-  CopyIcon,
-  DownloadIcon,
-  Share2Icon,
-  XIcon,
-} from "lucide-react";
+import { DownloadIcon, Share2Icon, XIcon } from "lucide-react";
 import React, { useEffect, useRef, useState } from "react";
 import ChatPreview from "./ChatPreview";
 // 临时类型定义，后续根据实际项目结构调整
@@ -82,9 +75,6 @@ export const ShareModal: React.FC<ShareModalProps> = ({
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen]); // 移除 resetScreenshot 依赖，避免不必要的重置
-
-  // 使用剪贴板钩子
-  const { isCopying, copyImageToClipboard } = useImgToClipboard();
 
   // 当截图URL更新时，更新本地状态
   useEffect(() => {
@@ -205,12 +195,6 @@ export const ShareModal: React.FC<ShareModalProps> = ({
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
-  };
-
-  // 复制到剪贴板
-  const handleCopyToClipboard = async () => {
-    if (!imageUrl) return;
-    await copyImageToClipboard(imageUrl);
   };
 
   // 直接在AlertDialog的onOpenChange中处理关闭逻辑
