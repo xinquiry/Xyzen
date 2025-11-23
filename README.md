@@ -10,7 +10,7 @@ AI Laboratory Server
 [![React](https://img.shields.io/badge/react-%2320232a.svg?style=flat&logo=react&logoColor=%2361DAFB)](https://reactjs.org/)
 [![npm version](https://img.shields.io/npm/v/@sciol/xyzen.svg)](https://www.npmjs.com/package/@sciol/xyzen)
 [![Pre-commit CI](https://github.com/ScienceOL/Xyzen/actions/workflows/pre-commit.yaml/badge.svg)](https://github.com/ScienceOL/Xyzen/actions/workflows/pre-commit.yaml)
-[![Docker Build](https://github.com/ScienceOL/Xyzen/actions/workflows/docker-build.yaml/badge.svg)](https://github.com/ScienceOL/Xyzen/actions/workflows/docker-build.yaml)
+[![Prod Build](https://github.com/ScienceOL/Xyzen/actions/workflows/docker-build.yaml/badge.svg)](https://github.com/ScienceOL/Xyzen/actions/workflows/prod-build.yaml)
 [![Test Suite](https://github.com/ScienceOL/Xyzen/actions/workflows/test.yaml/badge.svg)](https://github.com/ScienceOL/Xyzen/actions/workflows/test.yaml)
 
 ## Getting Started
@@ -98,52 +98,6 @@ The script will automatically:
 ```bash
 ./launch/dev.sh -h
 ```
-
-## Local Development
-
-For development without Docker, you can run the backend and frontend services locally.
-
-### Backend Setup
-
-1. Navigate to the service directory:
-
-   ```bash
-   cd service
-   ```
-
-2. Install dependencies:
-
-   ```bash
-   uv sync --dev
-   ```
-
-3. Run the development server:
-
-   ```bash
-   uv run python -m app.main
-   ```
-
-### Frontend Setup
-
-1. Navigate to the web directory:
-
-   ```bash
-   cd web
-   ```
-
-2. Install dependencies:
-
-   ```bash
-   yarn install
-   ```
-
-3. Run the development server:
-
-   ```bash
-   yarn dev
-   ```
-
-   The frontend will be available at http://localhost:32233
 
 ## Contributing
 
