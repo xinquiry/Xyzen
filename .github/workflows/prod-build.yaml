@@ -42,9 +42,11 @@ jobs:
           docker build web -t registry.sciol.ac.cn/sciol/xyzen-web:latest --push
 
       - name: Set up kubeconfig
+        env:
+          KUBE_CONFIG: ${{ secrets.SCIENCEOL_ACR_KUBE_CONFIG }}
         run: |
           mkdir -p ~/.kube
-          echo "${{ secrets.SCIENCEOL_ACR_KUBE_CONFIG }}" > ~/.kube/config
+          echo "$KUBE_CONFIG" > ~/.kube/config
           chmod 600 ~/.kube/config
 
       - name: Rolling update deployments
