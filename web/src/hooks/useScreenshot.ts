@@ -17,18 +17,20 @@ interface UseScreenshotReturn {
   reset: () => void;
 }
 
-// 辅助函数：将 ArrayBuffer 转换为 base64 data URL
-const arrayBufferToDataURL = (buffer: ArrayBuffer, type: string): string => {
-  let binary = "";
-  const bytes = new Uint8Array(buffer);
-  const len = bytes.byteLength;
-  for (let i = 0; i < len; i++) {
-    binary += String.fromCharCode(bytes[i]);
-  }
-  return `data:${type};base64,${window.btoa(binary)}`;
+// 辅助函数：等待容器内的所有图片加载完成
+const waitForImages = (element: HTMLElement): Promise<void> => {
+  const images = Array.from(element.querySelectorAll("img"));
+  const promises = images.map((img) => {
+    if (img.complete) return Promise.resolve();
+    return new Promise<void>((resolve) => {
+      img.onload = () => resolve();
+      img.onerror = () => resolve();
+    });
+  });
+  return Promise.all(promises).then(() => {});
 };
 
-// 辅助函数：将 SVG data URL 转换为 PNG data URL (使用 UPNG 进行 256 色压缩)
+// 辅助函数：将 SVG data URL 转换为 PNG Blob URL (使用 UPNG 进行 256 色压缩)
 const convertSvgToPng = (
   svgUrl: string,
   scale: number = 2,
@@ -76,7 +78,10 @@ const convertSvgToPng = (
           canvas.height,
           256,
         );
-        const pngUrl = arrayBufferToDataURL(pngBuffer, "image/png");
+
+        // 使用 Blob URL 替代 Base64 Data URL，避免大图导致字符串过长
+        const blob = new Blob([pngBuffer], { type: "image/png" });
+        const pngUrl = URL.createObjectURL(blob);
         console.log("UPNG 压缩完成");
 
         resolve(pngUrl);
@@ -84,11 +89,15 @@ const convertSvgToPng = (
         console.error("UPNG 压缩失败，回退到普通 PNG", e);
         // 失败回退
         try {
-          const canvas = document.createElement("canvas");
-          canvas.width = img.width;
-          canvas.height = img.height; // 这里其实应该用之前的 canvas，简化逻辑先不管
-          // 如果 UPNG 失败，直接 resolve 原始 canvas.toDataURL 可能也拿不到 ctx
-          reject(e);
+          // 如果 UPNG 失败，尝试直接导出 Canvas
+          // 注意：这里可能还是会因为 Canvas 太大而失败
+          canvas.toBlob((blob) => {
+            if (blob) {
+              resolve(URL.createObjectURL(blob));
+            } else {
+              reject(new Error("Canvas toBlob 失败"));
+            }
+          }, "image/png");
         } catch (e2) {
           reject(e2);
         }
@@ -113,6 +122,9 @@ export const useScreenshot = (
   const [error, setError] = useState<Error | null>(null);
 
   const reset = () => {
+    if (screenshotUrl && screenshotUrl.startsWith("blob:")) {
+      URL.revokeObjectURL(screenshotUrl);
+    }
     setScreenshotUrl(null);
     setError(null);
   };
@@ -178,7 +190,7 @@ export const useScreenshot = (
         element.style.height = "auto";
 
         // 等待布局重新计算
-        await new Promise((resolve) => setTimeout(resolve, 500));
+        await new Promise((resolve) => setTimeout(resolve, 1300));
 
         // 调整宽度以适应内容
         const realWidth = Math.max(
@@ -194,8 +206,11 @@ export const useScreenshot = (
       element.style.backgroundColor = backgroundColor;
       element.style.overflow = "visible";
 
+      // 等待图片加载
+      await waitForImages(element);
+
       // 等待样式应用和内容渲染
-      await new Promise((resolve) => setTimeout(resolve, 200));
+      await new Promise((resolve) => setTimeout(resolve, 1000));
 
       // 使用snapdom捕获元素
       const result = await snapdom(element, {
@@ -220,11 +235,8 @@ export const useScreenshot = (
             const pngResult = await resultAny.toPng();
             if (typeof pngResult === "string") imageUrl = pngResult;
             else if (pngResult instanceof Blob) {
-              imageUrl = await new Promise((resolve) => {
-                const reader = new FileReader();
-                reader.onload = () => resolve(reader.result as string);
-                reader.readAsDataURL(pngResult);
-              });
+              // 使用 Blob URL 替代 Base64 Data URL
+              imageUrl = URL.createObjectURL(pngResult);
             }
           } catch (e) {
             console.warn("toPng 失败", e);
@@ -274,7 +286,9 @@ export const useScreenshot = (
 
   useEffect(() => {
     return () => {
-      // Cleanup if needed
+      if (screenshotUrl && screenshotUrl.startsWith("blob:")) {
+        URL.revokeObjectURL(screenshotUrl);
+      }
     };
   }, [screenshotUrl]);
 

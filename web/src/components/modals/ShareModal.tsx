@@ -81,17 +81,18 @@ export const ShareModal: React.FC<ShareModalProps> = ({
     if (screenshotUrl) {
       console.log("screenshotUrl 已更新，设置 showPreview = true");
       console.log("screenshotUrl 内容预览:", screenshotUrl.substring(0, 100));
-      // 确保 URL 是有效的 data URL
+      // 确保 URL 是有效的 data URL 或 blob URL
       if (
         screenshotUrl.startsWith("data:image/") ||
-        screenshotUrl.startsWith("data:image/svg")
+        screenshotUrl.startsWith("data:image/svg") ||
+        screenshotUrl.startsWith("blob:")
       ) {
         setImageUrl(screenshotUrl);
         setShowPreview(true);
         setError(null);
       } else {
         console.error(
-          "screenshotUrl 不是有效的图片 data URL:",
+          "screenshotUrl 不是有效的图片 URL:",
           screenshotUrl.substring(0, 100),
         );
         setError("生成的图片 URL 格式不正确");
