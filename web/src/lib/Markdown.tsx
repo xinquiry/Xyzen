@@ -1,15 +1,13 @@
 import { CheckIcon, ClipboardIcon } from "@heroicons/react/24/outline";
 import clsx from "clsx";
-import React, { useState } from "react";
 import ReactECharts from "echarts-for-react";
+import React, { useEffect, useState } from "react";
 import ReactMarkdown from "react-markdown";
-import { createHighlighter, type Highlighter } from "shiki";
 import rehypeKatex from "rehype-katex";
 import remarkGfm from "remark-gfm";
 import remarkMath from "remark-math";
+import { createHighlighter, type Highlighter } from "shiki";
 
-import { useXyzen } from "@/store";
-import { LAYOUT_STYLE } from "@/store/slices/uiSlice/types";
 import "katex/dist/katex.css";
 
 interface CodeBlockProps {
@@ -235,20 +233,15 @@ const CodeBlock = React.memo(({ language, code, isDark }: CodeBlockProps) => {
             </div>
           )
         ) : (
-          <div className="p-5">
-            <div
-              className={clsx(
-                `h-full min-w-0 overflow-x-auto custom-scrollbar`,
-                isDark && "dark",
-              )}
-            >
+          <div className="p-5 w-full">
+            <div className={clsx(`h-full w-full min-w-0`, isDark && "dark")}>
               {!highlightedHtml ? (
                 <pre className="font-mono text-sm text-zinc-600 dark:text-zinc-300 whitespace-pre-wrap break-all">
                   {code}
                 </pre>
               ) : (
                 <div
-                  className="shiki-container [&_pre]:!bg-transparent [&_pre]:!p-0 [&_pre]:!m-0 [&_code]:!bg-transparent [&_code]:!font-mono [&_code]:!text-sm [&_code>span:first-child]:!pl-[2px]"
+                  className="shiki-container [&_pre]:!bg-transparent [&_pre]:!p-0 [&_pre]:!m-0 [&_pre]:!overflow-visible [&_pre]:!whitespace-pre-wrap [&_pre]:!break-all [&_code]:!bg-transparent [&_code]:!font-mono [&_code]:!text-sm [&_code>span:first-child]:!pl-[2px]"
                   dangerouslySetInnerHTML={{ __html: highlightedHtml }}
                 />
               )}
@@ -266,14 +259,12 @@ interface MarkdownProps {
 }
 
 const Markdown: React.FC<MarkdownProps> = function Markdown(props) {
-  const panelWidth = useXyzen((state) => state.panelWidth);
-  const layoutStyle = useXyzen((state) => state.layoutStyle);
   const { content = "", className } = props;
 
   // Detect theme for line number colors
   const [isDark, setIsDark] = React.useState(false);
 
-  React.useEffect(() => {
+  useEffect(() => {
     const checkTheme = () => {
       if (typeof document !== "undefined") {
         const htmlEl = document.documentElement;
@@ -298,6 +289,9 @@ const Markdown: React.FC<MarkdownProps> = function Markdown(props) {
 
   const MarkdownComponents = React.useMemo(
     () => ({
+      pre({ children }: React.ComponentPropsWithoutRef<"pre">) {
+        return <>{children}</>;
+      },
       code({
         inline,
         className,
@@ -308,12 +302,24 @@ const Markdown: React.FC<MarkdownProps> = function Markdown(props) {
         const code = String(children).replace(/\n$/, "");
         const lang = match?.[1] ?? "";
 
-        return !inline && match ? (
-          <CodeBlock language={lang} code={code} isDark={isDark} />
-        ) : (
-          <div className={clsx("overflow-x-auto", className)} {...props}>
-            {children}
-          </div>
+        if (!inline && match) {
+          return <CodeBlock language={lang} code={code} isDark={isDark} />;
+        }
+
+        if (inline) {
+          return (
+            <code className={className} {...props}>
+              {children}
+            </code>
+          );
+        }
+
+        return (
+          <pre className="overflow-x-auto">
+            <code className={className} {...props}>
+              {children}
+            </code>
+          </pre>
         );
       },
     }),
@@ -322,9 +328,6 @@ const Markdown: React.FC<MarkdownProps> = function Markdown(props) {
   return (
     <article
       className={clsx("prose", "markdown", "w-full", "max-w-full", className)}
-      style={{
-        width: layoutStyle === LAYOUT_STYLE.Sidebar ? panelWidth - 164 : "100%",
-      }}
     >
       <ReactMarkdown
         components={MarkdownComponents}
