@@ -1,4 +1,4 @@
-name: Prod Deployment
+name: Prod Deploy
 
 on:
   push:
@@ -41,34 +41,18 @@ jobs:
         run: |
           docker build web -t registry.sciol.ac.cn/sciol/xyzen-web:latest --push
 
-      - name: Download Let's Encrypt CA
-        run: curl -o ca.crt https://letsencrypt.org/certs/isrgrootx1.pem
+      - name: Set up kubeconfig
+        run: |
+          mkdir -p ~/.kube
+          echo "${{ secrets.SCIENCEOL_ACR_KUBE_CONFIG }}" > ~/.kube/config
+          chmod 600 ~/.kube/config
 
       - name: Rolling update deployments
         run: |
-          kubectl \
-            --server=${{ secrets.SCIENCEOL_K8S_SERVER_URL }} \
-            --token=${{ secrets.SCIENCEOL_K8S_ADMIN_TOKEN }} \
-            --certificate-authority=ca.crt \
-            rollout restart deployment xyzen -n bohrium
-
-          kubectl \
-            --server=${{ secrets.SCIENCEOL_K8S_SERVER_URL }} \
-            --token=${{ secrets.SCIENCEOL_K8S_ADMIN_TOKEN }} \
-            --certificate-authority=ca.crt \
-            rollout restart deployment xyzen -n sciol
-
-          kubectl \
-            --server=${{ secrets.SCIENCEOL_K8S_SERVER_URL }} \
-            --token=${{ secrets.SCIENCEOL_K8S_ADMIN_TOKEN }} \
-            --certificate-authority=ca.crt \
-            rollout restart deployment xyzen-web -n bohrium
-
-          kubectl \
-            --server=${{ secrets.SCIENCEOL_K8S_SERVER_URL }} \
-            --token=${{ secrets.SCIENCEOL_K8S_ADMIN_TOKEN }} \
-            --certificate-authority=ca.crt \
-            rollout restart deployment xyzen-web -n sciol
+          kubectl rollout restart deployment xyzen -n bohrium
+        #   kubectl rollout restart deployment xyzen -n sciol
+        #   kubectl rollout restart deployment xyzen-web -n bohrium
+        #   kubectl rollout restart deployment xyzen-web -n sciol
 
       - name: Calculate build duration
         if: always()
@@ -111,12 +95,12 @@ jobs:
           smtp_user: ${{ secrets.SMTP_USER }}
           smtp_pass: ${{ secrets.SMTP_PASS }}
           recipient: ${{ secrets.SMTP_RECEIVER }}
-          architecture: "amd64"
-          pr_number: "N/A"
-          pr_title: "Push to main"
-          pr_url: "${{ github.server_url }}/${{ github.repository }}/commit/${{ github.sha }}"
+          architecture: 'amd64'
+          pr_number: 'N/A'
+          pr_title: 'Push to main'
+          pr_url: '${{ github.server_url }}/${{ github.repository }}/commit/${{ github.sha }}'
           head_ref: ${{ github.ref_name }}
-          base_ref: "main"
+          base_ref: 'main'
           repo: ${{ github.repository }}
           run_id: ${{ github.run_id }}
           build_start: ${{ steps.build_setup.outputs.build_start }}
@@ -128,5 +112,5 @@ jobs:
           commit_sha: ${{ steps.build_setup.outputs.commit_sha }}
           commit_sha_short: ${{ steps.build_setup.outputs.commit_sha_short }}
           commit_date: ${{ steps.build_setup.outputs.commit_date }}
-          service_image: "registry.sciol.ac.cn/sciol/xyzen-service:latest"
-          web_image: "registry.sciol.ac.cn/sciol/xyzen-web:latest"
+          service_image: 'registry.sciol.ac.cn/sciol/xyzen-service:latest'
+          web_image: 'registry.sciol.ac.cn/sciol/xyzen-web:latest'
