@@ -230,14 +230,47 @@ export const ShareModal: React.FC<ShareModalProps> = ({
           .screenshot-container pre,
           .screenshot-container code,
           .screenshot-container .shiki,
-          .screenshot-container .shiki-container pre {
+          .screenshot-container .shiki-container,
+          .screenshot-container .shiki-container pre,
+          .screenshot-container .code-block,
+          .screenshot-container span {
             white-space: pre-wrap !important;
             word-break: break-all !important;
+            word-wrap: break-word !important;
+            overflow-wrap: break-word !important;
             overflow: visible !important;
+            overflow-x: visible !important;
             max-width: 100% !important;
+            min-width: 0 !important;
+            width: 100% !important;
             background-color: transparent !important;
             height: auto !important;
+            display: block !important; /* 强制块级显示，确保占满父容器并换行 */
           }
+
+          /* 针对 span 特殊处理，保持 inline 但允许换行 */
+          .screenshot-container span {
+            display: inline !important;
+            width: auto !important;
+          }
+
+          /* 专门针对 shiki 的行样式 */
+          .screenshot-container .shiki .line {
+            white-space: pre-wrap !important;
+            display: block !important;
+            width: 100% !important;
+          }
+
+          /* 强制表格布局的代码块（如果有）也换行 */
+          .screenshot-container table,
+          .screenshot-container tr,
+          .screenshot-container td {
+            display: block !important;
+            width: 100% !important;
+            white-space: pre-wrap !important;
+          }
+
+          /* 强制移除滚动条容器的滚动属性 */
 
           /* 强制移除滚动条容器的滚动属性 */
           .screenshot-container .overflow-x-auto,
