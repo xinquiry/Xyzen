@@ -33,7 +33,17 @@ export function Xyzen({
   backendUrl = DEFAULT_BACKEND_URL,
   showLlmProvider = false,
 }: XyzenProps) {
-  const { isXyzenOpen, layoutStyle, setBackendUrl, toggleXyzen } = useXyzen();
+  const {
+    isXyzenOpen,
+    layoutStyle,
+    setBackendUrl,
+    toggleXyzen,
+    fetchAgents,
+    fetchSystemAgents,
+    fetchMcpServers,
+    fetchChatHistory,
+    activateChannel,
+  } = useXyzen();
   const { status } = useAuth();
 
   // Initialize theme at the top level so it works for both layouts
@@ -43,6 +53,7 @@ export function Xyzen({
     typeof window !== "undefined" ? window.innerWidth : 1920,
   );
   const [progress, setProgress] = useState(0);
+  const [initialLoadComplete, setInitialLoadComplete] = useState(false);
 
   useEffect(() => {
     setMounted(true);
@@ -88,39 +99,103 @@ export function Xyzen({
     void autoLogin();
   }, [backendUrl, setBackendUrl]);
 
-  // Simulate progressive loading feedback while authentication status is pending.
+  // Load initial data when auth succeeds
   useEffect(() => {
-    let intervalId: number | undefined;
+    if (status === "succeeded" && !initialLoadComplete) {
+      const loadData = async () => {
+        try {
+          // 1. Fetch all necessary data in parallel
+          await Promise.all([
+            fetchAgents(),
+            fetchSystemAgents(),
+            fetchMcpServers(),
+            fetchChatHistory(),
+          ]);
 
-    if (status === "idle" || status === "loading") {
-      setProgress(10);
-      intervalId = window.setInterval(() => {
-        setProgress((prev) => {
-          if (prev >= 90) return prev;
-          const increment = Math.random() * 12 + 4;
-          return Math.min(prev + increment, 90);
-        });
-      }, 280);
+          // 2. If there is an active chat channel (persisted), try to connect to it
+          // We access the store directly to get the latest state after fetchChatHistory
+          const state = useXyzen.getState();
+          const currentActiveChannel = state.activeChatChannel;
+
+          if (currentActiveChannel) {
+            console.log(
+              `[App] Pre-connecting to active channel: ${currentActiveChannel}`,
+            );
+            // activateChannel handles fetching messages and connecting via WebSocket
+            await activateChannel(currentActiveChannel);
+          }
+        } catch (error) {
+          console.error("Failed to load initial data:", error);
+        } finally {
+          setInitialLoadComplete(true);
+        }
+      };
+      void loadData();
     }
+  }, [
+    status,
+    initialLoadComplete,
+    fetchAgents,
+    fetchSystemAgents,
+    fetchMcpServers,
+    fetchChatHistory,
+    activateChannel,
+  ]);
+
+  // Unified progress bar logic
+  useEffect(() => {
+    // Target progress based on current state
+    let targetProgress = 0;
+
+    if (status === "idle") {
+      targetProgress = 10;
+    } else if (status === "loading") {
+      targetProgress = 30;
+    } else if (status === "succeeded") {
+      if (!initialLoadComplete) {
+        targetProgress = 80; // Data loading phase
+      } else {
+        targetProgress = 100; // All done
+      }
+    } else if (status === "failed") {
+      targetProgress = 100;
+    }
+
+    // If we are already at target, do nothing (unless it's 100, then we ensure it stays there)
+    if (progress >= targetProgress && targetProgress !== 100) {
+      return;
+    }
+
+    // If we reached 100, just set it and clear interval
+    if (targetProgress === 100) {
+      setProgress(100);
+      return;
+    }
+
+    // Smoothly animate towards target
+    const intervalId = window.setInterval(() => {
+      setProgress((prev) => {
+        if (prev >= targetProgress) return prev;
+        // Decelerate as we get closer
+        const remaining = targetProgress - prev;
+        const increment = Math.max(0.5, remaining * 0.1);
+        return Math.min(prev + increment, targetProgress);
+      });
+    }, 100);
 
     return () => {
-      if (intervalId !== undefined) {
-        window.clearInterval(intervalId);
-      }
+      window.clearInterval(intervalId);
     };
-  }, [status]);
-
-  useEffect(() => {
-    if (status === "succeeded" || status === "failed") {
-      setProgress(100);
-    }
-  }, [status]);
+  }, [status, initialLoadComplete, progress]);
 
   const handleRetry = useCallback(() => {
     void autoLogin();
   }, []);
 
-  const isAuthenticating = status === "idle" || status === "loading";
+  const isAuthenticating =
+    status === "idle" ||
+    status === "loading" ||
+    (status === "succeeded" && !initialLoadComplete);
   const authFailed = status === "failed";
   // 手机阈值：512px 以下强制 Sidebar（不可拖拽，全宽）
   const isMobile = viewportWidth < MOBILE_BREAKPOINT;
@@ -158,8 +233,6 @@ export function Xyzen({
   const gatedContent = isAuthenticating ? (
     <AuthLoadingScreen progress={progress} />
   ) : authFailed ? (
-    // 在 Sidebar 模式下，不全屏拦截，让侧边面板内联显示错误卡片；
-    // 在全屏布局时，仍然展示全屏错误页。
     isSidebarLayout ? (
       <>{mainLayout}</>
     ) : (

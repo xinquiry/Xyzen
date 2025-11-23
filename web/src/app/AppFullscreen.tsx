@@ -4,7 +4,7 @@ import type { DragEndEvent } from "@dnd-kit/core";
 import { DndContext } from "@dnd-kit/core";
 import { restrictToVerticalAxis } from "@dnd-kit/modifiers";
 import { motion } from "framer-motion";
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 
 import Explorer from "@/app/explore/page";
@@ -31,9 +31,6 @@ export function AppFullscreen({
   backendUrl = DEFAULT_BACKEND_URL,
 }: AppFullscreenProps) {
   const {
-    user,
-    fetchAgents,
-    fetchMcpServers,
     setBackendUrl,
     activePanel,
     setActivePanel,
@@ -48,21 +45,6 @@ export function AppFullscreen({
     setMounted(true);
     setBackendUrl(backendUrl);
   }, [backendUrl, setBackendUrl]);
-
-  // Load initial data when user is available
-  const loadInitialData = useCallback(async () => {
-    if (user && backendUrl) {
-      try {
-        await Promise.all([fetchAgents(), fetchMcpServers()]);
-      } catch (error) {
-        console.error("Failed to load initial data:", error);
-      }
-    }
-  }, [user, backendUrl, fetchAgents, fetchMcpServers]);
-
-  useEffect(() => {
-    loadInitialData();
-  }, [loadInitialData]);
 
   // Keyboard shortcuts
   useEffect(() => {

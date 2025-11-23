@@ -448,6 +448,30 @@ export const createChatSlice: StateCreator<
         }
       }
       connectToChannel(channel.sessionId, channel.id);
+
+      // Wait for connection to be established
+      await new Promise<void>((resolve) => {
+        const checkConnection = () => {
+          const currentChannel = get().channels[topicId];
+          if (currentChannel?.connected) {
+            resolve();
+          } else if (currentChannel?.error) {
+            // Resolve on error too to avoid hanging the UI
+            console.warn(
+              `Connection failed for topic ${topicId}: ${currentChannel.error}`,
+            );
+            resolve();
+          } else {
+            setTimeout(checkConnection, 100);
+          }
+        };
+        // Timeout after 5 seconds to prevent infinite loading
+        setTimeout(() => {
+          console.warn(`Connection timeout for topic ${topicId}`);
+          resolve();
+        }, 5000);
+        checkConnection();
+      });
     }
   },
 

@@ -72,7 +72,7 @@ const ChatPreview: React.FC<ChatPreviewProps> = ({
 
               {/* 名字 */}
               <span
-                className={`text-xs font-bold opacity-90 ${
+                className={`text-xs font-bold opacity-90 whitespace-nowrap ${
                   isUser ? "text-blue-50" : "text-blue-600 dark:text-blue-400"
                 }`}
               >
@@ -140,10 +140,10 @@ const ChatPreview: React.FC<ChatPreviewProps> = ({
                 </svg>
               </div>
               <div>
-                <h2 className="text-xl font-bold text-neutral-900 dark:text-white tracking-tight">
+                <h2 className="text-xl font-bold text-neutral-900 dark:text-white tracking-tight whitespace-nowrap">
                   Xyzen AI
                 </h2>
-                <p className="text-xs font-medium text-neutral-600 dark:text-neutral-300 mt-0.5 uppercase tracking-wider opacity-80">
+                <p className="text-xs font-medium text-neutral-600 dark:text-neutral-300 mt-0.5 uppercase tracking-wider opacity-80 whitespace-nowrap">
                   {new Date().toLocaleDateString("zh-CN", {
                     year: "numeric",
                     month: "long",
@@ -162,7 +162,7 @@ const ChatPreview: React.FC<ChatPreviewProps> = ({
                   crossOrigin="anonymous"
                 />
               </div>
-              <span className="text-[10px] font-medium text-neutral-600 dark:text-neutral-300 opacity-80">
+              <span className="text-[10px] font-medium text-neutral-600 dark:text-neutral-300 opacity-80 whitespace-nowrap">
                 扫码开启 AI 对话
               </span>
             </div>
@@ -207,10 +207,10 @@ const ChatPreview: React.FC<ChatPreviewProps> = ({
                 AI
               </div>
               <div className="flex flex-col">
-                <span className="text-xs font-bold text-neutral-800 dark:text-white">
+                <span className="text-xs font-bold text-neutral-800 dark:text-white whitespace-nowrap">
                   Xyzen Assistant
                 </span>
-                <span className="text-[10px] text-neutral-500 dark:text-neutral-400">
+                <span className="text-[10px] text-neutral-500 dark:text-neutral-400 whitespace-nowrap">
                   Intelligent Conversation
                 </span>
               </div>
@@ -224,7 +224,7 @@ const ChatPreview: React.FC<ChatPreviewProps> = ({
                 </span>{" "}
                 导出
               </p>
-              <p className="text-[10px] text-neutral-500 dark:text-neutral-400 mt-0.5 flex items-center justify-end gap-1">
+              <p className="text-[10px] text-neutral-500 dark:text-neutral-400 mt-0.5 flex items-center justify-end gap-1 whitespace-nowrap">
                 <span>AI 生成内容</span>
                 <span className="w-1 h-1 rounded-full bg-neutral-400"></span>
                 <span>仅供参考</span>

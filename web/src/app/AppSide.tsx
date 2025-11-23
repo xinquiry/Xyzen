@@ -75,9 +75,6 @@ export function AppSide({
     setPanelWidth,
     activePanel,
     setBackendUrl,
-    user,
-    fetchAgents,
-    fetchMcpServers,
     openMcpListModal,
     openSettingsModal,
   } = useXyzen();
@@ -92,21 +89,6 @@ export function AppSide({
     setMounted(true);
     setBackendUrl(backendUrl);
   }, [backendUrl, setBackendUrl]);
-
-  // Load initial data
-  const loadInitialData = useCallback(async () => {
-    if (user && backendUrl) {
-      try {
-        await Promise.all([fetchAgents(), fetchMcpServers()]);
-      } catch (error) {
-        console.error("Failed to load initial data:", error);
-      }
-    }
-  }, [user, backendUrl, fetchAgents, fetchMcpServers]);
-
-  useEffect(() => {
-    loadInitialData();
-  }, [loadInitialData]);
 
   // Sensors only when resizable
   const sensors = useSensors(
