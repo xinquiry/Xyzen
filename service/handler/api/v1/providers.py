@@ -5,23 +5,54 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 from common.code.error_code import ErrCodeError, handle_auth_error
+from core.auth import AuthorizationService, get_auth_service
+from core.providers import ModelRegistry, config
 from middleware.auth import get_current_user
 from middleware.database.connection import get_session
 from models.provider import ProviderCreate, ProviderRead, ProviderUpdate
-from repo.provider import ProviderRepository
-from schemas.providers import PROVIDER_TEMPLATES, ProviderTemplate, ProviderType
-from core.auth import AuthorizationService, get_auth_service
+from repos.provider import ProviderRepository
+from schemas.provider import ProviderType
 
 router = APIRouter(tags=["providers"])
 
 
-@router.get("/templates", response_model=list[ProviderTemplate])
-async def get_provider_templates() -> list[ProviderTemplate]:
+@router.get("/templates", response_model=ModelRegistry)
+async def get_provider_templates() -> ModelRegistry:
     """
     Get available provider templates with metadata for the UI.
     Returns configuration templates for all supported LLM providers.
     """
-    return PROVIDER_TEMPLATES
+    return config
+
+
+@router.get("/system", response_model=list[ProviderRead])
+async def get_system_providers(
+    user: str = Depends(get_current_user),
+    db: AsyncSession = Depends(get_session),
+) -> list[ProviderRead]:
+    """
+    Get all providers accessible to the current authenticated user.
+
+    Includes both user's own providers and system providers. System provider
+    API keys and endpoints are masked for security reasons.
+
+    Args:
+        user: Authenticated user ID (injected by dependency)
+        db: Database session (injected by dependency)
+
+    Returns:
+        List[ProviderRead]: List of providers accessible to the user
+
+    Raises:
+        HTTPException: None - this endpoint always succeeds, returning empty list if no providers
+    """
+    provider_repo = ProviderRepository(db)
+    provider = await provider_repo.get_system_provider()
+    if not provider:
+        raise HTTPException(status_code=404, detail="System provider not found")
+
+    provider = ProviderRead.model_validate(provider)
+    return [provider]
 
 
 @router.get("/me", response_model=list[ProviderRead])
@@ -101,6 +132,7 @@ async def create_provider(
     # Convert to ProviderRead by constructing the dict manually
     # BEFORE committing, to avoid detached SQLAlchemy instance issues
     provider_dict: dict[str, Any] = {
+        "scope": created_provider.scope,
         "id": created_provider.id,
         "user_id": created_provider.user_id,
         "name": created_provider.name,
@@ -201,6 +233,7 @@ async def update_provider(
         # Convert to ProviderRead by constructing the dict manually
         # BEFORE committing, to avoid detached SQLAlchemy instance issues
         provider_dict: dict[str, Any] = {
+            "scope": updated_provider.scope,
             "id": updated_provider.id,
             "user_id": updated_provider.user_id,
             "name": updated_provider.name,

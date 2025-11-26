@@ -3,13 +3,14 @@ import logging
 from typing import TYPE_CHECKING
 from uuid import UUID
 
-from core.providers import get_user_provider_manager
 from langchain_core.messages import HumanMessage
+
+from core.providers import get_user_provider_manager
 from middleware.database.connection import AsyncSessionLocal
 from models.topic import TopicUpdate
-from repo.agent import AgentRepository
-from repo.session import SessionRepository
-from repo.topic import TopicRepository
+from repos.agent import AgentRepository
+from repos.session import SessionRepository
+from repos.topic import TopicRepository
 
 if TYPE_CHECKING:
     from handler.ws.v1.chat import ConnectionManager
@@ -58,18 +59,7 @@ async def generate_and_update_topic_title(
 
             user_provider_manager = await get_user_provider_manager(user_id, db)
             # Prefer system provider or active provider
-            provider = user_provider_manager.get_provider(provider_name)
-            if not provider:
-                logger.warning(
-                    f"Requested provider {provider_name} not found for user {user_id}, falling back to active provider"
-                )
-                provider = user_provider_manager.get_active_provider()
-                if provider:
-                    # Update provider_name to match the fallback provider
-                    for p_info in user_provider_manager.list_providers():
-                        if p_info["active"]:
-                            provider_name = p_info["name"]
-                            break
+            provider = user_provider_manager.get_provider_config(provider_name)
 
             if not provider:
                 logger.error(f"No provider available for user {user_id}")
