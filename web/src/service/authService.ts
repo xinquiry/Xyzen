@@ -70,6 +70,31 @@ class AuthService {
     return response.json();
   }
 
+  async loginWithCasdoor(
+    code: string,
+    state?: string,
+  ): Promise<{
+    access_token: string;
+    token_type: string;
+    user_info: UserInfo;
+  }> {
+    const response = await fetch(
+      `${getBackendUrl()}/xyzen/api/v1/auth/login/casdoor`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ code, state }),
+      },
+    );
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    return response.json();
+  }
+
   async validateToken(token?: string): Promise<AuthValidationResponse> {
     const accessToken = token || this.getToken();
     if (!accessToken) {

@@ -7,7 +7,7 @@ import {
   type AuthStatus,
 } from "@/service/authService";
 import { InfoIcon } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 
 function useAuthProvider() {
   const [status, setStatus] = useState<AuthStatus | null>(null);
@@ -44,6 +44,7 @@ function useAuthProvider() {
 function buildAuthorizeUrl(
   provider: string,
   cfg: AuthProviderConfig,
+  state?: string,
 ): string | null {
   if (!cfg.issuer) return null;
   const redirectUri = encodeURIComponent(
@@ -52,9 +53,12 @@ function buildAuthorizeUrl(
   const audience = cfg.audience ? encodeURIComponent(cfg.audience) : "";
 
   if (provider === "casdoor") {
-    // Casdoor OAuth2 implicit flow
-    const base = cfg.issuer.replace(/\/$/, "");
-    return `${base}/login/oauth/authorize?client_id=${audience}&response_type=token&redirect_uri=${redirectUri}&scope=openid%20profile%20email`;
+    // Casdoor OAuth2 Authorization Code Flow
+    const base = cfg.issuer
+      .replace(/\/$/, "")
+      .replace("host.docker.internal", "localhost");
+
+    return `${base}/login/oauth/authorize?client_id=${audience}&response_type=code&redirect_uri=${redirectUri}&scope=openid%20profile%20email&state=${state}`;
   }
   if (provider === "bohrium") {
     // Best-effort: common authorize path; adjust if backend exposes a dedicated login endpoint
@@ -77,7 +81,36 @@ function AuthErrorScreen({
   const { status, config, loading } = useAuthProvider();
   const [appAccessKey, setAppAccessKey] = useState("");
 
-  // Handle implicit grant callback: parse access_token in URL hash
+  // Handle Authorization Code Flow callback
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const code = params.get("code");
+    const state = params.get("state");
+
+    if (code) {
+      // Optional: Verify state matches what we stored
+      const storedState = sessionStorage.getItem("auth_state");
+      if (state && storedState && state !== storedState) {
+        console.error("State mismatch during authentication");
+        return;
+      }
+
+      // Clear query params to look cleaner
+      window.history.replaceState({}, document.title, window.location.pathname);
+
+      // Exchange code for token
+      authService
+        .loginWithCasdoor(code, state || undefined)
+        .then((response) => {
+          void login(response.access_token);
+        })
+        .catch((err) => {
+          console.error("Failed to exchange code for token:", err);
+        });
+    }
+  }, [login]);
+
+  // Legacy Implicit Flow handling (optional, can be removed if strictly code flow)
   useEffect(() => {
     const hash = window.location.hash;
     if (hash && hash.includes("access_token=")) {
@@ -96,10 +129,25 @@ function AuthErrorScreen({
   }, [login]);
 
   const provider = config?.provider ?? status?.provider ?? undefined;
-  const oauthUrl = useMemo(() => {
-    if (!provider || !config) return null;
-    return buildAuthorizeUrl(provider, config);
-  }, [provider, config]);
+
+  const handleOAuthLogin = () => {
+    if (!provider || !config) return;
+
+    let url: string | null = null;
+
+    if (provider === "casdoor") {
+      // Generate state only when user clicks login
+      const state = Math.random().toString(36).substring(7);
+      sessionStorage.setItem("auth_state", state);
+      url = buildAuthorizeUrl(provider, config, state);
+    } else {
+      url = buildAuthorizeUrl(provider, config);
+    }
+
+    if (url) {
+      window.location.href = url;
+    }
+  };
 
   // Container classes vary by layout variant
   const outerCls =
@@ -199,24 +247,9 @@ function AuthErrorScreen({
                   跳转至 Bohrium 授权页面完成登录。
                 </p>
                 <div>
-                  {oauthUrl ? (
-                    <Button
-                      className="w-full"
-                      onClick={() => (window.location.href = oauthUrl)}
-                    >
-                      前往 Bohrium 授权
-                    </Button>
-                  ) : (
-                    <Button
-                      className="w-full"
-                      variant="outline"
-                      onClick={() =>
-                        config?.issuer && (window.location.href = config.issuer)
-                      }
-                    >
-                      打开 Bohrium 登录页
-                    </Button>
-                  )}
+                  <Button className="w-full" onClick={handleOAuthLogin}>
+                    前往 Bohrium 授权
+                  </Button>
                 </div>
               </div>
             )}
@@ -228,24 +261,9 @@ function AuthErrorScreen({
                   跳转至 Casdoor 授权页面完成登录。
                 </p>
                 <div>
-                  {oauthUrl ? (
-                    <Button
-                      className="w-full"
-                      onClick={() => (window.location.href = oauthUrl)}
-                    >
-                      前往 Casdoor 授权
-                    </Button>
-                  ) : (
-                    <Button
-                      className="w-full"
-                      variant="outline"
-                      onClick={() =>
-                        config?.issuer && (window.location.href = config.issuer)
-                      }
-                    >
-                      打开 Casdoor 登录页
-                    </Button>
-                  )}
+                  <Button className="w-full" onClick={handleOAuthLogin}>
+                    前往 Casdoor 授权
+                  </Button>
                 </div>
               </div>
             )}

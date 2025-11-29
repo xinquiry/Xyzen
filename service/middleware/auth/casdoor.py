@@ -103,6 +103,42 @@ class CasdoorAuthProvider(BaseAuthProvider):
         logger.info(f"Casdoor: 解析结果 - ID: {user_info.id}, 用户名: {user_info.username}, 邮箱: {user_info.email}")
         return user_info
 
+    def exchange_code_for_token(self, code: str) -> str:
+        """Exchange authorization code for access token"""
+        # Ensure Client Secret is configured
+        client_secret = getattr(self.config, "ClientSecret", None)
+        if not client_secret:
+            logger.error("Casdoor Client Secret not configured")
+            raise Exception("Server configuration error: Client Secret missing")
+
+        url = f"{self.issuer.rstrip('/')}/api/login/oauth/access_token"
+
+        payload = {
+            "grant_type": "authorization_code",
+            "client_id": self.audience,
+            "client_secret": client_secret,
+            "code": code,
+        }
+
+        try:
+            logger.info(f"Exchanging code for token with URL: {url}")
+            response = requests.post(url, data=payload, timeout=10)
+            response.raise_for_status()
+            data = response.json()
+
+            if "access_token" in data:
+                return data["access_token"]
+            elif "error" in data:
+                logger.error(f"Casdoor returned error: {data.get('error_description', data.get('error'))}")
+                raise Exception(f"Casdoor error: {data.get('error_description', data.get('error'))}")
+            else:
+                logger.error(f"Failed to get access token from Casdoor response: {data}")
+                raise Exception("Failed to retrieve access token from response")
+
+        except Exception as e:
+            logger.error(f"Error exchanging code for token: {e}")
+            raise e
+
     def parse_user_info(self, token_payload: dict[str, Any]) -> UserInfo:
         """从 token payload 解析用户信息"""
         logger.info("Casdoor: 解析token payload中的用户信息")

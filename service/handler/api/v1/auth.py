@@ -4,12 +4,24 @@ from typing import Optional
 from fastapi import APIRouter, Header, HTTPException, status
 from pydantic import BaseModel
 
+from core.auth.authentication import authentication_service
 from middleware.auth import AuthProvider
 
 # 设置日志记录器
 logger = logging.getLogger(__name__)
 
 router = APIRouter(tags=["auth"])
+
+
+class LoginRequest(BaseModel):
+    code: str
+    state: Optional[str] = None
+
+
+class LoginResponse(BaseModel):
+    access_token: str
+    token_type: str
+    user_info: Optional["UserInfoResponse"] = None
 
 
 class AuthStatusResponse(BaseModel):
@@ -165,3 +177,32 @@ async def get_current_user(
         )
 
     return validation_result.user_info
+
+
+@router.post("/login/casdoor", response_model=LoginResponse)
+async def login_casdoor(request: LoginRequest) -> LoginResponse:
+    """Casdoor 授权码登录接口"""
+    try:
+        logger.info("收到 Casdoor 登录请求")
+        result = authentication_service.login_with_code(request.code, request.state)
+
+        user_info = None
+        if result.get("user_info"):
+            u = result["user_info"]
+            user_info = UserInfoResponse(
+                id=u.id,
+                username=u.username,
+                email=u.email,
+                display_name=u.display_name,
+                avatar_url=u.avatar_url,
+                roles=u.roles,
+            )
+
+        return LoginResponse(
+            access_token=result["access_token"],
+            token_type=result["token_type"],
+            user_info=user_info,
+        )
+    except Exception as e:
+        logger.error(f"Login failed: {e}")
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
