@@ -351,11 +351,11 @@ export const ShareModal: React.FC<ShareModalProps> = ({
             </Button>
             <Button
               variant="default"
-              className="flex-1 min-w-[120px] bg-blue-600 hover:bg-blue-700"
+              className="flex-1 min-w-[120px] bg-blue-600 hover:bg-blue-700 dark:text-neutral-50"
               onClick={downloadImage}
               disabled={!imageUrl}
             >
-              <DownloadIcon className="h-4 w-4 mr-2" />
+              <DownloadIcon className="h-4 w-4 mr-2 " />
               下载图片
             </Button>
           </div>
@@ -385,11 +385,18 @@ export const ShareModal: React.FC<ShareModalProps> = ({
         }}
       >
         <style>{`
-          .hide-scrollbar::-webkit-scrollbar { display: none; }
-          .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-          .screenshot-container pre, .screenshot-container code {
+
+          /* 截图容器内的代码块强制换行与去背景 */
+          .screenshot-container pre,
+          .screenshot-container code,
+          .screenshot-container .shiki,
+          .screenshot-container .shiki-container pre {
             white-space: pre-wrap !important;
             word-break: break-all !important;
+            overflow: visible !important;
+            max-width: 100% !important;
+            background-color: transparent !important;
+            height: auto !important;
           }
         `}</style>
         <ChatPreview

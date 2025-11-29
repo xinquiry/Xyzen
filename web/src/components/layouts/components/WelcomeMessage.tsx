@@ -36,12 +36,12 @@ const WelcomeMessage: React.FC<WelcomeMessageProps> = ({ assistant }) => {
 
   // Fix dynamic class name issue by mapping to pre-defined classes
   const iconColorMap: Record<string, string> = {
-    blue: "bg-blue-100 dark:bg-blue-900/30",
-    green: "bg-green-100 dark:bg-green-900/30",
-    purple: "bg-purple-100 dark:bg-purple-900/30",
-    amber: "bg-amber-100 dark:bg-amber-900/30",
-    red: "bg-red-100 dark:bg-red-900/30",
-    indigo: "bg-indigo-100 dark:bg-indigo-900/30",
+    blue: "bg-blue-50 dark:bg-blue-900/20",
+    green: "bg-green-50 dark:bg-green-900/20",
+    purple: "bg-purple-50 dark:bg-purple-900/20",
+    amber: "bg-amber-50 dark:bg-amber-900/20",
+    red: "bg-red-50 dark:bg-red-900/20",
+    indigo: "bg-indigo-50 dark:bg-indigo-900/20",
   };
 
   const iconTextColorMap: Record<string, string> = {
@@ -69,7 +69,7 @@ const WelcomeMessage: React.FC<WelcomeMessageProps> = ({ assistant }) => {
       transition={{ duration: 0.6 }}
       className="flex flex-col items-center justify-center space-y-4 p-6 text-center"
     >
-      <div className={`rounded-full ${bgColorClass} p-5`}>
+      <div className={`rounded-full ${bgColorClass} opacity-60 p-5`}>
         <svg
           xmlns="http://www.w3.org/2000/svg"
           className={`h-10 w-10 ${textColorClass}`}
@@ -90,10 +90,10 @@ const WelcomeMessage: React.FC<WelcomeMessageProps> = ({ assistant }) => {
         animate={{ y: 0, opacity: 1 }}
         transition={{ delay: 0.2, duration: 0.5 }}
       >
-        <h3 className="text-lg font-medium text-neutral-900 dark:text-white">
+        <h3 className="text-lg font-medium text-neutral-900/40 dark:text-white/40">
           {title}
         </h3>
-        <p className="mt-2 max-w-md text-sm leading-relaxed text-neutral-600 dark:text-neutral-300">
+        <p className="mt-2 max-w-md text-sm leading-relaxed text-neutral-600/30 dark:text-neutral-300/30">
           {description}
         </p>
       </motion.div>

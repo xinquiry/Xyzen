@@ -5,6 +5,7 @@ import NotificationModal from "@/components/modals/NotificationModal";
 import { ShareModal } from "@/components/modals/ShareModal";
 import type { XyzenChatConfig } from "@/hooks/useXyzenChat";
 import { useXyzenChat } from "@/hooks/useXyzenChat";
+import type { Agent } from "@/types/agents";
 import { ArrowPathIcon, ShareIcon } from "@heroicons/react/24/outline";
 
 import { AnimatePresence, motion } from "framer-motion";
@@ -97,11 +98,27 @@ const ThemedEmptyState: React.FC<{ config: XyzenChatConfig }> = ({
 };
 
 // Welcome message component for different themes
-const ThemedWelcomeMessage: React.FC<{ config: XyzenChatConfig }> = ({
-  config,
-}) => {
+const ThemedWelcomeMessage: React.FC<{
+  config: XyzenChatConfig;
+  currentAgent?: Agent | null;
+}> = ({ config, currentAgent }) => {
   if (!config.welcomeMessage || config.theme === "indigo") {
-    return <WelcomeMessage />;
+    return (
+      <WelcomeMessage
+        assistant={
+          currentAgent
+            ? {
+                id: currentAgent.id,
+                title: currentAgent.name,
+                description: currentAgent.description,
+                iconType: "chat",
+                iconColor: "indigo",
+                category: "general",
+              }
+            : undefined
+        }
+      />
+    );
   }
 
   const { welcomeMessage } = config;
@@ -341,7 +358,10 @@ function BaseChat({ config, historyEnabled = false }: BaseChatProps) {
           >
             <div className="px-3 min-w-0">
               {messages.length === 0 ? (
-                <ThemedWelcomeMessage config={config} />
+                <ThemedWelcomeMessage
+                  config={config}
+                  currentAgent={currentAgent}
+                />
               ) : (
                 <div className="space-y-0.5">
                   <AnimatePresence>
