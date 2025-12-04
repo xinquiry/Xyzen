@@ -303,17 +303,9 @@ async def list_materials(lab_uuid: str, type: str = "resources") -> dict:
 
 
 # 获取设备可用动作
-@osdl_mcp.tool
-async def list_material_actions(lab_uuid: str, material_name: str) -> dict:
+async def _list_material_actions(lab_uuid: str, material_name: str) -> dict:
     """
-    Retrieve available actions for a specific material/device.
-
-    Args:
-        lab_uuid (str): Unique identifier of the laboratory.
-        material_name (str): Name of the material/device.
-
-    Returns:
-        dict: Operation result containing the list of actions.
+    Internal helper to retrieve available actions for a specific material/device.
     """
     try:
         access_token = get_access_token()
@@ -348,6 +340,21 @@ async def list_material_actions(lab_uuid: str, material_name: str) -> dict:
         return {"error": str(e), "success": False}
 
 
+@osdl_mcp.tool
+async def list_material_actions(lab_uuid: str, material_name: str) -> dict:
+    """
+    Retrieve available actions for a specific material/device.
+
+    Args:
+        lab_uuid (str): Unique identifier of the laboratory.
+        material_name (str): Name of the material/device.
+
+    Returns:
+        dict: Operation result containing the list of actions.
+    """
+    return await _list_material_actions(lab_uuid, material_name)
+
+
 # 获取动作参数详情
 @osdl_mcp.tool
 async def get_action_params(lab_uuid: str, material_name: str, action_name: str) -> dict:
@@ -364,7 +371,7 @@ async def get_action_params(lab_uuid: str, material_name: str, action_name: str)
         dict: Operation result containing the action details and parameters.
     """
     # Reuse list_material_actions logic
-    result = await list_material_actions(lab_uuid, material_name)  # type: ignore
+    result = await _list_material_actions(lab_uuid, material_name)
     if not result.get("success"):
         return result
 
