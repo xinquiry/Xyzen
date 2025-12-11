@@ -1,7 +1,7 @@
 [project]
 name = "service"
 version = "0.1.0"
-description = "Add your description here"
+description = "The backend service of Xyzen"
 readme = "README.md"
 requires-python = ">=3.13, <3.14"
 dependencies = [
@@ -191,6 +191,7 @@ omit = [
 [tool.coverage.report]
 exclude_lines = [
     "pragma: no cover",
+    "if TYPE_CHECKING:",
     "def __repr__",
     "if self.debug:",
     "if settings.DEBUG",
