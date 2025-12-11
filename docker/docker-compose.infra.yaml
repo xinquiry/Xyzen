@@ -88,7 +88,7 @@ services:
       - db-data:/var/lib/postgresql/data
 
   minio:
-    image: minio/minio:latest
+    image: minio/minio:RELEASE.2025-04-22T22-12-26Z
     container_name: sciol-minio
     network_mode: 'service:network-service'
     volumes:
@@ -125,6 +125,14 @@ services:
           mc mb myminio/casdoor
         else
           echo 'Bucket casdoor already exists'
+        fi
+
+        # 检查 Xyzen 存储桶是否存在，不存在则创建
+        if ! mc ls myminio/xyzen > /dev/null 2>&1; then
+          echo 'Creating bucket xyzen'
+          mc mb myminio/xyzen
+        else
+          echo 'Bucket xyzen already exists'
         fi
 
         mc anonymous set download myminio/casdoor
