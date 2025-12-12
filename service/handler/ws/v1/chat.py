@@ -15,7 +15,7 @@ from middleware.auth import AuthContext, get_auth_context_websocket
 from middleware.database.connection import AsyncSessionLocal
 from models.message import Message as MessageModel
 from models.message import MessageCreate
-from repos import MessageRepository, SessionRepository, TopicRepository
+from repos import FileRepository, MessageRepository, SessionRepository, TopicRepository
 from schemas.chat_events import ChatClientEventType, ChatEventType, ToolCallStatus
 
 logger = logging.getLogger(__name__)
@@ -370,6 +370,7 @@ async def chat_websocket(
 
                 # Handle regular chat messages
                 message_text = data.get("message")
+                file_ids = data.get("file_ids", [])
 
                 if not message_text:
                     continue
@@ -378,13 +379,34 @@ async def chat_websocket(
                 user_message_create = MessageCreate(role="user", content=message_text, topic_id=topic_id)
                 user_message = await message_repo.create_message(user_message_create)
 
-                # 2. Send user message back to client first
-                await manager.send_personal_message(
-                    user_message.model_dump_json(),
-                    connection_id,
-                )
+                # 2. Link files to the message if file_ids provided
+                if file_ids:
+                    file_repo = FileRepository(db)
+                    await file_repo.update_files_message_id(
+                        file_ids=file_ids,
+                        message_id=user_message.id,
+                        user_id=user,
+                    )
+                    # Flush to ensure file links are visible to subsequent queries
+                    await db.flush()
 
-                # 3. Send loading status
+                # 3. Send user message back to client with attachments
+                user_message_with_files = await message_repo.get_message_with_files(user_message.id)
+
+                if user_message_with_files:
+                    await manager.send_personal_message(
+                        user_message_with_files.model_dump_json(),
+                        connection_id,
+                    )
+                else:
+                    # Fallback if message fetch fails
+                    logger.warning(f"Could not fetch message {user_message.id}, falling back to base message")
+                    await manager.send_personal_message(
+                        user_message.model_dump_json(),
+                        connection_id,
+                    )
+
+                # 4. Send loading status
                 loading_event = {"type": ChatEventType.LOADING, "data": {"message": "AI is thinking..."}}
                 await manager.send_personal_message(
                     json.dumps(loading_event),
