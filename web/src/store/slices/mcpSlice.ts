@@ -78,14 +78,17 @@ export const createMcpSlice: StateCreator<
   },
   fetchBuiltinMcpServers: async () => {
     try {
+      // Fetch regular builtin servers
       const rawServers = await mcpService.getBuiltinMcpServers();
-      // 转换为新格式
-      const builtinServers = convertBuiltinServers(rawServers);
+
+      // Convert to new format
+      const allBuiltinServers = convertBuiltinServers(rawServers);
+
       const { mcpServers, backendUrl } = get();
 
       // Filter out servers that user has already added
       const existingUrls = mcpServers.map((s) => s.url);
-      const filtered = builtinServers.filter((bs) => {
+      const filtered = allBuiltinServers.filter((bs) => {
         // Ensure URL has trailing slash for comparison
         const mountPath = bs.data.mount_path.endsWith("/")
           ? bs.data.mount_path

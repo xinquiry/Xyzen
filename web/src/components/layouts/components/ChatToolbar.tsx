@@ -10,6 +10,7 @@ import {
 } from "@/components/animate-ui/components/radix/sheet";
 import { FileUploadButton, FileUploadPreview } from "@/components/features";
 import { useXyzen } from "@/store";
+import type { ModelInfo } from "@/types/llmProvider";
 import {
   type DragEndEvent,
   type DragMoveEvent,
@@ -19,11 +20,16 @@ import {
   useSensor,
   useSensors,
 } from "@dnd-kit/core";
-import { ClockIcon, PlusIcon } from "@heroicons/react/24/outline";
+import {
+  ArrowPathIcon,
+  ClockIcon,
+  PlusIcon,
+} from "@heroicons/react/24/outline";
 import { VisuallyHidden } from "@radix-ui/react-visually-hidden";
-import { useCallback, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import SessionHistory from "./SessionHistory";
 import { ModelSelector } from "./ModelSelector";
+import { BuiltinSearchToggle } from "./BuiltinSearchToggle";
 
 interface ChatToolbarProps {
   onShowHistory: () => void;
@@ -67,6 +73,7 @@ export default function ChatToolbar({
     llmProviders,
     availableModels,
     updateSessionProviderAndModel,
+    updateSessionConfig,
     uploadedFiles,
     isUploading,
   } = useXyzen();
@@ -127,9 +134,30 @@ export default function ChatToolbar({
     return channel?.model || null;
   }, [activeChatChannel, channels]);
 
+  // State for built-in search toggle
+  const [builtinSearchEnabled, setBuiltinSearchEnabled] = useState(false);
+
+  // State for new chat creation loading
+  const [isCreatingNewChat, setIsCreatingNewChat] = useState(false);
+
   // Refs for drag handling
   const initialHeightRef = useRef(inputHeight);
   const dragDeltaRef = useRef(0);
+
+  // Fetch current session's built-in search enabled status
+  useEffect(() => {
+    if (!activeChatChannel) {
+      return;
+    }
+
+    const channel = channels[activeChatChannel];
+    if (!channel?.sessionId) {
+      return;
+    }
+
+    // Fetch built-in search enabled status
+    setBuiltinSearchEnabled(channel.google_search_enabled || false);
+  }, [activeChatChannel, channels]);
 
   // Model change handler - updates session's provider and model
   const handleModelChange = useCallback(
@@ -155,6 +183,42 @@ export default function ChatToolbar({
     [activeChatChannel, channels, updateSessionProviderAndModel],
   );
 
+  // Built-in search toggle handler - updates session's google_search_enabled
+  const handleBuiltinSearchToggle = useCallback(
+    async (enabled: boolean) => {
+      if (!activeChatChannel) return;
+
+      const channel = channels[activeChatChannel];
+      if (!channel?.sessionId) return;
+
+      try {
+        await updateSessionConfig(channel.sessionId, {
+          google_search_enabled: enabled,
+        });
+        setBuiltinSearchEnabled(enabled);
+        console.log(
+          `Updated session ${channel.sessionId} built-in search to ${enabled}`,
+        );
+      } catch (error) {
+        console.error("Failed to update built-in search setting:", error);
+      }
+    },
+    [activeChatChannel, channels, updateSessionConfig],
+  );
+
+  // Check if current model supports web search
+  const supportsWebSearch = useMemo(() => {
+    if (!currentSessionModel || !currentSessionProvider) return false;
+
+    // Find the model info from availableModels (it's a Record<string, ModelInfo[]>)
+    const providerModels = Object.values(availableModels).flat();
+    const modelInfo = providerModels.find(
+      (m: ModelInfo) => m.key === currentSessionModel,
+    );
+
+    return modelInfo?.supports_web_search || false;
+  }, [currentSessionModel, currentSessionProvider, availableModels]);
+
   // Setup dnd sensors
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -164,8 +228,17 @@ export default function ChatToolbar({
     }),
   );
 
-  const handleNewChat = () => {
-    createDefaultChannel(currentAgent?.id);
+  const handleNewChat = async () => {
+    if (isCreatingNewChat) return; // Prevent multiple clicks
+
+    try {
+      setIsCreatingNewChat(true);
+      await createDefaultChannel(currentAgent?.id);
+    } catch (error) {
+      console.error("Failed to create new chat:", error);
+    } finally {
+      setIsCreatingNewChat(false);
+    }
   };
 
   // const handleToggleToolCallConfirmation = async () => {
@@ -243,10 +316,19 @@ export default function ChatToolbar({
           <div className="flex items-center space-x-1">
             <button
               onClick={handleNewChat}
-              className="flex items-center justify-center rounded-sm p-1.5 text-neutral-500 transition-colors hover:bg-neutral-200/60 hover:text-neutral-700 dark:text-neutral-400 dark:hover:bg-neutral-800/60 dark:hover:text-neutral-300"
-              title="新对话"
+              disabled={isCreatingNewChat}
+              className={`flex items-center justify-center rounded-sm p-1.5 transition-colors ${
+                isCreatingNewChat
+                  ? "text-neutral-400 cursor-not-allowed dark:text-neutral-600"
+                  : "text-neutral-500 hover:bg-neutral-200/60 hover:text-neutral-700 dark:text-neutral-400 dark:hover:bg-neutral-800/60 dark:hover:text-neutral-300"
+              }`}
+              title={isCreatingNewChat ? "创建中..." : "新对话"}
             >
-              <PlusIcon className="h-4 w-4" />
+              {isCreatingNewChat ? (
+                <ArrowPathIcon className="h-4 w-4 animate-spin" />
+              ) : (
+                <PlusIcon className="h-4 w-4" />
+              )}
             </button>
 
             {/* File Upload Button */}
@@ -280,6 +362,15 @@ export default function ChatToolbar({
                 llmProviders={llmProviders}
                 availableModels={availableModels}
                 onModelChange={handleModelChange}
+              />
+            )}
+
+            {/* Built-in Search Toggle - Only for models that support web search */}
+            {activeChatChannel && (
+              <BuiltinSearchToggle
+                enabled={builtinSearchEnabled}
+                onToggle={handleBuiltinSearchToggle}
+                supportsWebSearch={supportsWebSearch}
               />
             )}
 

@@ -1,3 +1,4 @@
+import logging
 import os
 from typing import Any, Dict, List, Optional
 from urllib.parse import parse_qsl, urlencode, urlparse, urlunparse
@@ -14,6 +15,8 @@ from internal.configs import configs
 from middleware.auth import get_current_user
 from middleware.database.connection import get_session
 from models.mcp import McpServer, McpServerCreate, McpServerUpdate
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(tags=["mcps"])
 
@@ -158,18 +161,22 @@ async def discover_mcp_servers(
 ) -> List[Dict[str, Any]]:
     """
     Discover available MCP servers registered in the backend.
-    Returns server metadata for users to easily add them.
+    Returns server metadata for all registered MCP servers.
     """
     from handler.mcp import registry
 
+    # Get all servers
+    all_servers = registry.get_all_servers()
+
     discovered = []
-    for server_name, config in registry.get_all_servers().items():
+    for server_name, config in all_servers.items():
         discovered.append(
             {
                 "name": config["name"],
                 "module_name": server_name,
                 "mount_path": config["mount_path"],
-                "description": f"Built-in MCP server: {server_name.replace('_', ' ').title()}",
+                "description": config.get("description")
+                or f"Built-in MCP server: {server_name.replace('_', ' ').title()}",
                 "is_builtin": True,
                 "requires_auth": config.get("auth") is not None,
                 "is_default": config.get("is_default", False),
@@ -188,7 +195,9 @@ async def read_mcp_servers(
     limit: int = 100,
 ) -> list[McpServer]:
     # Filter MCP servers by current user
-    statement = select(McpServer).where(McpServer.user_id == user).offset(offset).limit(limit)
+    statement = select(McpServer).where(McpServer.user_id == user)
+
+    statement = statement.offset(offset).limit(limit)
     result = await session.exec(statement)
     mcp_servers = result.all()
     return list(mcp_servers)

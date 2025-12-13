@@ -36,11 +36,11 @@ ResponseT = TypeVar("ResponseT")
 STREAMING_LOG_BATCH_SIZE = 50  # Log every N tokens instead of every token
 
 
-async def _prepare_langchain_tools(db: AsyncSession, agent: Agent | None) -> list[BaseTool]:
-    """Prepare LangChain tools from MCP servers."""
+async def _prepare_langchain_tools(db: AsyncSession, agent: Agent | None, session_id: Any = None) -> list[BaseTool]:
+    """Prepare LangChain tools from MCP servers (both agent-level and session-level)."""
     from core.chat.tools import execute_tool_call, prepare_mcp_tools
 
-    mcp_tools = await prepare_mcp_tools(db, agent)
+    mcp_tools = await prepare_mcp_tools(db, agent, session_id)
     langchain_tools: list[BaseTool] = []
 
     for tool in mcp_tools:
@@ -79,12 +79,12 @@ async def _prepare_langchain_tools(db: AsyncSession, agent: Agent | None) -> lis
         ArgsSchema = create_model(f"{tool_name}Args", **field_definitions)
 
         # Create tool execution function with closure
-        async def make_tool_func(t_name: str, t_db: AsyncSession, t_agent: Any) -> Any:
+        async def make_tool_func(t_name: str, t_db: AsyncSession, t_agent: Any, t_session_id: Any) -> Any:
             async def tool_func(**kwargs: Any) -> str:
                 """Execute the tool with given arguments."""
                 try:
                     args_json = json.dumps(kwargs)
-                    result = await execute_tool_call(t_db, t_name, args_json, t_agent)
+                    result = await execute_tool_call(t_db, t_name, args_json, t_agent, t_session_id)
                     # Format result for AI consumption using the utility function
                     # from core.chat.content_utils import format_tool_result_for_ai
 
@@ -96,7 +96,7 @@ async def _prepare_langchain_tools(db: AsyncSession, agent: Agent | None) -> lis
 
             return tool_func
 
-        tool_func = await make_tool_func(tool_name, db, agent)
+        tool_func = await make_tool_func(tool_name, db, agent, session_id)
 
         # Create structured tool
         structured_tool = StructuredTool(
@@ -107,6 +107,9 @@ async def _prepare_langchain_tools(db: AsyncSession, agent: Agent | None) -> lis
         )
 
         langchain_tools.append(structured_tool)
+
+    logger.info(f"Loaded {len(langchain_tools)} tools")
+    logger.debug(f"Loaded {langchain_tools}")
 
     return langchain_tools
 
@@ -292,9 +295,17 @@ async def get_ai_response_stream_langchain_legacy(
     yield {"type": ChatEventType.PROCESSING, "data": {"status": ProcessingStatus.PREPARING_REQUEST}}
 
     try:
-        # Create langchain agent
-        llm = user_provider_manager.create_langchain_model(provider_id, model=model_name)
-        tools = await _prepare_langchain_tools(db, agent)
+        # Check if built-in search is enabled for this session
+        google_search_enabled = session.google_search_enabled if session else False
+
+        # Create langchain model
+        # Pass google_search_enabled to enable built-in web search for supported models
+        llm = user_provider_manager.create_langchain_model(
+            provider_id, model=model_name, google_search_enabled=google_search_enabled
+        )
+        # Pass session_id to load both agent-level and session-level MCP tools
+        session_id = topic.session_id if topic else None
+        tools = await _prepare_langchain_tools(db, agent, session_id)
         langchain_agent: CompiledStateGraph = create_agent(model=llm, tools=tools, system_prompt=system_prompt)
 
         logger.info(f"Agent created with {len(tools)} tools")
@@ -305,6 +316,11 @@ async def get_ai_response_stream_langchain_legacy(
         assistant_buffer: list[str] = []  # collect tokens/final text for persistence
         # got_stream_tokens = False  # whether we received token-by-token chunks
         token_count = 0  # Track tokens for batch logging
+
+        # Token usage tracking
+        total_input_tokens = 0
+        total_output_tokens = 0
+        total_tokens = 0
 
         # Use astream with multiple stream modes: "updates" for step progress, "messages" for token streaming
         logger.debug("Starting agent.astream with stream_mode=['updates','messages']")
@@ -393,7 +409,79 @@ async def get_ai_response_stream_langchain_legacy(
                         and (not hasattr(last_message, "tool_calls") or not last_message.tool_calls)
                     ):
                         # Do not emit content here; 'messages' stream provides token chunks.
-                        # Keeping this branch prevents other handlers from treating it as an error.
+                        # However, extract citations from response_metadata if available
+                        if hasattr(last_message, "response_metadata"):
+                            response_metadata = last_message.response_metadata
+                            if isinstance(response_metadata, dict):
+                                grounding_metadata = response_metadata.get("grounding_metadata", {})
+
+                                if grounding_metadata:
+                                    logger.info("Found grounding_metadata in final model response")
+                                    citations = []
+
+                                    # Extract web search queries
+                                    web_search_queries = grounding_metadata.get("web_search_queries", [])
+
+                                    # Extract grounding chunks (sources)
+                                    grounding_chunks = grounding_metadata.get("grounding_chunks", [])
+
+                                    # Extract grounding supports (mappings between text segments and sources)
+                                    grounding_supports = grounding_metadata.get("grounding_supports", [])
+
+                                    # Build a map of chunk_index -> chunk data for quick lookup
+                                    chunk_map = {}
+                                    for idx, chunk in enumerate(grounding_chunks):
+                                        if isinstance(chunk, dict) and "web" in chunk:
+                                            web_info = chunk["web"]
+                                            chunk_map[idx] = {
+                                                "url": web_info.get("uri"),
+                                                "title": web_info.get("title"),
+                                            }
+
+                                    # Create citations from grounding_supports
+                                    for support in grounding_supports:
+                                        if isinstance(support, dict):
+                                            segment = support.get("segment", {})
+                                            chunk_indices = support.get("grounding_chunk_indices", [])
+
+                                            # Get the cited text from segment
+                                            cited_text = segment.get("text", "")
+                                            start_index = segment.get("start_index")
+                                            end_index = segment.get("end_index")
+
+                                            # For each chunk index, create a citation
+                                            for chunk_idx in chunk_indices:
+                                                if chunk_idx in chunk_map:
+                                                    citation = {
+                                                        "url": chunk_map[chunk_idx]["url"],
+                                                        "title": chunk_map[chunk_idx]["title"],
+                                                        "cited_text": cited_text,
+                                                        "start_index": start_index,
+                                                        "end_index": end_index,
+                                                    }
+                                                    if web_search_queries:
+                                                        citation["search_queries"] = web_search_queries
+                                                    citations.append(citation)
+
+                                    # Deduplicate citations by URL
+                                    if citations:
+                                        seen_urls = set()
+                                        unique_citations = []
+                                        for citation in citations:
+                                            url = citation.get("url")
+                                            if url and url not in seen_urls:
+                                                seen_urls.add(url)
+                                                unique_citations.append(citation)
+
+                                        if unique_citations:
+                                            logger.info(
+                                                f"Emitting {len(unique_citations)} unique search citations from final response"
+                                            )
+                                            yield {
+                                                "type": ChatEventType.SEARCH_CITATIONS,
+                                                "data": {"citations": unique_citations},
+                                            }
+
                         logger.debug("Final model response update received; deferring to token stream")
 
             elif mode == "messages":
@@ -406,6 +494,21 @@ async def get_ai_response_stream_langchain_legacy(
                 except Exception:
                     logger.debug("Malformed messages data: %r", data)
                     continue
+
+                # Extract token usage metadata if available
+                if hasattr(message_chunk, "usage_metadata"):
+                    usage_metadata = message_chunk.usage_metadata
+                    if isinstance(usage_metadata, dict):
+                        total_input_tokens = usage_metadata.get("input_tokens", total_input_tokens)
+                        total_output_tokens = usage_metadata.get("output_tokens", total_output_tokens)
+                        total_tokens = usage_metadata.get("total_tokens", total_tokens)
+
+                        logger.debug(
+                            "Token usage updated: input=%d, output=%d, total=%d",
+                            total_input_tokens,
+                            total_output_tokens,
+                            total_tokens,
+                        )
 
                 # Batch logging: only log metadata occasionally to reduce overhead
                 token_count += 1
@@ -468,6 +571,23 @@ async def get_ai_response_stream_langchain_legacy(
                 "type": ChatEventType.STREAMING_END,
                 "data": {"id": stream_id, "created_at": asyncio.get_event_loop().time()},
             }
+
+            # Emit token usage information if we captured it
+            if total_tokens > 0 or total_input_tokens > 0 or total_output_tokens > 0:
+                logger.info(
+                    "Emitting token usage: input=%d, output=%d, total=%d",
+                    total_input_tokens,
+                    total_output_tokens,
+                    total_tokens,
+                )
+                yield {
+                    "type": ChatEventType.TOKEN_USAGE,
+                    "data": {
+                        "input_tokens": total_input_tokens,
+                        "output_tokens": total_output_tokens,
+                        "total_tokens": total_tokens,
+                    },
+                }
 
     except Exception as e:
         logger.error(f"Agent execution failed: {e}", exc_info=True)

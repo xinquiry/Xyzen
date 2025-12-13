@@ -37,6 +37,15 @@ export interface MessageAttachment {
   thumbnail_url?: string;
 }
 
+export interface SearchCitation {
+  url?: string;
+  title?: string;
+  cited_text?: string;
+  start_index?: number;
+  end_index?: number;
+  search_queries?: string[];
+}
+
 export interface Message {
   id: string;
   clientId?: string;
@@ -54,6 +63,8 @@ export interface Message {
   isToolCalling?: boolean;
   // Multimodal support
   attachments?: MessageAttachment[];
+  // Search citations from built-in search
+  citations?: SearchCitation[];
 }
 
 export interface ChatChannel {
@@ -64,6 +75,7 @@ export interface ChatChannel {
   agentId?: string;
   provider_id?: string;
   model?: string;
+  google_search_enabled?: boolean;
   connected: boolean;
   error: string | null;
   // Whether assistant is currently producing a reply (planning, tool calls, or generating tokens)
@@ -105,6 +117,7 @@ export interface SessionResponse {
   agent_id?: string;
   provider_id?: string;
   model?: string;
+  google_search_enabled?: boolean;
   topics: TopicResponse[];
 }
 

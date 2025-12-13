@@ -1,7 +1,8 @@
-from typing import List
+from typing import Any, Dict, List
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException
+from pydantic import BaseModel
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 from core.agent_type_detector import AgentTypeDetector
@@ -21,6 +22,24 @@ except Exception as e:
     logging.getLogger(__name__).warning(f"Failed to rebuild SessionReadWithTopics: {e}")
 
 router = APIRouter(tags=["sessions"])
+
+
+# Pydantic models for search engine endpoints
+class SetSearchEngineRequest(BaseModel):
+    """Request model for setting session's search engine"""
+
+    mcp_server_id: str
+
+
+class SearchEngineResponse(BaseModel):
+    """Response model for search engine information"""
+
+    id: str
+    name: str
+    description: str | None
+    status: str
+    url: str
+    tools: List[Dict[str, Any]] | None
 
 
 @router.post("/", response_model=SessionRead)

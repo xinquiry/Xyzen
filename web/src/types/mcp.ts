@@ -21,6 +21,7 @@ export interface BuiltinMcpData {
   requires_auth: boolean;
   is_default?: boolean;
   banner?: string;
+  category?: "search" | "capability" | "knowledge" | "integration" | "general";
 }
 
 /**

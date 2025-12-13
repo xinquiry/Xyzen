@@ -35,6 +35,12 @@ class ChatEventType(StrEnum):
     # Post-processing/ack
     MESSAGE_SAVED = "message_saved"
 
+    # Token usage tracking
+    TOKEN_USAGE = "token_usage"
+
+    # Built-in search citations
+    SEARCH_CITATIONS = "search_citations"
+
 
 class ChatClientEventType(StrEnum):
     """Client -> Server event types (messages coming from the frontend)."""

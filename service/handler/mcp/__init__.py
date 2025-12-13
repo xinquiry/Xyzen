@@ -101,6 +101,7 @@ class MCPServerRegistry:
             "source": metadata.get("source", "official"),
             "banner": metadata.get("banner"),
             "description": metadata.get("description"),
+            "metadata": metadata,  # Store full metadata for filtering
         }
 
     def get_server(self, name: str) -> Optional[Dict[str, Any]]:
