@@ -11,8 +11,8 @@ from common.code.error_code import ErrCode, ErrCodeError
 from core.chat import get_ai_response_stream
 from core.chat.topic_generator import generate_and_update_topic_title
 from core.consume import create_consume_for_chat
+from infra.database import AsyncSessionLocal
 from middleware.auth import AuthContext, get_auth_context_websocket
-from middleware.database.connection import AsyncSessionLocal
 from models.citation import CitationCreate
 from models.message import Message as MessageModel
 from models.message import MessageCreate
@@ -372,6 +372,8 @@ async def chat_websocket(
                 # Handle regular chat messages
                 message_text = data.get("message")
                 file_ids = data.get("file_ids", [])
+                context = data.get("context")
+                logger.debug(f"Received context: {context}")
 
                 if not message_text:
                     continue
@@ -498,7 +500,7 @@ async def chat_websocket(
                 total_tokens = 0
 
                 async for stream_event in get_ai_response_stream(
-                    db, message_text, topic_refreshed, user, manager, connection_id
+                    db, message_text, topic_refreshed, user, manager, connection_id, context
                 ):
                     logger.debug(f"Received stream event: {stream_event['type']}")
 
