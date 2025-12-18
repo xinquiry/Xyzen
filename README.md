@@ -1,4 +1,4 @@
-![coverage](https://storage.sciol.ac.cn/library/xyzen/coverage.png)
+<img src="https://storage.sciol.ac.cn/library/xyzen/coverage.png" style="width:100%; object-fit: contain;" />
 
 # Xyzen
 
