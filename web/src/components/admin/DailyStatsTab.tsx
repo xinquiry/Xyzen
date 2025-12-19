@@ -12,7 +12,7 @@ interface DailyStatsTabProps {
   backendUrl: string;
 }
 
-export function DailyStatsTab({ adminSecret, backendUrl }: DailyStatsTabProps) {
+export function DailyStatsTab({ adminSecret }: DailyStatsTabProps) {
   const [stats, setStats] = useState<DailyTokenStatsResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);

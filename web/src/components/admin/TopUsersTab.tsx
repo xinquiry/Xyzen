@@ -13,7 +13,7 @@ interface TopUsersTabProps {
   backendUrl: string;
 }
 
-export function TopUsersTab({ adminSecret, backendUrl }: TopUsersTabProps) {
+export function TopUsersTab({ adminSecret }: TopUsersTabProps) {
   const [users, setUsers] = useState<UserConsumptionResponse[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
