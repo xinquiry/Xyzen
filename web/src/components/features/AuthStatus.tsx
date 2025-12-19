@@ -1,7 +1,17 @@
 "use client";
 
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/animate-ui/components/radix/dropdown-menu";
 import { useAuth } from "@/hooks/useAuth";
 import {
+  ArrowTopRightOnSquareIcon,
+  ClipboardDocumentIcon,
   ExclamationTriangleIcon,
   UserIcon,
   XMarkIcon,
@@ -126,6 +136,33 @@ function TokenInputModal({
 export function AuthStatus({ onTokenInput, className = "" }: AuthStatusProps) {
   const auth = useAuth();
   const [showTokenModal, setShowTokenModal] = useState(false);
+  const [copied, setCopied] = useState(false);
+
+  const maskedToken = (() => {
+    const token = auth.token;
+    if (!token) return "暂无 access_token";
+    if (token.length <= 20) return "***";
+    return `${token.slice(0, 10)}…${token.slice(-8)}`;
+  })();
+
+  const copyToken = useCallback(async () => {
+    if (!auth.token) return;
+    try {
+      await navigator.clipboard.writeText(auth.token);
+    } catch {
+      const textarea = document.createElement("textarea");
+      textarea.value = auth.token;
+      textarea.setAttribute("readonly", "");
+      textarea.style.position = "fixed";
+      textarea.style.left = "-9999px";
+      document.body.appendChild(textarea);
+      textarea.select();
+      document.execCommand("copy");
+      document.body.removeChild(textarea);
+    }
+    setCopied(true);
+    window.setTimeout(() => setCopied(false), 1200);
+  }, [auth.token]);
 
   // 处理token输入
   const handleTokenSubmit = async (token: string) => {
@@ -145,26 +182,76 @@ export function AuthStatus({ onTokenInput, className = "" }: AuthStatusProps) {
   // 已登录：展示用户信息
   if (auth.isAuthenticated) {
     return (
-      <div className={`flex items-center space-x-2 ${className}`}>
-        <div className="flex items-center space-x-2">
-          {auth.user?.avatar ? (
-            <img
-              src={auth.user.avatar}
-              alt={auth.user.username}
-              className="h-6 w-6 rounded-full"
-            />
-          ) : (
-            <div className="flex h-6 w-6 items-center justify-center rounded-full bg-indigo-100 dark:bg-indigo-900">
-              <UserIcon className="h-4 w-4 text-indigo-600 dark:text-indigo-400" />
-            </div>
-          )}
-          <div className="flex flex-col">
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <button
+            type="button"
+            className={`flex items-center gap-2 rounded-md px-1.5 py-1 transition-colors hover:bg-neutral-100 dark:hover:bg-neutral-800 ${className}`}
+            title="认证信息"
+          >
+            {auth.user?.avatar ? (
+              <img
+                src={auth.user.avatar}
+                alt={auth.user.username}
+                className="h-6 w-6 rounded-full"
+              />
+            ) : (
+              <div className="flex h-6 w-6 items-center justify-center rounded-full bg-indigo-100 dark:bg-indigo-900">
+                <UserIcon className="h-4 w-4 text-indigo-600 dark:text-indigo-400" />
+              </div>
+            )}
+
             <span className="text-sm font-medium max-w-32 truncate text-neutral-900 dark:text-neutral-100">
               {auth.user?.username}
             </span>
+          </button>
+        </DropdownMenuTrigger>
+
+        <DropdownMenuContent align="end" className="w-80">
+          <DropdownMenuLabel className="text-xs">凭证</DropdownMenuLabel>
+
+          <div className="px-2 py-1.5">
+            <div className="mb-1 text-[11px] text-neutral-500 dark:text-neutral-400">
+              access_token
+            </div>
+            <div className="rounded-md bg-neutral-100 px-2 py-2 font-mono text-[11px] text-neutral-800 dark:bg-neutral-800 dark:text-neutral-200 break-all">
+              {maskedToken}
+            </div>
           </div>
-        </div>
-      </div>
+
+          <DropdownMenuSeparator />
+
+          <DropdownMenuItem
+            disabled={!auth.token}
+            onSelect={(e) => {
+              e.preventDefault();
+              void copyToken();
+            }}
+            className="gap-2"
+          >
+            <ClipboardDocumentIcon className="h-4 w-4" />
+            <span>{copied ? "已复制" : "复制 Token"}</span>
+          </DropdownMenuItem>
+
+          <DropdownMenuItem
+            disabled={!auth.token}
+            onSelect={(e) => {
+              e.preventDefault();
+              if (!auth.token) return;
+              const encoded = encodeURIComponent(auth.token);
+              window.open(
+                `https://chat.sciol.ac.cn/?access_token=${encoded}`,
+                "_blank",
+                "noopener,noreferrer",
+              );
+            }}
+            className="gap-2"
+          >
+            <ArrowTopRightOnSquareIcon className="h-4 w-4" />
+            <span>跳转到 Web</span>
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
     );
   }
 
