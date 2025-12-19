@@ -1,5 +1,6 @@
 "use client";
 
+import { CopyButton } from "@/components/animate-ui/components/buttons/copy";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -12,7 +13,6 @@ import { useAuth } from "@/hooks/useAuth";
 import { useUserWallet } from "@/hooks/useUserWallet";
 import {
   ArrowTopRightOnSquareIcon,
-  ClipboardDocumentIcon,
   ExclamationTriangleIcon,
   InformationCircleIcon,
   UserIcon,
@@ -28,7 +28,6 @@ export function AuthStatus({ onTokenInput, className = "" }: AuthStatusProps) {
   const auth = useAuth();
   const [showTokenModal, setShowTokenModal] = useState(false);
   const [tokenInput, setTokenInput] = useState("");
-  const [copied, setCopied] = useState(false);
   const [showPointsInfo, setShowPointsInfo] = useState(false);
 
   const isAuthedForUi = auth.isAuthenticated || !!auth.token;
@@ -41,7 +40,7 @@ export function AuthStatus({ onTokenInput, className = "" }: AuthStatusProps) {
     return `${token.slice(0, 10)}…${token.slice(-8)}`;
   })();
 
-  const copyToken = useCallback(async () => {
+  const copyTokenFallback = useCallback(async () => {
     if (!auth.token) return;
     try {
       await navigator.clipboard.writeText(auth.token);
@@ -56,8 +55,6 @@ export function AuthStatus({ onTokenInput, className = "" }: AuthStatusProps) {
       document.execCommand("copy");
       document.body.removeChild(textarea);
     }
-    setCopied(true);
-    window.setTimeout(() => setCopied(false), 1200);
   }, [auth.token]);
 
   // 处理token输入
@@ -144,15 +141,14 @@ export function AuthStatus({ onTokenInput, className = "" }: AuthStatusProps) {
                   access_token
                 </div>
                 <div className="flex items-center gap-1">
-                  <button
-                    type="button"
+                  <CopyButton
+                    content={auth.token ?? ""}
+                    variant="ghost"
+                    size="xs"
                     disabled={!auth.token}
-                    onClick={() => void copyToken()}
-                    className="rounded-md p-1 text-neutral-500 hover:bg-neutral-100 hover:text-neutral-700 disabled:cursor-not-allowed disabled:opacity-60 dark:text-neutral-400 dark:hover:bg-neutral-800 dark:hover:text-neutral-200"
-                    title={copied ? "已复制" : "复制"}
-                  >
-                    <ClipboardDocumentIcon className="h-4 w-4" />
-                  </button>
+                    className="text-neutral-500 hover:text-neutral-700 disabled:cursor-not-allowed disabled:opacity-60 dark:text-neutral-400 dark:hover:text-neutral-200"
+                    title="复制"
+                  />
                   <button
                     type="button"
                     disabled={!auth.token}
@@ -176,7 +172,7 @@ export function AuthStatus({ onTokenInput, className = "" }: AuthStatusProps) {
               <button
                 type="button"
                 disabled={!auth.token}
-                onClick={() => void copyToken()}
+                onClick={() => void copyTokenFallback()}
                 className="w-full rounded-md bg-neutral-100 px-2 py-1.5 text-left font-mono text-[11px] text-neutral-800 hover:bg-neutral-200 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-neutral-800 dark:text-neutral-200 dark:hover:bg-neutral-700"
                 title={auth.token ? "点击复制" : "暂无 access_token"}
               >
