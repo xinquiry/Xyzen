@@ -5,12 +5,11 @@ from datetime import datetime, timezone
 from typing import Any, Callable, Dict
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, WebSocket, WebSocketDisconnect
-
 from common.code.error_code import ErrCode, ErrCodeError
 from core.chat import get_ai_response_stream
 from core.chat.topic_generator import generate_and_update_topic_title
 from core.consume import create_consume_for_chat
+from fastapi import APIRouter, Depends, WebSocket, WebSocketDisconnect
 from infra.database import AsyncSessionLocal
 from middleware.auth import AuthContext, get_auth_context_websocket
 from models.citation import CitationCreate
@@ -175,9 +174,8 @@ async def handle_tool_call_confirmation(
         # model = pending_info["model"]
 
         # Import necessary functions
-        from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
-
         from core.chat.tools import execute_tool_calls
+        from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
         from schemas.message import ChatMessage
 
         try:
@@ -617,7 +615,7 @@ async def chat_websocket(
                         full_content = stream_event["data"]["content"]
 
                         if not ai_message_obj:
-                            ai_message_create = MessageCreate(role="assistant", content=full_content, topic_id=topic_id)
+                            ai_message_create = MessageCreate(role="assistant", content=full_content, topic_id=topic_id)  # noqa: E501
                             ai_message_obj = await message_repo.create_message(ai_message_create)
                         else:
                             ai_message_obj.content = full_content
@@ -738,6 +736,13 @@ async def chat_websocket(
                         remaining_amount = total_cost - pre_deducted_amount
 
                         if remaining_amount > 0:
+                            # Log auth context for debugging
+                            logger.info(
+                                f"About to create consume record - user_id: '{auth_ctx.user_id}', "
+                                f"auth_provider: '{auth_ctx.auth_provider}', "
+                                f"user_id type: {type(auth_ctx.user_id)}"
+                            )
+
                             # 仅在 bohr_app 时传递 access_token
                             access_key = None
                             if auth_ctx.auth_provider.lower() == "bohr_app":

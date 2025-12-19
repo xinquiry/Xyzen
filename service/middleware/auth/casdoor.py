@@ -82,9 +82,16 @@ class CasdoorAuthProvider(BaseAuthProvider):
         logger.debug("Casdoor: 解析 userinfo API 响应中的用户信息")
         logger.debug(f"Casdoor: userinfo 数据: {userinfo_data}")
 
+        # Extract user ID - try multiple fields
+        user_id = userinfo_data.get("sub") or userinfo_data.get("id") or userinfo_data.get("name") or ""
+        if not user_id:
+            logger.error(f"Casdoor: 无法从 userinfo 中提取用户ID！数据: {userinfo_data}")
+        else:
+            logger.debug(f"Casdoor: 成功提取用户ID: {user_id}")
+
         # Casdoor 返回标准的 JWT userinfo 格式
         user_info = UserInfo(
-            id=userinfo_data.get("sub", ""),
+            id=user_id,
             username=userinfo_data.get("preferred_username", ""),
             email=userinfo_data.get("email"),
             display_name=userinfo_data.get("name", userinfo_data.get("preferred_username", "")),
