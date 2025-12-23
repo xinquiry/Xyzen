@@ -226,7 +226,7 @@ async def write_file(knowledge_set_id: UUID, filename: str, content: str) -> dic
 
     Args:
         knowledge_set_id: The ID of the knowledge set.
-        filename: The name of the file.
+        filename: The name of the file. Use different extensions for different file types.
         content: The text content to write.
     """
     try:
