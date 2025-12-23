@@ -11,6 +11,7 @@ Xyzen is an AI Laboratory Server - a full-stack application with a Python FastAP
 **Goal:** Write professional, scalable, and clean code.
 
 ### Frontend (`/web`)
+
 - **Architecture:** Follow the **Layered Architecture**:
   1.  **Component** (`components/`): UI rendering only. No business logic or direct API calls.
   2.  **Hook** (`hooks/`): Encapsulates capabilities, subscribes to Store.
@@ -29,33 +30,48 @@ Xyzen is an AI Laboratory Server - a full-stack application with a Python FastAP
   - Global types: `types/<module>`
 
 ### Backend (`/service`)
+
 - **Framework:** FastAPI with Uvicorn.
-- **Language:** Python 3.13. Use modern union syntax (`str | None` instead of `Optional[str]`).
+- **Language:** Python 3.12. Use modern union syntax (`str | None` instead of `Optional[str]`).
 - **Database:** **SQLModel** with PostgreSQL.
   - **Constraint:** Use a **No-Foreign-Key** model approach.
-  - **Pattern:** Use the **Repository Pattern** (`repo/`) for all database operations.
+  - **Pattern:** Use the **Repository Pattern** (`repos/`) for all database operations.
 - **AI/Agents:**
   - **Framework:** **LangGraph** for multi-agent workflows and state management.
   - **Integration:** LangChain-compatible provider system.
   - **MCP:** FastMCP integration for Model Context Protocol.
+- **Testing:**
+  - **Runner:** `uv run pytest`.
+  - **Structure:**
+    - `tests/unit/`: Logic tests without external dependencies.
+    - `tests/integration/`: API and database integration tests.
+  - **Style:**
+    - Use `async_client` fixture for API tests.
+    - Use `db_session` fixture for database operations.
+    - Ensure tests clean up created resources or rely on database transaction rollbacks.
 
 ## Project Structure
 
 ### Backend (`/service`)
+
 ```
 service/
-├── app/main.py             # Entry point
-├── core/                   # Business Logic
-│   ├── agents/             # Agent implementations
-│   ├── chat/               # Chat & LangChain logic
-│   └── ...
-├── handler/api/v1/         # API Endpoints
-├── models/                 # SQLModel definitions (No FKs)
-├── repo/                   # Database Repositories
-└── schemas/                # Pydantic Schemas
+├── app/
+│   ├── main.py             # Entry point
+│   ├── agents/             # Builtin Agents
+│   ├── api/v1/             # API Endpoints
+│   ├── core/               # Business Logic, Chat & LangChain logic
+│   ├── models/             # SQLModel definitions (No FKs)
+│   ├── repos/              # Database Repositories
+│   └── schemas/            # Pydantic Schemas
+├── tests/                  # Tests
+├── migrations/             # Alembic Migrations
+├── alembic.ini
+└── pyproject.toml
 ```
 
 ### Frontend (`/web`)
+
 ```
 web/src/
 ├── app/                    # Pages/Routes

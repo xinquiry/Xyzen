@@ -1,7 +1,14 @@
+import ConfirmationModal from "@/components/modals/ConfirmationModal";
+import InputModal from "@/components/modals/InputModal";
+import NotificationModal from "@/components/modals/NotificationModal";
 import { PreviewModal } from "@/components/preview/PreviewModal";
 import type { PreviewFile } from "@/components/preview/types";
 import { fileService, type FileUploadResponse } from "@/service/fileService";
 import { folderService, type Folder } from "@/service/folderService";
+import {
+  knowledgeSetService,
+  type KnowledgeSetWithFileCount,
+} from "@/service/knowledgeSetService";
 import {
   ArrowDownTrayIcon,
   ArrowPathRoundedSquareIcon,
@@ -10,6 +17,7 @@ import {
   TrashIcon,
 } from "@heroicons/react/24/outline";
 import { FolderIcon } from "@heroicons/react/24/solid";
+import { useXyzen } from "@/store";
 import { format } from "date-fns";
 import React, {
   forwardRef,
@@ -26,10 +34,12 @@ import type { KnowledgeTab, ViewMode } from "./types";
 interface FileListProps {
   filter: KnowledgeTab;
   viewMode: ViewMode;
-  refreshTrigger?: number;
+  refreshTrigger: number;
+  onRefresh?: () => void;
   onFileCountChange?: (count: number) => void;
-  currentFolderId?: string | null;
+  currentFolderId: string | null;
   onFolderChange?: (folderId: string | null) => void;
+  currentKnowledgeSetId?: string | null;
 }
 
 export interface FileListHandle {
@@ -51,9 +61,11 @@ export const FileList = React.memo(
         filter,
         viewMode,
         refreshTrigger,
+        onRefresh,
         onFileCountChange,
         currentFolderId,
         onFolderChange,
+        currentKnowledgeSetId,
       },
       ref,
     ) => {
@@ -80,47 +92,127 @@ export const FileList = React.memo(
         type: ContextMenuType;
       } | null>(null);
 
+      const [knowledgeSetModal, setKnowledgeSetModal] = useState<{
+        isOpen: boolean;
+        file: FileUploadResponse;
+      } | null>(null);
+
+      const [knowledgeSets, setKnowledgeSets] = useState<
+        KnowledgeSetWithFileCount[]
+      >([]);
+
+      // Confirmation Modal State
+      const [confirmation, setConfirmation] = useState<{
+        isOpen: boolean;
+        title: string;
+        message: string;
+        confirmLabel?: string;
+        destructive?: boolean;
+        onConfirm: () => void;
+      } | null>(null);
+
+      // Rename Modal State
+      const [renameModal, setRenameModal] = useState<{
+        isOpen: boolean;
+        item: Folder | FileUploadResponse;
+        type: ContextMenuType;
+      } | null>(null);
+
+      // Notification State
+      const [notification, setNotification] = useState<{
+        isOpen: boolean;
+        title: string;
+        message: string;
+        type: "info" | "success" | "warning" | "error";
+      } | null>(null);
+
       useImperativeHandle(
         ref,
         () => ({
           emptyTrash: async () => {
             if (files.length === 0 && folders.length === 0) return;
             const count = files.length + folders.length;
-            if (
-              !confirm(
-                `Are you sure you want to permanently delete ${count} items? This cannot be undone.`,
-              )
-            )
-              return;
 
-            try {
-              setIsLoading(true);
-              // Hard delete all currently listed files
-              await Promise.all(
-                files.map((f) => fileService.deleteFile(f.id, true)),
-              );
-              // Hard delete all currently listed folders
-              await Promise.all(
-                folders.map((f) => folderService.deleteFolder(f.id, true)),
-              );
+            setConfirmation({
+              isOpen: true,
+              title: "Empty Trash",
+              message: `Are you sure you want to permanently delete ${count} items? This cannot be undone.`,
+              confirmLabel: "Empty Trash",
+              destructive: true,
+              onConfirm: async () => {
+                try {
+                  setIsLoading(true);
+                  // Hard delete all currently listed files
+                  await Promise.all(
+                    files.map((f) => fileService.deleteFile(f.id, true)),
+                  );
+                  // Hard delete all currently listed folders
+                  await Promise.all(
+                    folders.map((f) => folderService.deleteFolder(f.id, true)),
+                  );
 
-              setFiles([]);
-              setFolders([]);
-              if (onFileCountChange) onFileCountChange(0);
-            } catch (error) {
-              console.error("Failed to empty trash", error);
-              alert("Failed to empty trash completely. Some items may remain.");
-            } finally {
-              setIsLoading(false);
-            }
+                  setFiles([]);
+                  setFolders([]);
+                  if (onFileCountChange) onFileCountChange(0);
+                  if (onRefresh) onRefresh();
+                } catch (error) {
+                  console.error("Failed to empty trash", error);
+                  alert(
+                    "Failed to empty trash completely. Some items may remain.",
+                  );
+                } finally {
+                  setIsLoading(false);
+                }
+              },
+            });
           },
         }),
-        [files, folders, onFileCountChange],
+        [files, folders, onFileCountChange, onRefresh],
       );
+
+      // Load knowledge sets for the modal
+      useEffect(() => {
+        const loadKnowledgeSets = async () => {
+          try {
+            const sets = await knowledgeSetService.listKnowledgeSets(false);
+            setKnowledgeSets(sets);
+          } catch (error) {
+            console.error("Failed to load knowledge sets", error);
+          }
+        };
+        loadKnowledgeSets();
+      }, [refreshTrigger]);
 
       const loadFiles = useCallback(async () => {
         setIsLoading(true);
         try {
+          // Handle Knowledge Set view
+          if (filter === "knowledge" && currentKnowledgeSetId) {
+            // Get file IDs linked to this knowledge set
+            const fileIds = await knowledgeSetService.getFilesInKnowledgeSet(
+              currentKnowledgeSetId,
+            );
+
+            // Fetch file details for each ID
+            if (fileIds.length > 0) {
+              const filePromises = fileIds.map((id) =>
+                fileService.getFile(id).catch(() => null),
+              );
+              const filesData = await Promise.all(filePromises);
+              const validFiles = filesData.filter(
+                (f) => f !== null && !f.is_deleted,
+              ) as FileUploadResponse[];
+              setFiles(validFiles);
+              setFolders([]);
+              if (onFileCountChange) onFileCountChange(validFiles.length);
+            } else {
+              setFiles([]);
+              setFolders([]);
+              if (onFileCountChange) onFileCountChange(0);
+            }
+            return;
+          }
+
           if (filter === "folders") {
             // ... (existing logic)
             const folderData = await folderService.listFolders(
@@ -173,7 +265,7 @@ export const FileList = React.memo(
         } finally {
           setIsLoading(false);
         }
-      }, [filter, currentFolderId, onFileCountChange]);
+      }, [filter, currentFolderId, currentKnowledgeSetId, onFileCountChange]);
 
       useEffect(() => {
         loadFiles();
@@ -198,13 +290,12 @@ export const FileList = React.memo(
         item: Folder | FileUploadResponse,
         type: ContextMenuType,
       ) => {
-        const newName = prompt(
-          "Enter new name:",
-          type === "folder"
-            ? (item as Folder).name
-            : (item as FileUploadResponse).original_filename,
-        );
-        if (!newName || newName.trim() === "") return;
+        setRenameModal({ isOpen: true, item, type });
+      };
+
+      const handleRenameConfirm = async (newName: string) => {
+        if (!renameModal) return;
+        const { item, type } = renameModal;
 
         try {
           if (type === "folder") {
@@ -215,6 +306,7 @@ export const FileList = React.memo(
             });
           }
           loadFiles(); // Refresh
+          if (onRefresh) onRefresh();
         } catch (e) {
           console.error("Rename failed", e);
           alert("Rename failed");
@@ -236,6 +328,7 @@ export const FileList = React.memo(
             });
           }
           loadFiles(); // Refresh list
+          if (onRefresh) onRefresh();
           setMoveModal(null);
         } catch (e) {
           console.error("Move failed", e);
@@ -247,20 +340,28 @@ export const FileList = React.memo(
         item: Folder | FileUploadResponse,
         type: ContextMenuType,
       ) => {
-        if (!confirm(`Are you sure you want to delete this ${type}?`)) return;
-
-        try {
-          const isHardDelete = filter === "trash";
-          if (type === "folder") {
-            await folderService.deleteFolder(item.id, isHardDelete);
-          } else {
-            await fileService.deleteFile(item.id, isHardDelete);
-          }
-          loadFiles();
-        } catch (e) {
-          console.error("Delete failed", e);
-          alert("Delete failed");
-        }
+        setConfirmation({
+          isOpen: true,
+          title: `Delete ${type === "folder" ? "Folder" : "File"}`,
+          message: `Are you sure you want to delete this ${type}?`,
+          confirmLabel: "Delete",
+          destructive: true,
+          onConfirm: async () => {
+            try {
+              const isHardDelete = filter === "trash";
+              if (type === "folder") {
+                await folderService.deleteFolder(item.id, isHardDelete);
+              } else {
+                await fileService.deleteFile(item.id, isHardDelete);
+              }
+              loadFiles();
+              if (onRefresh) onRefresh();
+            } catch (e) {
+              console.error("Delete failed", e);
+              alert("Delete failed");
+            }
+          },
+        });
       };
 
       const handleDelete = async (fileId: string) => {
@@ -270,18 +371,26 @@ export const FileList = React.memo(
           ? "Are you sure you want to permanently delete this file? This cannot be undone."
           : "Are you sure you want to move this file to Trash?";
 
-        if (!confirm(confirmMsg)) return;
-
-        try {
-          await fileService.deleteFile(fileId, isHardDelete);
-          setFiles((prev) => {
-            const next = prev.filter((f) => f.id !== fileId);
-            if (onFileCountChange) onFileCountChange(next.length);
-            return next;
-          });
-        } catch (error) {
-          console.error("Delete failed", error);
-        }
+        setConfirmation({
+          isOpen: true,
+          title: isHardDelete ? "Delete Forever" : "Move to Trash",
+          message: confirmMsg,
+          confirmLabel: isHardDelete ? "Delete Forever" : "Move to Trash",
+          destructive: true,
+          onConfirm: async () => {
+            try {
+              await fileService.deleteFile(fileId, isHardDelete);
+              setFiles((prev) => {
+                const next = prev.filter((f) => f.id !== fileId);
+                if (onFileCountChange) onFileCountChange(next.length);
+                return next;
+              });
+              if (onRefresh) onRefresh();
+            } catch (error) {
+              console.error("Delete failed", error);
+            }
+          },
+        });
       };
 
       const handleRestore = async (id: string, type: ContextMenuType) => {
@@ -303,18 +412,40 @@ export const FileList = React.memo(
               return next;
             });
           }
+          if (onRefresh) onRefresh();
         } catch (error) {
           console.error("Restore failed", error);
           alert("Restore failed");
         }
       };
 
-      const handleDownload = async (fileId: string) => {
+      const backendUrl = useXyzen((state) => state.backendUrl);
+      const token = useXyzen((state) => state.token);
+
+      const handleDownload = async (fileId: string, fileName: string) => {
         try {
-          const { download_url } = await fileService.getFileUrl(fileId);
-          window.open(download_url, "_blank");
+          // Use proxy download endpoint to handle auth and force download
+          const base = backendUrl || window.location.origin;
+          const url = `${base}${base.endsWith("/") ? "" : "/"}xyzen/api/v1/files/${fileId}/download`;
+
+          const response = await fetch(url, {
+            headers: token ? { Authorization: `Bearer ${token}` } : {},
+          });
+
+          if (!response.ok) throw new Error("Download failed");
+
+          const blob = await response.blob();
+          const objectUrl = URL.createObjectURL(blob);
+          const a = document.createElement("a");
+          a.href = objectUrl;
+          a.download = fileName;
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          URL.revokeObjectURL(objectUrl);
         } catch (error) {
           console.error("Download failed", error);
+          alert("Download failed");
         }
       };
 
@@ -331,6 +462,76 @@ export const FileList = React.memo(
       const handleFolderClick = (folderId: string) => {
         if (onFolderChange) {
           onFolderChange(folderId);
+        }
+      };
+
+      const handleAddToKnowledgeSet = (file: FileUploadResponse) => {
+        setKnowledgeSetModal({ isOpen: true, file });
+      };
+
+      const handleRemoveFromKnowledgeSet = async (file: FileUploadResponse) => {
+        if (!currentKnowledgeSetId) return;
+
+        setConfirmation({
+          isOpen: true,
+          title: "Remove from Knowledge Set",
+          message: `Remove "${file.original_filename}" from this knowledge set?`,
+          confirmLabel: "Remove",
+          destructive: true,
+          onConfirm: async () => {
+            try {
+              await knowledgeSetService.unlinkFileFromKnowledgeSet(
+                currentKnowledgeSetId,
+                file.id,
+              );
+              // Refresh the file list
+              loadFiles();
+              if (onRefresh) onRefresh();
+            } catch (error) {
+              console.error("Failed to remove file from knowledge set", error);
+              alert("Failed to remove file from knowledge set");
+            }
+          },
+        });
+      };
+
+      const handleLinkToKnowledgeSet = async (knowledgeSetId: string) => {
+        if (!knowledgeSetModal) return;
+
+        try {
+          await knowledgeSetService.linkFileToKnowledgeSet(
+            knowledgeSetId,
+            knowledgeSetModal.file.id,
+          );
+          setKnowledgeSetModal(null);
+          if (onRefresh) onRefresh();
+          setNotification({
+            isOpen: true,
+            title: "Success",
+            message: "File added to knowledge set successfully",
+            type: "success",
+          });
+        } catch (error: unknown) {
+          console.error("Failed to link file to knowledge set", error);
+          const msg = error instanceof Error ? error.message : String(error);
+          if (
+            msg.toLowerCase().includes("already") ||
+            msg.toLowerCase().includes("duplicate")
+          ) {
+            setNotification({
+              isOpen: true,
+              title: "Notice",
+              message: "This file is already in the knowledge set.",
+              type: "warning",
+            });
+          } else {
+            setNotification({
+              isOpen: true,
+              title: "Error",
+              message: "Failed to add file to knowledge set",
+              type: "error",
+            });
+          }
         }
       };
 
@@ -506,7 +707,7 @@ export const FileList = React.memo(
                             <button
                               onClick={(e) => {
                                 e.stopPropagation();
-                                handleDownload(file.id);
+                                handleDownload(file.id, file.original_filename);
                               }}
                               title="Download"
                             >
@@ -613,7 +814,26 @@ export const FileList = React.memo(
               onMove={(item, type) =>
                 setMoveModal({ isOpen: true, item, type })
               }
-              onDownload={(item) => handleDownload(item.id)}
+              onDownload={
+                contextMenu.type === "file"
+                  ? (item) =>
+                      handleDownload(
+                        item.id,
+                        (item as FileUploadResponse).original_filename,
+                      )
+                  : undefined
+              }
+              onAddToKnowledgeSet={
+                contextMenu.type === "file"
+                  ? handleAddToKnowledgeSet
+                  : undefined
+              }
+              onRemoveFromKnowledgeSet={
+                contextMenu.type === "file"
+                  ? handleRemoveFromKnowledgeSet
+                  : undefined
+              }
+              isInKnowledgeSetView={filter === "knowledge"}
             />
           )}
 
@@ -634,6 +854,94 @@ export const FileList = React.memo(
             onClose={() => setIsPreviewOpen(false)}
             file={previewFile}
           />
+
+          {/* Knowledge Set Selection Modal */}
+          {knowledgeSetModal && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+              <div className="w-full max-w-md rounded-lg border border-neutral-200 bg-white p-6 shadow-xl dark:border-neutral-800 dark:bg-neutral-900">
+                <h3 className="mb-4 text-lg font-semibold text-neutral-900 dark:text-white">
+                  Add to Knowledge Set
+                </h3>
+                <p className="mb-4 text-sm text-neutral-600 dark:text-neutral-400">
+                  Select a knowledge set to add "
+                  {knowledgeSetModal.file.original_filename}"
+                </p>
+                <div className="mb-4 max-h-64 space-y-2 overflow-y-auto">
+                  {knowledgeSets.length === 0 ? (
+                    <p className="text-sm text-neutral-400 italic">
+                      No knowledge sets available. Create one first.
+                    </p>
+                  ) : (
+                    knowledgeSets.map((ks) => (
+                      <button
+                        key={ks.id}
+                        onClick={() => handleLinkToKnowledgeSet(ks.id)}
+                        className="flex w-full items-center justify-between rounded-lg border border-neutral-200 p-3 text-left hover:bg-neutral-50 dark:border-neutral-800 dark:hover:bg-neutral-800"
+                      >
+                        <div className="flex-1">
+                          <div className="font-medium text-neutral-900 dark:text-white">
+                            {ks.name}
+                          </div>
+                          {ks.description && (
+                            <div className="text-xs text-neutral-500 dark:text-neutral-400">
+                              {ks.description}
+                            </div>
+                          )}
+                        </div>
+                        <div className="text-xs text-neutral-400">
+                          {ks.file_count} files
+                        </div>
+                      </button>
+                    ))
+                  )}
+                </div>
+                <button
+                  onClick={() => setKnowledgeSetModal(null)}
+                  className="w-full rounded-lg bg-neutral-100 px-4 py-2 text-sm font-medium text-neutral-900 hover:bg-neutral-200 dark:bg-neutral-800 dark:text-white dark:hover:bg-neutral-700"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          )}
+
+          {confirmation && (
+            <ConfirmationModal
+              isOpen={confirmation.isOpen}
+              onClose={() => setConfirmation(null)}
+              onConfirm={confirmation.onConfirm}
+              title={confirmation.title}
+              message={confirmation.message}
+              confirmLabel={confirmation.confirmLabel}
+              destructive={confirmation.destructive}
+            />
+          )}
+
+          {renameModal && (
+            <InputModal
+              isOpen={renameModal.isOpen}
+              onClose={() => setRenameModal(null)}
+              onConfirm={handleRenameConfirm}
+              title={`Rename ${renameModal.type === "folder" ? "Folder" : "File"}`}
+              initialValue={
+                renameModal.type === "folder"
+                  ? (renameModal.item as Folder).name
+                  : (renameModal.item as FileUploadResponse).original_filename
+              }
+              placeholder="Enter new name"
+              confirmLabel="Rename"
+            />
+          )}
+
+          {notification && (
+            <NotificationModal
+              isOpen={notification.isOpen}
+              onClose={() => setNotification(null)}
+              title={notification.title}
+              message={notification.message}
+              type={notification.type}
+            />
+          )}
         </div>
       );
     },

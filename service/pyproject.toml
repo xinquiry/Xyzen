@@ -8,6 +8,7 @@ dependencies = [
     "aioboto3>=15.5.0",
     "alembic>=1.16.4",
     "anthropic>=0.67.0",
+    "celery[redis]>=5.4.0",
     "databases[postgresql,sqlite]>=0.9.0",
     "fastapi[standard]>=0.116.1",
     "fastmcp>=2.12.3",
@@ -34,6 +35,9 @@ dependencies = [
     "python-multipart>=0.0.20",
     "requests>=2.32.4",
     "sqlmodel>=0.0.24",
+    "openpyxl>=3.1.2",
+    "python-docx>=1.1.0",
+    "python-pptx>=0.6.23",
     "websockets>=13.0,<14.0",
 ]
 
@@ -50,6 +54,8 @@ dev = [
     "pytest-mock>=3.12.0",
     "httpx>=0.28.1",
     "aiosqlite>=0.20.0",
+    "pytest-xdist>=3.8.0",
+    "polyfactory>=3.2.0",
 ]
 
 [tool.ruff]
@@ -169,11 +175,14 @@ addopts = [
     "--maxfail=10",
     "--durations=10",
     "--color=yes",
+    # "-n", "auto",  # Enable parallel execution with pytest-xdist (uncomment to use)
+    "--dist", "worksteal",
 ]
 markers = [
     "slow: marks tests as slow (deselect with '-m \"not slow\"')",
     "integration: marks tests as integration tests",
     "unit: marks tests as unit tests",
+    "e2e: marks tests as end-to-end tests",
 ]
 filterwarnings = [
     "ignore::DeprecationWarning",

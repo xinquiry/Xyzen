@@ -6,6 +6,7 @@ import { AudioRenderer } from "./renderers/AudioRenderer";
 import { ImageRenderer } from "./renderers/ImageRenderer";
 import { PdfRenderer } from "./renderers/PdfRenderer";
 import { VideoRenderer } from "./renderers/VideoRenderer";
+import { MarkdownRenderer } from "./renderers/MarkdownRenderer";
 import type { PreviewFile } from "./types";
 
 interface PreviewModalProps {
@@ -75,9 +76,15 @@ export const PreviewModal = ({ isOpen, onClose, file }: PreviewModalProps) => {
           } else {
             URL.revokeObjectURL(objectUrl);
           }
-        } catch (err) {
+        } catch (err: unknown) {
           console.error(err);
-          if (active) setError("Failed to load file preview");
+          if (active) {
+            const errorMessage =
+              err instanceof Error
+                ? err.message
+                : "Failed to load file preview";
+            setError(errorMessage);
+          }
         } finally {
           if (active) setLoading(false);
         }
@@ -118,6 +125,14 @@ export const PreviewModal = ({ isOpen, onClose, file }: PreviewModalProps) => {
     if (type === "application/pdf") {
       return <PdfRenderer file={file} url={blobUrl} />;
     }
+    if (
+      type === "text/markdown" ||
+      type === "text/plain" ||
+      file.name.endsWith(".md") ||
+      file.name.endsWith(".txt")
+    ) {
+      return <MarkdownRenderer file={file} url={blobUrl} />;
+    }
 
     return (
       <div className="flex flex-col items-center gap-4 text-white">
@@ -126,6 +141,7 @@ export const PreviewModal = ({ isOpen, onClose, file }: PreviewModalProps) => {
           href={blobUrl}
           download={file.name}
           className="rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium hover:bg-indigo-700"
+          title="Download"
         >
           Download File
         </a>
