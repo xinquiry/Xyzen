@@ -1,5 +1,11 @@
 "use client";
 
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/animate-ui/components/animate/tooltip";
 import { CopyButton } from "@/components/animate-ui/components/buttons/copy";
 import {
   DropdownMenu,
@@ -28,6 +34,7 @@ export interface AuthStatusProps {
 
 export function AuthStatus({ onTokenInput, className = "" }: AuthStatusProps) {
   const auth = useAuth();
+  const [menuOpen, setMenuOpen] = useState(false);
   const [showTokenModal, setShowTokenModal] = useState(false);
   const [showPointsInfo, setShowPointsInfo] = useState(false);
 
@@ -77,7 +84,7 @@ export function AuthStatus({ onTokenInput, className = "" }: AuthStatusProps) {
   if (isAuthedForUi) {
     return (
       <>
-        <DropdownMenu>
+        <DropdownMenu open={menuOpen} onOpenChange={setMenuOpen}>
           <DropdownMenuTrigger asChild>
             <button
               type="button"
@@ -106,7 +113,7 @@ export function AuthStatus({ onTokenInput, className = "" }: AuthStatusProps) {
             <DropdownMenuLabel className="text-xs">账户</DropdownMenuLabel>
 
             <div className="px-2 py-1.5">
-              <div className="relative overflow-hidden rounded-lg border border-indigo-100 bg-gradient-to-br from-indigo-50/80 to-white p-3 dark:border-indigo-500/20 dark:from-indigo-950/20 dark:to-neutral-900/20">
+              <div className="relative overflow-hidden rounded-lg border border-indigo-100 bg-linear-to-br from-indigo-50/80 to-white p-3 dark:border-indigo-500/20 dark:from-indigo-950/20 dark:to-neutral-900/20">
                 <div className="flex items-center justify-between gap-2">
                   <div className="flex items-center gap-3">
                     <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-indigo-100 text-indigo-600 shadow-sm dark:bg-indigo-500/20 dark:text-indigo-400">
@@ -125,7 +132,10 @@ export function AuthStatus({ onTokenInput, className = "" }: AuthStatusProps) {
                   </div>
                   <button
                     type="button"
-                    onClick={() => setShowPointsInfo(true)}
+                    onClick={() => {
+                      setMenuOpen(false);
+                      setShowPointsInfo(true);
+                    }}
                     className="rounded-full p-1 text-neutral-400 transition-colors hover:bg-white/50 hover:text-indigo-600 dark:text-neutral-500 dark:hover:bg-neutral-800 dark:hover:text-indigo-400"
                     title="积分说明"
                   >
@@ -144,31 +154,44 @@ export function AuthStatus({ onTokenInput, className = "" }: AuthStatusProps) {
                   access_token
                 </div>
                 <div className="flex items-center gap-1">
-                  <CopyButton
-                    content={auth.token ?? ""}
-                    variant="ghost"
-                    size="xs"
-                    disabled={!auth.token}
-                    className="text-neutral-500 hover:text-neutral-700 disabled:cursor-not-allowed disabled:opacity-60 dark:text-neutral-400 dark:hover:text-neutral-200"
-                    title="复制"
-                  />
-                  <button
-                    type="button"
-                    disabled={!auth.token}
-                    onClick={() => {
-                      if (!auth.token) return;
-                      const encoded = encodeURIComponent(auth.token);
-                      window.open(
-                        `https://chat.sciol.ac.cn/?access_token=${encoded}`,
-                        "_blank",
-                        "noopener,noreferrer",
-                      );
-                    }}
-                    className="rounded-md p-1 text-neutral-500 hover:bg-neutral-100 hover:text-neutral-700 disabled:cursor-not-allowed disabled:opacity-60 dark:text-neutral-400 dark:hover:bg-neutral-800 dark:hover:text-neutral-200"
-                    title="打开 Web"
-                  >
-                    <ArrowTopRightOnSquareIcon className="h-4 w-4" />
-                  </button>
+                  <TooltipProvider>
+                    <Tooltip side="top">
+                      <TooltipTrigger asChild>
+                        <CopyButton
+                          content={auth.token ?? ""}
+                          variant="ghost"
+                          size="xs"
+                          disabled={!auth.token}
+                          className="text-neutral-500 hover:text-neutral-700 disabled:cursor-not-allowed disabled:opacity-60 dark:text-neutral-400 dark:hover:text-neutral-200"
+                        />
+                      </TooltipTrigger>
+                      <TooltipContent>复制</TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+
+                  <TooltipProvider>
+                    <Tooltip side="top">
+                      <TooltipTrigger asChild>
+                        <button
+                          type="button"
+                          disabled={!auth.token}
+                          onClick={() => {
+                            if (!auth.token) return;
+                            const encoded = encodeURIComponent(auth.token);
+                            window.open(
+                              `https://chat.sciol.ac.cn/?access_token=${encoded}`,
+                              "_blank",
+                              "noopener,noreferrer",
+                            );
+                          }}
+                          className="rounded-md p-1 text-neutral-500 hover:bg-neutral-100 hover:text-neutral-700 disabled:cursor-not-allowed disabled:opacity-60 dark:text-neutral-400 dark:hover:bg-neutral-800 dark:hover:text-neutral-200"
+                        >
+                          <ArrowTopRightOnSquareIcon className="h-4 w-4" />
+                        </button>
+                      </TooltipTrigger>
+                      <TooltipContent>在 App 中打开</TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
                 </div>
               </div>
 
