@@ -310,7 +310,7 @@ async def get_day_consumption(
             )
 
         consume_repo = ConsumeRepository(db)
-        stats = await consume_repo.get_daily_token_stats(date)
+        stats = await consume_repo.get_daily_token_stats(date, user_id)
 
         # Generate friendly message based on consumption
         message = None

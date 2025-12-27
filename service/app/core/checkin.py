@@ -12,6 +12,9 @@ from app.repos.checkin import CheckInRepository
 
 logger = logging.getLogger(__name__)
 
+# Define timezone for check-in (UTC+8 for China Standard Time)
+CHECKIN_TZ = timezone(timedelta(hours=8))
+
 
 class CheckInService:
     """Service layer for check-in operations."""
@@ -24,15 +27,18 @@ class CheckInService:
     @staticmethod
     def normalize_date(dt: datetime) -> datetime:
         """
-        Normalize a datetime to the start of the day in UTC.
+        Normalize a datetime to the start of the day in the check-in timezone.
 
         Args:
             dt: Datetime to normalize.
 
         Returns:
-            Datetime normalized to 00:00:00 UTC.
+            Datetime normalized to 00:00:00 in check-in timezone.
         """
-        return dt.replace(hour=0, minute=0, second=0, microsecond=0, tzinfo=timezone.utc)
+        # Convert to check-in timezone
+        dt_tz = dt.astimezone(CHECKIN_TZ)
+        # Normalize to start of day
+        return dt_tz.replace(hour=0, minute=0, second=0, microsecond=0)
 
     @staticmethod
     def calculate_points(consecutive_days: int) -> int:
@@ -86,7 +92,7 @@ class CheckInService:
         Raises:
             ErrCodeError: If user has already checked in today.
         """
-        now = datetime.now(timezone.utc)
+        now = datetime.now(CHECKIN_TZ)
         today = self.normalize_date(now)
 
         logger.info(f"Processing check-in for user: {user_id}")
@@ -152,7 +158,7 @@ class CheckInService:
             - next_points: int (points for next check-in)
             - total_check_ins: int
         """
-        now = datetime.now(timezone.utc)
+        now = datetime.now(CHECKIN_TZ)
         today = self.normalize_date(now)
 
         # Check if checked in today

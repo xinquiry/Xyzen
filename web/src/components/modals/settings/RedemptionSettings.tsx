@@ -1,8 +1,8 @@
-import { useState } from "react";
-import { useMutation } from "@tanstack/react-query";
-import { redemptionService } from "@/service/redemptionService";
 import { Button } from "@/components/ui/button";
-import { TicketIcon, CheckCircleIcon } from "@heroicons/react/24/outline";
+import { redemptionService } from "@/service/redemptionService";
+import { CheckCircleIcon, TicketIcon } from "@heroicons/react/24/outline";
+import { useMutation } from "@tanstack/react-query";
+import { useState } from "react";
 
 export function RedemptionSettings() {
   const [code, setCode] = useState("");
@@ -57,7 +57,7 @@ export function RedemptionSettings() {
           <div>
             <label
               htmlFor="redemption-code"
-              className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2"
+              className="block text-base font-medium text-neutral-700 dark:text-neutral-300 mb-2"
             >
               Enter Redemption Code
             </label>
@@ -75,7 +75,7 @@ export function RedemptionSettings() {
                     handleRedeem();
                   }
                 }}
-                className="flex-1 rounded-sm border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 px-3 py-2 text-sm text-neutral-900 dark:text-white placeholder-neutral-400 dark:placeholder-neutral-500 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 disabled:opacity-50"
+                className="flex-1 rounded-sm border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 px-3 py-2 text-base text-neutral-900 dark:text-white placeholder-neutral-400 dark:placeholder-neutral-500 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 disabled:opacity-50"
                 disabled={redeemMutation.isPending}
               />
               <Button
