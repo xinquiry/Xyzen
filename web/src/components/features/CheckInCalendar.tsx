@@ -247,7 +247,7 @@ export function CheckInCalendar({ onCheckInSuccess }: CheckInCalendarProps) {
       >
         {/* Left Panel: Calendar */}
         <Card className="h-fit backdrop-blur-md bg-white/70 dark:bg-neutral-900/70 border-white/20 dark:border-neutral-700/30 shadow-xl">
-          <CardContent className="flex h-full flex-col p-6">
+          <CardContent className="flex h-full flex-col p-4 sm:p-6">
             <div className="mb-6 flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <div className="rounded-lg bg-gradient-to-br from-indigo-500 to-purple-600 p-2 shadow-lg shadow-indigo-500/30 transition-transform hover:scale-105">
@@ -268,25 +268,31 @@ export function CheckInCalendar({ onCheckInSuccess }: CheckInCalendarProps) {
             <motion.div
               layout
               transition={{ type: "spring", stiffness: 220, damping: 28 }}
-              className="flex-1 rounded-xl border border-neutral-200/60 bg-white/80 p-4 shadow-sm backdrop-blur-sm dark:border-neutral-700/60 dark:bg-neutral-800/80"
+              className="flex-1 rounded-xl border border-neutral-200/60 bg-white/80 p-2 shadow-sm backdrop-blur-sm sm:p-4 dark:border-neutral-700/60 dark:bg-neutral-800/80"
             >
               <Calendar
                 mode="single"
                 selected={selectedDate}
                 onSelect={setSelectedDate}
-                className="w-full rounded-lg"
+                className="w-full rounded-lg mx-auto"
                 classNames={{
-                  weekdays: "flex gap-1",
-                  week: "flex w-full mt-2 gap-1",
+                  root: "w-full",
+                  months: "w-full",
+                  month: "w-full",
+                  table: "w-full",
+                  weekdays: "flex gap-0.5 sm:gap-1 w-full",
+                  weekday: "flex-1 text-center",
+                  week: "flex w-full mt-1.5 gap-0.5 sm:mt-2 sm:gap-1",
+                  day: "flex-1",
                   day_button:
-                    "focus:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 hover:bg-neutral-900/5 dark:hover:bg-white/5 hover:text-neutral-900 dark:hover:text-white data-[selected-single=true]:bg-neutral-900/10 dark:data-[selected-single=true]:bg-white/10 data-[selected-single=true]:text-neutral-900 dark:data-[selected-single=true]:text-white",
+                    "w-full h-auto aspect-square rounded-md transition-[transform,background-color,box-shadow] duration-150 focus:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 text-neutral-900 dark:text-white hover:bg-neutral-900/5 dark:hover:bg-white/5 hover:shadow-sm data-[selected-single=true]:bg-transparent data-[selected-single=true]:shadow-none data-[selected-single=true]:ring-2 data-[selected-single=true]:ring-white data-[selected-single=true]:shadow-sm",
                 }}
                 modifiers={{
                   checkedIn: (date) => isDateCheckedIn(date),
                 }}
                 modifiersClassNames={{
                   checkedIn:
-                    "relative rounded-md bg-gradient-to-br from-indigo-500 to-purple-600 text-white font-semibold shadow-md transition-transform hover:scale-105 hover:shadow-lg dark:from-indigo-600 dark:to-purple-700 before:pointer-events-none before:absolute before:inset-0 before:rounded-md before:bg-white/0 data-[selected-single=true]:before:bg-white/10",
+                    "[&>button]:bg-gradient-to-br [&>button]:from-indigo-500 [&>button]:to-purple-600 [&>button]:text-white [&>button]:font-semibold [&>button]:shadow-md [&>button]:transition-[transform,filter,box-shadow] [&>button:hover]:-translate-y-px [&>button:hover]:brightness-110 [&>button:hover]:shadow-lg dark:[&>button]:from-indigo-600 dark:[&>button]:to-purple-700 [&>button[data-selected-single=true]]:ring-2 [&>button[data-selected-single=true]]:ring-white/60 [&>button[data-selected-single=true]]:shadow-lg",
                 }}
                 disabled={(date) => date > today}
               />
@@ -357,7 +363,7 @@ export function CheckInCalendar({ onCheckInSuccess }: CheckInCalendarProps) {
             <Card className="group cursor-pointer backdrop-blur-md bg-gradient-to-br from-indigo-500/20 to-purple-600/20 border-indigo-300/30 dark:border-indigo-600/30 shadow-lg transition-all hover:scale-105 hover:shadow-xl">
               <CardContent className="p-5 text-center">
                 <div className="text-xs font-medium text-indigo-700 dark:text-indigo-300">
-                  明日奖励
+                  明日签到奖励
                 </div>
                 <div className="mt-3 flex items-center justify-center gap-1.5">
                   <SparklesIcon className="h-6 w-6 animate-pulse text-indigo-600 dark:text-indigo-400" />

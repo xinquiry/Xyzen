@@ -104,15 +104,20 @@ export function AppHeader({
           {/* Points Balance Display */}
           {isAuthedForUi && (
             <>
-              <div className="flex items-center gap-2 rounded-md border border-indigo-100 bg-gradient-to-br from-indigo-50/80 to-white px-3 py-1.5 dark:border-indigo-500/20 dark:from-indigo-950/20 dark:to-neutral-900/20">
+              <div className="flex items-center gap-1.5 rounded-md border border-indigo-100 bg-gradient-to-br from-indigo-50/80 to-white px-2 py-1 sm:gap-2 sm:px-3 sm:py-1.5 dark:border-indigo-500/20 dark:from-indigo-950/20 dark:to-neutral-900/20">
                 <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-indigo-100 text-indigo-600 dark:bg-indigo-500/20 dark:text-indigo-400">
                   <SparklesIcon className="h-3.5 w-3.5" />
                 </div>
-                <div className="flex items-center gap-1.5">
-                  <span className="text-xs font-medium text-neutral-500 dark:text-neutral-400">
+                <div className="flex items-center gap-1 sm:gap-1.5">
+                  <span className="hidden text-xs font-medium text-neutral-500 dark:text-neutral-400 sm:inline">
                     积分
                   </span>
-                  <span className="font-bold text-indigo-900 dark:text-indigo-100">
+                  <span className="sr-only">
+                    {walletQuery.isLoading
+                      ? "积分加载中"
+                      : `积分 ${(walletQuery.data?.virtual_balance ?? "--").toString()}`}
+                  </span>
+                  <span className="hidden text-sm font-bold text-indigo-900 dark:text-indigo-100 sm:inline sm:text-base">
                     {walletQuery.isLoading
                       ? "..."
                       : (walletQuery.data?.virtual_balance ?? "--")}
@@ -130,15 +135,16 @@ export function AppHeader({
               <button
                 type="button"
                 onClick={() => setShowCheckInModal(true)}
-                className="rounded-md border border-amber-100 bg-gradient-to-br from-amber-50/80 to-white px-2.5 py-1.5 text-sm font-medium text-amber-700 transition-colors hover:from-amber-100/80 hover:to-amber-50 dark:border-amber-500/20 dark:from-amber-950/20 dark:to-neutral-900/20 dark:text-amber-400 dark:hover:from-amber-900/30 dark:hover:to-amber-950/30"
+                className="rounded-md border border-amber-100 bg-gradient-to-br from-amber-50/80 to-white px-2 py-1 text-sm font-medium text-amber-700 transition-colors hover:from-amber-100/80 hover:to-amber-50 sm:px-2.5 sm:py-1.5 dark:border-amber-500/20 dark:from-amber-950/20 dark:to-neutral-900/20 dark:text-amber-400 dark:hover:from-amber-900/30 dark:hover:to-amber-950/30"
                 title="每日签到"
               >
                 <div className="flex items-center gap-1.5">
                   <CalendarDaysIcon className="h-4 w-4" />
-                  <span>签到</span>
+                  <span className="sr-only">签到</span>
+                  <span className="hidden sm:inline">签到</span>
                 </div>
               </button>
-              <div className="mx-2 h-6 w-px bg-neutral-200 dark:bg-neutral-700"></div>
+              <div className="mx-2 hidden h-6 w-px bg-neutral-200 dark:bg-neutral-700 sm:block"></div>
             </>
           )}
 
