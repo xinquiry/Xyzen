@@ -18,6 +18,16 @@ from app.schemas.provider import ProviderType
 router = APIRouter(tags=["providers"])
 
 
+def _sanitize_provider_read(provider: Any) -> ProviderRead:
+    provider_dict = provider.model_dump()
+    # Never expose system provider secrets to clients.
+    if provider.is_system:
+        provider_dict["key"] = "••••••••"
+        provider_dict["api"] = "•••••••••••••••••"
+        provider_dict["provider_config"] = None
+    return ProviderRead(**provider_dict)
+
+
 class DefaultModelInfo(ModelInfo, total=False):
     provider_type: NotRequired[str]
 
@@ -159,8 +169,7 @@ async def get_system_providers(
     if not provider:
         raise HTTPException(status_code=404, detail="System provider not found")
 
-    provider = ProviderRead.model_validate(provider)
-    return [provider]
+    return [_sanitize_provider_read(provider)]
 
 
 @router.get("/me", response_model=list[ProviderRead])
@@ -169,10 +178,7 @@ async def get_my_providers(
     db: AsyncSession = Depends(get_session),
 ) -> list[ProviderRead]:
     """
-    Get all providers accessible to the current authenticated user.
-
-    Includes both user's own providers and system providers. System provider
-    API keys and endpoints are masked for security reasons.
+    Get all user-scoped providers owned by the current authenticated user.
 
     Args:
         user: Authenticated user ID (injected by dependency)
@@ -186,17 +192,7 @@ async def get_my_providers(
     """
     provider_repo = ProviderRepository(db)
     providers = await provider_repo.get_providers_by_user(user_id, include_system=True)
-
-    # Convert to response models and mask sensitive data for system providers
-    provider_reads = []
-    for provider in providers:
-        provider_dict = provider.model_dump()
-        if provider.is_system:
-            provider_dict["key"] = "••••••••"
-            provider_dict["api"] = "•••••••••••••••••"
-        provider_reads.append(ProviderRead(**provider_dict))
-
-    return provider_reads
+    return [_sanitize_provider_read(p) for p in providers]
 
 
 @router.post("/", response_model=ProviderRead, status_code=201)
@@ -289,6 +285,7 @@ async def get_provider(
     if provider.is_system:
         provider_dict["key"] = "••••••••"
         provider_dict["api"] = "•••••••••••••••••"
+        provider_dict["provider_config"] = None
 
     return ProviderRead(**provider_dict)
 
