@@ -7,8 +7,10 @@ import {
 } from "@heroicons/react/24/outline";
 import { AnimatePresence, motion } from "framer-motion";
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 
 import {
+  LanguageSettings,
   ProviderConfigForm,
   ProviderList,
   RedemptionSettings,
@@ -18,6 +20,7 @@ import {
 } from "./settings";
 
 export function SettingsModal() {
+  const { t } = useTranslation();
   const {
     isSettingsModalOpen,
     closeSettingsModal,
@@ -33,9 +36,21 @@ export function SettingsModal() {
   );
 
   const categories = [
-    { id: "provider", label: "模型服务", icon: CloudIcon },
-    { id: "ui", label: "界面设置", icon: AdjustmentsHorizontalIcon },
-    { id: "redemption", label: "兑换中心", icon: GiftIcon },
+    {
+      id: "provider",
+      label: t("settings.categories.provider"),
+      icon: CloudIcon,
+    },
+    {
+      id: "ui",
+      label: t("settings.categories.ui"),
+      icon: AdjustmentsHorizontalIcon,
+    },
+    {
+      id: "redemption",
+      label: t("settings.categories.redemption"),
+      icon: GiftIcon,
+    },
   ];
 
   const handleCategoryClick = (categoryId: string) => {
@@ -51,7 +66,7 @@ export function SettingsModal() {
     <Modal
       isOpen={isSettingsModalOpen}
       onClose={closeSettingsModal}
-      title="设置"
+      title={t("settings.modal.title")}
       maxWidth="max-w-[90vw]"
       maxHeight="h-[85vh]"
       minHeight="min-h-[600px]"
@@ -109,7 +124,7 @@ export function SettingsModal() {
                 onClick={handleBackToCategories}
                 className="mr-2 text-neutral-500 hover:text-neutral-900 dark:text-neutral-400 dark:hover:text-white"
               >
-                ← 返回
+                ← {t("settings.modal.back")}
               </button>
               <span className="font-medium text-neutral-900 dark:text-white">
                 {categories.find((c) => c.id === activeSettingsCategory)?.label}
@@ -130,7 +145,7 @@ export function SettingsModal() {
                     ) : (
                       <div className="flex h-full flex-col items-center justify-center text-center text-neutral-500 dark:text-neutral-400">
                         <CloudIcon className="mb-4 h-12 w-12 opacity-20" />
-                        <p>请选择或添加一个模型服务商</p>
+                        <p>{t("settings.provider.emptyHint")}</p>
                       </div>
                     )}
                   </div>
@@ -145,6 +160,7 @@ export function SettingsModal() {
                   <div className="flex-1 overflow-y-auto p-4 md:p-6">
                     {activeUiSetting === "theme" && <ThemeSettings />}
                     {activeUiSetting === "style" && <StyleSettings />}
+                    {activeUiSetting === "language" && <LanguageSettings />}
                   </div>
                 </div>
               )}

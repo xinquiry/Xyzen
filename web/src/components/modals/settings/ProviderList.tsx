@@ -19,8 +19,10 @@ import {
   TrashIcon,
 } from "@heroicons/react/24/outline";
 import { useEffect } from "react";
+import { useTranslation } from "react-i18next";
 
 export const ProviderList = () => {
+  const { t } = useTranslation();
   const {
     providerTemplates,
     templatesLoading,
@@ -99,7 +101,7 @@ export const ProviderList = () => {
           {myProviders.length > 0 && (
             <div>
               <h3 className="mb-3 px-2 text-xs font-semibold uppercase tracking-wider text-neutral-500 dark:text-neutral-400">
-                已配置的服务
+                {t("settings.providers.my.title")}
               </h3>
               <TabsList className="flex flex-col space-y-1">
                 {myProviders.map((provider) => (
@@ -114,7 +116,7 @@ export const ProviderList = () => {
                         className={`${triggerBaseClassName} flex-1`}
                       >
                         <div className="flex items-center gap-3 overflow-hidden">
-                          <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-md bg-neutral-100 text-neutral-700 dark:bg-neutral-700 dark:text-neutral-200">
+                          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-neutral-100 text-neutral-700 dark:bg-neutral-700 dark:text-neutral-200">
                             {getProviderIcon(provider.provider_type)}
                           </div>
                           <div className="min-w-0 flex-1">
@@ -135,14 +137,18 @@ export const ProviderList = () => {
                           e.stopPropagation();
                           if (
                             confirm(
-                              `Are you sure you want to delete ${provider.name}?`,
+                              t("settings.providers.deleteConfirm", {
+                                name: provider.name,
+                              }),
                             )
                           ) {
                             removeProvider(provider.id);
                           }
                         }}
                         className="rounded-lg p-2 text-neutral-400 opacity-0 transition-opacity hover:bg-red-100 hover:text-red-600 group-hover:opacity-100 dark:hover:bg-red-900/30 dark:hover:text-red-400"
-                        aria-label={`Delete provider ${provider.name}`}
+                        aria-label={t("settings.providers.deleteAria", {
+                          name: provider.name,
+                        })}
                       >
                         <TrashIcon className="h-4 w-4" />
                       </button>
@@ -156,7 +162,7 @@ export const ProviderList = () => {
           {/* Provider Templates Section */}
           <div>
             <h3 className="mb-3 px-2 text-xs font-semibold uppercase tracking-wider text-neutral-500 dark:text-neutral-400">
-              添加新服务
+              {t("settings.providers.templates.title")}
             </h3>
             <TabsList className="flex flex-col space-y-1">
               {availableTemplates.map((template) => (
@@ -180,7 +186,9 @@ export const ProviderList = () => {
                         <PlusCircleIcon className="h-5 w-5 text-neutral-400" />
                       </div>
                       <div className="mt-0.5 truncate text-xs text-neutral-500 dark:text-neutral-400">
-                        支持 {template.models.length} 个模型
+                        {t("settings.providers.templates.supports", {
+                          count: template.models.length,
+                        })}
                       </div>
                     </div>
                   </TabsTrigger>

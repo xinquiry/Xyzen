@@ -11,6 +11,7 @@ import { SettingsModal } from "@/components/modals/SettingsModal";
 import { DEFAULT_BACKEND_URL } from "@/configs";
 import { DEFAULT_WIDTH, MIN_WIDTH } from "@/configs/common";
 import { useXyzen } from "@/store";
+import { useTranslation } from "react-i18next";
 import AuthErrorScreen from "./auth/AuthErrorScreen";
 
 export interface AppSideProps {
@@ -32,6 +33,7 @@ export function AppSide({
   showAuthError = false,
   onRetryAuth,
 }: AppSideProps) {
+  const { t } = useTranslation();
   const {
     isXyzenOpen,
     closeXyzen,
@@ -274,25 +276,25 @@ export function AppSide({
 
             {/* Corner Handles */}
             <div
-              className="absolute top-0 left-0 w-4 h-4 cursor-nwse-resize z-[51] bg-transparent"
+              className="absolute top-0 left-0 w-4 h-4 cursor-nwse-resize z-51 bg-transparent"
               onPointerDown={(e) => handleResizeStart(e, "nw")}
               onPointerMove={handleResizeMove}
               onPointerUp={handleResizeEnd}
             />
             <div
-              className="absolute top-0 right-0 w-4 h-4 cursor-nesw-resize z-[51] bg-transparent"
+              className="absolute top-0 right-0 w-4 h-4 cursor-nesw-resize z-51 bg-transparent"
               onPointerDown={(e) => handleResizeStart(e, "ne")}
               onPointerMove={handleResizeMove}
               onPointerUp={handleResizeEnd}
             />
             <div
-              className="absolute bottom-0 left-0 w-4 h-4 cursor-nesw-resize z-[51] bg-transparent"
+              className="absolute bottom-0 left-0 w-4 h-4 cursor-nesw-resize z-51 bg-transparent"
               onPointerDown={(e) => handleResizeStart(e, "sw")}
               onPointerMove={handleResizeMove}
               onPointerUp={handleResizeEnd}
             />
             <div
-              className="absolute bottom-0 right-0 w-4 h-4 cursor-nwse-resize z-[51] bg-transparent"
+              className="absolute bottom-0 right-0 w-4 h-4 cursor-nwse-resize z-51 bg-transparent"
               onPointerDown={(e) => handleResizeStart(e, "se")}
               onPointerMove={handleResizeMove}
               onPointerUp={handleResizeEnd}
@@ -310,7 +312,11 @@ export function AppSide({
           onDragEnd={handleDragEnd}
           showBackButton={activePanel === "chat" && !!activeChatChannel}
           onBackClick={() => setActiveChatChannel(null)}
-          backButtonLabel={activeChatChannel ? "Chat" : "Assistants"}
+          backButtonLabel={
+            activeChatChannel
+              ? t("app.chat.chatLabel")
+              : t("app.chat.assistantsTitle")
+          }
         />
 
         {/* Content Area with Sidebar */}
@@ -335,12 +341,12 @@ export function AppSide({
                 </div>
               ) : (
                 <div className="h-full bg-white dark:bg-neutral-950 flex flex-col">
-                  <div className="border-b border-neutral-200 p-4 dark:border-neutral-800 flex-shrink-0">
+                  <div className="border-b border-neutral-200 p-4 dark:border-neutral-800 shrink-0">
                     <h2 className="text-sm font-semibold text-neutral-900 dark:text-white">
-                      Assistants
+                      {t("app.chat.assistantsTitle")}
                     </h2>
                     <p className="mt-1 text-xs text-neutral-500 dark:text-neutral-400">
-                      Choose an agent to start
+                      {t("app.chat.chooseAgentHint")}
                     </p>
                   </div>
                   <div className="flex-1 overflow-y-auto py-4">
