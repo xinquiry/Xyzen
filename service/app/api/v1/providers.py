@@ -144,7 +144,7 @@ async def get_provider_available_models(
     except ErrCodeError as e:
         raise handle_auth_error(e)
 
-    models = LiteLLMService.get_models_by_provider(provider.provider_type.value)
+    models = LiteLLMService.get_models_by_provider(str(provider.provider_type))
     return models
 
 
