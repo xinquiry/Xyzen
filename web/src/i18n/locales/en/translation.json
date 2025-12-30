@@ -50,7 +50,7 @@
         "description": "Use English as the interface language"
       },
       "zh": {
-        "description": "Use Simplified Chinese as the interface language"
+        "description": "Use Chinese as the interface language"
       }
     },
     "theme": {
@@ -452,6 +452,33 @@
       "errors": {
         "createFailed": "Failed to create knowledge set"
       }
+    }
+  },
+  "mcp": {
+    "title": "My Servers",
+    "subtitle": "Browse marketplace and manage your servers",
+    "refresh": "Refresh",
+    "addCustom": "Add Custom",
+    "market": {
+      "title": "MCP Market",
+      "quickAdd": "Quick Add",
+      "close": "Close"
+    },
+    "added": {
+      "title": "Added Servers",
+      "online": "Online",
+      "offline": "Offline",
+      "tools": "tools",
+      "noDescription": "No description",
+      "edit": "Edit server",
+      "remove": "Remove server",
+      "test": "Test tool",
+      "empty": {
+        "title": "No Servers Added Yet",
+        "description": "Browse the marketplace on the left to add servers, or create a custom connection.",
+        "button": "Add Custom Server"
+      },
+      "loading": "Loading MCP servers..."
     }
   }
 }

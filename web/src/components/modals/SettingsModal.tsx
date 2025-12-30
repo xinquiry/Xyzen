@@ -2,6 +2,7 @@ import { Modal } from "@/components/animate-ui/primitives/headless/modal";
 import { useXyzen } from "@/store";
 import {
   AdjustmentsHorizontalIcon,
+  ArrowLeftIcon,
   CloudIcon,
   GiftIcon,
 } from "@heroicons/react/24/outline";
@@ -28,24 +29,27 @@ export function SettingsModal() {
     setActiveSettingsCategory,
     activeUiSetting,
     selectedProviderId,
+    setSelectedProvider,
   } = useXyzen();
 
   // Mobile navigation state: 'categories' | 'content'
   const [mobileView, setMobileView] = useState<"categories" | "content">(
     "categories",
   );
+  const [showUiDetail, setShowUiDetail] = useState(false);
 
   const categories = [
-    {
-      id: "provider",
-      label: t("settings.categories.provider"),
-      icon: CloudIcon,
-    },
     {
       id: "ui",
       label: t("settings.categories.ui"),
       icon: AdjustmentsHorizontalIcon,
     },
+    {
+      id: "provider",
+      label: t("settings.categories.provider"),
+      icon: CloudIcon,
+    },
+
     {
       id: "redemption",
       label: t("settings.categories.redemption"),
@@ -135,11 +139,32 @@ export function SettingsModal() {
               {activeSettingsCategory === "provider" && (
                 <div className="flex h-full flex-col md:flex-row">
                   {/* Provider List Column */}
-                  <div className="w-full border-b border-neutral-200 bg-neutral-50/80 md:w-72 md:border-b-0 md:border-r dark:border-neutral-800 dark:bg-neutral-900/80">
+                  <div
+                    className={`w-full border-b border-neutral-200 bg-neutral-50/80 md:w-72 md:border-b-0 md:border-r dark:border-neutral-800 dark:bg-neutral-900/80 ${
+                      selectedProviderId ? "hidden md:block" : "block"
+                    }`}
+                  >
                     <ProviderList />
                   </div>
                   {/* Provider Config Column */}
-                  <div className="flex-1 overflow-y-auto bg-neutral-50/30 p-4 md:p-6 dark:bg-neutral-900/30">
+                  <div
+                    className={`flex-1 overflow-y-auto bg-neutral-50/30 p-4 md:p-6 dark:bg-neutral-900/30 ${
+                      selectedProviderId ? "block" : "hidden md:block"
+                    }`}
+                  >
+                    {/* Mobile Back Button */}
+                    <div className="mb-4 flex items-center md:hidden">
+                      <button
+                        onClick={() => setSelectedProvider(null)}
+                        className="mr-2 text-neutral-500 hover:text-neutral-900 dark:text-neutral-400 dark:hover:text-white"
+                      >
+                        <ArrowLeftIcon className="h-5 w-5" />
+                      </button>
+                      <span className="font-medium text-neutral-900 dark:text-white">
+                        {t("settings.categories.provider")}
+                      </span>
+                    </div>
+
                     {selectedProviderId ? (
                       <ProviderConfigForm />
                     ) : (
@@ -154,10 +179,31 @@ export function SettingsModal() {
 
               {activeSettingsCategory === "ui" && (
                 <div className="flex h-full flex-col md:flex-row">
-                  <div className="w-full border-b border-neutral-200 md:w-64 md:border-b-0 md:border-r dark:border-neutral-800">
-                    <UiSettings />
+                  <div
+                    className={`w-full border-b border-neutral-200 md:w-64 md:border-b-0 md:border-r dark:border-neutral-800 ${
+                      showUiDetail ? "hidden md:block" : "block"
+                    }`}
+                  >
+                    <UiSettings onSelect={() => setShowUiDetail(true)} />
                   </div>
-                  <div className="flex-1 overflow-y-auto p-4 md:p-6">
+                  <div
+                    className={`flex-1 overflow-y-auto p-4 md:p-6 ${
+                      showUiDetail ? "block" : "hidden md:block"
+                    }`}
+                  >
+                    {/* Mobile Back Button */}
+                    <div className="mb-4 flex items-center md:hidden">
+                      <button
+                        onClick={() => setShowUiDetail(false)}
+                        className="mr-2 text-neutral-500 hover:text-neutral-900 dark:text-neutral-400 dark:hover:text-white"
+                      >
+                        <ArrowLeftIcon className="h-5 w-5" />
+                      </button>
+                      <span className="font-medium text-neutral-900 dark:text-white">
+                        {t("settings.categories.ui")}
+                      </span>
+                    </div>
+
                     {activeUiSetting === "theme" && <ThemeSettings />}
                     {activeUiSetting === "style" && <StyleSettings />}
                     {activeUiSetting === "language" && <LanguageSettings />}

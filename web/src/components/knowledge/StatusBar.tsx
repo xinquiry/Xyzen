@@ -47,7 +47,7 @@ export const StatusBar = ({ itemCount, stats }: StatusBarProps) => {
           })}
         </span>
         <span className="text-neutral-300 dark:text-neutral-700">|</span>
-        <span>
+        <span className=" hidden sm:inline">
           {t("knowledge.status.available", {
             available: formatSize(available),
           })}
@@ -55,7 +55,7 @@ export const StatusBar = ({ itemCount, stats }: StatusBarProps) => {
       </div>
       <div className="flex items-center gap-3">
         {/* Progress bar */}
-        <div className="w-32 h-1.5 bg-neutral-200 dark:bg-neutral-700 rounded-full overflow-hidden">
+        <div className="w-24 sm:w-32 h-1.5 bg-neutral-200 dark:bg-neutral-700 rounded-full overflow-hidden">
           <div
             className={`h-full transition-all duration-300 ${getProgressBarColor()}`}
             style={{ width: `${Math.min(usagePercentage, 100)}%` }}

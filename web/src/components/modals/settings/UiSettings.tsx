@@ -7,7 +7,7 @@ import {
 } from "@heroicons/react/24/outline";
 import { useTranslation } from "react-i18next";
 
-export function UiSettings() {
+export function UiSettings({ onSelect }: { onSelect?: () => void }) {
   const { t } = useTranslation();
   const { activeUiSetting, setActiveUiSetting } = useXyzen();
 
@@ -51,7 +51,10 @@ export function UiSettings() {
           return (
             <button
               key={option.id}
-              onClick={() => setActiveUiSetting(option.id)}
+              onClick={() => {
+                setActiveUiSetting(option.id);
+                onSelect?.();
+              }}
               className={`mb-2 w-full rounded-sm border p-3 text-left transition-all ${
                 isActive
                   ? "border-indigo-500 bg-indigo-50 dark:border-indigo-600 dark:bg-indigo-950/30"

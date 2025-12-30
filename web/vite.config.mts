@@ -12,47 +12,36 @@ export default defineConfig(() => {
 
   const plugins: PluginOption[] = [react(), tailwindcss()];
 
-  // PWA 仅用于站点构建；库构建会生成很大的 UMD 包，不应进入 Workbox precache
-  if (!isLibBuild) {
-    // 在 Bohrium App 内嵌模式下禁用 PWA 功能，并且自毁 Service Worker
-    if (isIframeBuild) {
-      plugins.push(
-        VitePWA({
-          selfDestroying: true,
-          registerType: "autoUpdate",
-          devOptions: { enabled: false },
-        }),
-      );
-    } else {
-      plugins.push(
-        VitePWA({
-          registerType: "autoUpdate",
-          includeAssets: ["pwa-icon.png", "favicon.ico"],
-          manifest: {
-            name: "Xyzen",
-            short_name: "Xyzen",
-            description: "Xyzen Application",
-            display: "standalone",
-            display_override: ["window-controls-overlay"],
-            icons: [
-              {
-                src: "pwa-icon.png",
-                sizes: "192x192 512x512",
-                type: "image/png",
-              },
-            ],
-          },
-          devOptions: {
-            enabled: true,
-          },
-          workbox: {
-            maximumFileSizeToCacheInBytes: 10 * 1024 * 1024, // 10 MiB
-            // 排除 /api 和 /xyzen 开头的请求，避免 Service Worker 拦截后端接口
-            navigateFallbackDenylist: [/^\/api/, /^\/xyzen/],
-          },
-        }),
-      );
-    }
+  // PWA 仅用于站点构建；iframe/第三方平台构建禁用 PWA（避免 SW 安装/更新链路影响三方 Auth 与启动时延）
+  if (!isLibBuild && !isIframeBuild) {
+    plugins.push(
+      VitePWA({
+        registerType: "autoUpdate",
+        includeAssets: ["pwa-icon.png", "favicon.ico"],
+        manifest: {
+          name: "Xyzen",
+          short_name: "Xyzen",
+          description: "Xyzen Application",
+          display: "standalone",
+          display_override: ["window-controls-overlay"],
+          icons: [
+            {
+              src: "pwa-icon.png",
+              sizes: "192x192 512x512",
+              type: "image/png",
+            },
+          ],
+        },
+        devOptions: {
+          enabled: true,
+        },
+        workbox: {
+          maximumFileSizeToCacheInBytes: 10 * 1024 * 1024, // 10 MiB
+          // 排除 /api 和 /xyzen 开头的请求，避免 Service Worker 拦截后端接口
+          navigateFallbackDenylist: [/^\/api/, /^\/xyzen/],
+        },
+      }),
+    );
   }
 
   if (isLibBuild) {
@@ -88,6 +77,10 @@ export default defineConfig(() => {
 
   const config = {
     plugins,
+    define: {
+      __XYZEN_BUILD_MODE__: JSON.stringify(process.env.BUILD_MODE ?? ""),
+      __XYZEN_IFRAME_BUILD__: JSON.stringify(isIframeBuild),
+    },
     resolve: {
       alias: {
         "@": path.resolve(import.meta.dirname, "./src"),

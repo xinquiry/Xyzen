@@ -50,7 +50,7 @@
         "description": "使用英文作为界面语言"
       },
       "zh": {
-        "description": "使用简体中文作为界面语言"
+        "description": "使用中文作为界面语言"
       }
     },
     "theme": {
@@ -431,6 +431,33 @@
       "errors": {
         "createFailed": "创建知识集失败"
       }
+    }
+  },
+  "mcp": {
+    "title": "我的服务",
+    "subtitle": "浏览市场并管理你的服务",
+    "refresh": "刷新",
+    "addCustom": "添加自定义",
+    "market": {
+      "title": "MCP 市场",
+      "quickAdd": "快速添加",
+      "close": "关闭"
+    },
+    "added": {
+      "title": "已添加服务",
+      "online": "在线",
+      "offline": "离线",
+      "tools": "工具",
+      "noDescription": "暂无描述",
+      "edit": "编辑服务",
+      "remove": "移除服务",
+      "test": "测试工具",
+      "empty": {
+        "title": "暂无已添加服务",
+        "description": "在左侧浏览市场添加服务，或创建自定义连接。",
+        "button": "添加自定义服务"
+      },
+      "loading": "加载 MCP 服务中..."
     }
   }
 }

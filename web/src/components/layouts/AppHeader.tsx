@@ -105,10 +105,10 @@ export function AppHeader({
           {isAuthedForUi && (
             <>
               <div className="flex items-center gap-1.5 rounded-md border border-indigo-100 bg-gradient-to-br from-indigo-50/80 to-white px-2 py-1 sm:gap-2 sm:px-3 sm:py-1.5 dark:border-indigo-500/20 dark:from-indigo-950/20 dark:to-neutral-900/20">
-                <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-indigo-100 text-indigo-600 dark:bg-indigo-500/20 dark:text-indigo-400">
+                <div className="hidden sm:flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-indigo-100 text-indigo-600 dark:bg-indigo-500/20 dark:text-indigo-400">
                   <SparklesIcon className="h-3.5 w-3.5" />
                 </div>
-                <div className="flex items-center gap-1 sm:gap-1.5">
+                <div className="hidden sm:flex items-center gap-1 sm:gap-1.5">
                   <span className="hidden text-xs font-medium text-neutral-500 dark:text-neutral-400 sm:inline">
                     积分
                   </span>
