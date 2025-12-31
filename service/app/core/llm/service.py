@@ -171,14 +171,15 @@ class ModelFilter:
     @staticmethod
     def no_expensive_azure_filter() -> Callable[[str], bool]:
         """
-        Create a filter that excludes expensive Azure models like "azure/gpt-5.2-pro".
+        Create a filter that excludes expensive Azure models like "azure/gpt-5.2-pro" or "azure/gpt-5-pro".
 
         Returns:
             Filter function that returns True if not an expensive Azure model
         """
 
         def filter_fn(model_name: str) -> bool:
-            return "gpt-5.2-pro" not in model_name.lower()
+            lower = model_name.lower()
+            return "gpt-5.2-pro" not in lower and "gpt-5-pro" not in lower
 
         return filter_fn
 
