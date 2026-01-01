@@ -337,16 +337,16 @@ export function CheckInCalendar({ onCheckInSuccess }: CheckInCalendarProps) {
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.25, ease: "easeOut" }}
-      className="mx-auto w-full h-full"
+      className="mx-auto w-full h-auto lg:h-full"
     >
       <motion.div
         layout
         transition={{ type: "spring", stiffness: 220, damping: 28 }}
-        className="grid h-full grid-cols-1 gap-6 lg:grid-cols-[420px_1fr]"
+        className="grid h-auto lg:h-full grid-cols-1 gap-6 lg:grid-cols-[420px_1fr]"
       >
         {/* Left Panel: Calendar */}
         <Card className="h-auto lg:h-full backdrop-blur-md bg-white/70 dark:bg-neutral-900/70 border-white/20 dark:border-neutral-700/30 shadow-xl">
-          <CardContent className="flex h-full flex-col p-4 sm:p-6">
+          <CardContent className="flex h-auto lg:h-full flex-col p-4 sm:p-6">
             <div className="mb-6 flex items-center justify-between shrink-0">
               <div className="flex items-center gap-3">
                 <div className="rounded-lg bg-linear-to-br from-indigo-500 to-purple-600 p-2 shadow-lg shadow-indigo-500/30 transition-transform hover:scale-105">
@@ -367,7 +367,7 @@ export function CheckInCalendar({ onCheckInSuccess }: CheckInCalendarProps) {
             <motion.div
               layout
               transition={{ type: "spring", stiffness: 220, damping: 28 }}
-              className="flex-1 rounded-xl border border-neutral-200/60 bg-white/80 p-2 shadow-sm backdrop-blur-sm sm:p-4 dark:border-neutral-700/60 dark:bg-neutral-800/80 overflow-hidden flex flex-col"
+              className="flex-1 rounded-xl border border-neutral-200/60 bg-white/80 p-2 shadow-sm backdrop-blur-sm sm:p-4 dark:border-neutral-700/60 dark:bg-neutral-800/80 overflow-hidden flex flex-col min-h-[320px]"
             >
               <AnimatePresence mode="wait" custom={direction}>
                 <motion.div
@@ -501,7 +501,7 @@ export function CheckInCalendar({ onCheckInSuccess }: CheckInCalendarProps) {
             <Card className="group cursor-pointer backdrop-blur-md bg-gradient-to-br from-indigo-500/20 to-purple-600/20 border-indigo-300/30 dark:border-indigo-600/30 shadow-lg transition-all hover:scale-105 hover:shadow-xl">
               <CardContent className="p-5 text-center">
                 <div className="text-xs font-medium text-indigo-700 dark:text-indigo-300">
-                  明日签到奖励
+                  明日奖励
                 </div>
                 <div className="mt-3 flex items-center justify-center gap-1.5">
                   <SparklesIcon className="h-6 w-6 animate-pulse text-indigo-600 dark:text-indigo-400" />
