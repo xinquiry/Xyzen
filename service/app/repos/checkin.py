@@ -1,7 +1,7 @@
 """Check-in repository for managing daily check-in records."""
 
 import logging
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 
 from sqlmodel import col, select
 from sqlmodel.ext.asyncio.session import AsyncSession
@@ -9,6 +9,12 @@ from sqlmodel.ext.asyncio.session import AsyncSession
 from app.models.checkin import CheckIn, CheckInCreate
 
 logger = logging.getLogger(__name__)
+
+
+# Check-in dates are normalized to start-of-day in China Standard Time (UTC+8).
+# Monthly queries must use the same timezone boundaries, otherwise the first 8
+# hours of a month (in CST) would be counted as the previous month (in UTC).
+CHECKIN_TZ = timezone(timedelta(hours=8))
 
 
 class CheckInRepository:
@@ -142,12 +148,12 @@ class CheckInRepository:
         """
         logger.debug(f"Getting check-ins for user: {user_id}, year: {year}, month: {month}")
 
-        # Calculate start and end dates for the month
-        start_date = datetime(year, month, 1, tzinfo=timezone.utc)
+        # Calculate start and end dates for the month in CHECKIN_TZ.
+        start_date = datetime(year, month, 1, tzinfo=CHECKIN_TZ)
         if month == 12:
-            end_date = datetime(year + 1, 1, 1, tzinfo=timezone.utc)
+            end_date = datetime(year + 1, 1, 1, tzinfo=CHECKIN_TZ)
         else:
-            end_date = datetime(year, month + 1, 1, tzinfo=timezone.utc)
+            end_date = datetime(year, month + 1, 1, tzinfo=CHECKIN_TZ)
 
         statement = (
             select(CheckIn)

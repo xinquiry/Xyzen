@@ -14,7 +14,7 @@ import {
   CheckCircleIcon,
   SparklesIcon,
 } from "@heroicons/react/24/outline";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQueries, useQuery, useQueryClient } from "@tanstack/react-query";
 import { AnimatePresence, motion } from "motion/react";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -27,11 +27,42 @@ export function CheckInCalendar({ onCheckInSuccess }: CheckInCalendarProps) {
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(
     new Date(),
   );
+  const [displayMonth, setDisplayMonth] = useState<Date>(() => {
+    const now = new Date();
+    return new Date(now.getFullYear(), now.getMonth(), 1);
+  });
   const queryClient = useQueryClient();
 
   const today = new Date();
-  const currentYear = today.getFullYear();
-  const currentMonth = today.getMonth() + 1;
+  const displayYear = displayMonth.getFullYear();
+  const displayMonthNumber = displayMonth.getMonth() + 1;
+
+  // Calculate prev and next month for fetching data
+  const prevMonthDate = new Date(displayYear, displayMonthNumber - 2, 1);
+  const nextMonthDate = new Date(displayYear, displayMonthNumber, 1);
+
+  // Format a Date to YYYY-MM-DD in check-in timezone (Asia/Shanghai)
+  function formatDateInCheckinTZ(date: Date): string {
+    const parts = new Intl.DateTimeFormat("en-CA", {
+      timeZone: "Asia/Shanghai",
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+    }).formatToParts(date);
+
+    const year = parts.find((p) => p.type === "year")?.value;
+    const month = parts.find((p) => p.type === "month")?.value;
+    const day = parts.find((p) => p.type === "day")?.value;
+
+    if (!year || !month || !day) {
+      // Fallback (should be rare)
+      const y = date.getFullYear();
+      const m = String(date.getMonth() + 1).padStart(2, "0");
+      const d = String(date.getDate()).padStart(2, "0");
+      return `${y}-${m}-${d}`;
+    }
+    return `${year}-${month}-${day}`;
+  }
 
   // Get check-in status
   const statusQuery = useQuery({
@@ -40,18 +71,52 @@ export function CheckInCalendar({ onCheckInSuccess }: CheckInCalendarProps) {
     refetchOnWindowFocus: true,
   });
 
-  // Get monthly check-in records
-  const monthlyQuery = useQuery({
-    queryKey: ["check-in", "monthly", currentYear, currentMonth],
-    queryFn: () => checkInService.getMonthlyCheckIns(currentYear, currentMonth),
+  // Get monthly check-in records (current, prev, next)
+  const monthlyQueries = useQueries({
+    queries: [
+      {
+        queryKey: [
+          "check-in",
+          "monthly",
+          prevMonthDate.getFullYear(),
+          prevMonthDate.getMonth() + 1,
+        ],
+        queryFn: () =>
+          checkInService.getMonthlyCheckIns(
+            prevMonthDate.getFullYear(),
+            prevMonthDate.getMonth() + 1,
+          ),
+      },
+      {
+        queryKey: ["check-in", "monthly", displayYear, displayMonthNumber],
+        queryFn: () =>
+          checkInService.getMonthlyCheckIns(displayYear, displayMonthNumber),
+      },
+      {
+        queryKey: [
+          "check-in",
+          "monthly",
+          nextMonthDate.getFullYear(),
+          nextMonthDate.getMonth() + 1,
+        ],
+        queryFn: () =>
+          checkInService.getMonthlyCheckIns(
+            nextMonthDate.getFullYear(),
+            nextMonthDate.getMonth() + 1,
+          ),
+      },
+    ],
   });
+
+  const monthlyData = monthlyQueries.flatMap((q) => q.data || []);
+  const isMonthlyLoading = monthlyQueries.some((q) => q.isLoading);
 
   // Get day consumption when date changes
   const dayConsumptionQuery = useQuery({
     queryKey: ["check-in", "consumption", selectedDate?.toISOString()],
     queryFn: () => {
       if (!selectedDate) return null;
-      const dateStr = formatDateForAPI(selectedDate);
+      const dateStr = formatDateInCheckinTZ(selectedDate);
       return checkInService.getDayConsumption(dateStr);
     },
     enabled: !!selectedDate,
@@ -69,21 +134,21 @@ export function CheckInCalendar({ onCheckInSuccess }: CheckInCalendarProps) {
 
   // Check if a date has been checked in
   function isDateCheckedIn(date: Date): boolean {
-    if (!monthlyQuery.data) return false;
-    const dateStr = formatDateForAPI(date);
-    return monthlyQuery.data.some(
+    if (monthlyData.length === 0) return false;
+    const dateStr = formatDateInCheckinTZ(date);
+    return monthlyData.some(
       (record: CheckInRecordResponse) =>
-        formatDateForAPI(new Date(record.check_in_date)) === dateStr,
+        formatDateInCheckinTZ(new Date(record.check_in_date)) === dateStr,
     );
   }
 
   // Get check-in record for a date
   function getCheckInForDate(date: Date): CheckInRecordResponse | undefined {
-    if (!monthlyQuery.data) return undefined;
-    const dateStr = formatDateForAPI(date);
-    return monthlyQuery.data.find(
+    if (monthlyData.length === 0) return undefined;
+    const dateStr = formatDateInCheckinTZ(date);
+    return monthlyData.find(
       (record: CheckInRecordResponse) =>
-        formatDateForAPI(new Date(record.check_in_date)) === dateStr,
+        formatDateInCheckinTZ(new Date(record.check_in_date)) === dateStr,
     );
   }
 
@@ -118,7 +183,7 @@ export function CheckInCalendar({ onCheckInSuccess }: CheckInCalendarProps) {
 
   const selectedIsToday =
     !!selectedDate &&
-    formatDateForAPI(selectedDate) === formatDateForAPI(today);
+    formatDateInCheckinTZ(selectedDate) === formatDateInCheckinTZ(today);
 
   const selectedDateLabel = selectedDate?.toLocaleDateString("zh-CN", {
     year: "numeric",
@@ -202,7 +267,7 @@ export function CheckInCalendar({ onCheckInSuccess }: CheckInCalendarProps) {
   }
 
   // Loading state
-  if (statusQuery.isLoading || monthlyQuery.isLoading) {
+  if (statusQuery.isLoading || isMonthlyLoading) {
     return (
       <div className="mx-auto w-full p-6">
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-[400px_1fr]">
@@ -273,7 +338,16 @@ export function CheckInCalendar({ onCheckInSuccess }: CheckInCalendarProps) {
               <Calendar
                 mode="single"
                 selected={selectedDate}
-                onSelect={setSelectedDate}
+                month={displayMonth}
+                onMonthChange={setDisplayMonth}
+                onSelect={(date) => {
+                  setSelectedDate(date);
+                  if (date) {
+                    setDisplayMonth(
+                      new Date(date.getFullYear(), date.getMonth(), 1),
+                    );
+                  }
+                }}
                 className="w-full rounded-lg mx-auto"
                 classNames={{
                   root: "w-full",
