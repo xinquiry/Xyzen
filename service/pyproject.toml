@@ -90,6 +90,8 @@ ignore = ["**/migrations", "**/.venv/**"]
 pythonVersion = "3.12"
 pythonPlatform = "All"
 typeCheckingMode = "standard"
+venvPath = "."
+venv = ".venv"
 
 # ---------- 严格模式细节配置 ----------
 # strictListInference = true           # 严格推断列表类型（避免 list[Unknown]）
