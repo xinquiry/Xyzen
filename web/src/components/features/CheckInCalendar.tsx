@@ -14,7 +14,7 @@ import {
   CheckCircleIcon,
   SparklesIcon,
 } from "@heroicons/react/24/outline";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQueries, useQuery, useQueryClient } from "@tanstack/react-query";
 import { AnimatePresence, motion } from "motion/react";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -27,11 +27,42 @@ export function CheckInCalendar({ onCheckInSuccess }: CheckInCalendarProps) {
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(
     new Date(),
   );
+  const [displayMonth, setDisplayMonth] = useState<Date>(() => {
+    const now = new Date();
+    return new Date(now.getFullYear(), now.getMonth(), 1);
+  });
   const queryClient = useQueryClient();
 
   const today = new Date();
-  const currentYear = today.getFullYear();
-  const currentMonth = today.getMonth() + 1;
+  const displayYear = displayMonth.getFullYear();
+  const displayMonthNumber = displayMonth.getMonth() + 1;
+
+  // Calculate prev and next month for fetching data
+  const prevMonthDate = new Date(displayYear, displayMonthNumber - 2, 1);
+  const nextMonthDate = new Date(displayYear, displayMonthNumber, 1);
+
+  // Format a Date to YYYY-MM-DD in check-in timezone (Asia/Shanghai)
+  function formatDateInCheckinTZ(date: Date): string {
+    const parts = new Intl.DateTimeFormat("en-CA", {
+      timeZone: "Asia/Shanghai",
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+    }).formatToParts(date);
+
+    const year = parts.find((p) => p.type === "year")?.value;
+    const month = parts.find((p) => p.type === "month")?.value;
+    const day = parts.find((p) => p.type === "day")?.value;
+
+    if (!year || !month || !day) {
+      // Fallback (should be rare)
+      const y = date.getFullYear();
+      const m = String(date.getMonth() + 1).padStart(2, "0");
+      const d = String(date.getDate()).padStart(2, "0");
+      return `${y}-${m}-${d}`;
+    }
+    return `${year}-${month}-${day}`;
+  }
 
   // Get check-in status
   const statusQuery = useQuery({
@@ -40,24 +71,92 @@ export function CheckInCalendar({ onCheckInSuccess }: CheckInCalendarProps) {
     refetchOnWindowFocus: true,
   });
 
-  // Get monthly check-in records
-  const monthlyQuery = useQuery({
-    queryKey: ["check-in", "monthly", currentYear, currentMonth],
-    queryFn: () => checkInService.getMonthlyCheckIns(currentYear, currentMonth),
+  // Get monthly check-in records (current, prev, next)
+  const monthlyQueries = useQueries({
+    queries: [
+      {
+        queryKey: [
+          "check-in",
+          "monthly",
+          prevMonthDate.getFullYear(),
+          prevMonthDate.getMonth() + 1,
+        ],
+        queryFn: () =>
+          checkInService.getMonthlyCheckIns(
+            prevMonthDate.getFullYear(),
+            prevMonthDate.getMonth() + 1,
+          ),
+      },
+      {
+        queryKey: ["check-in", "monthly", displayYear, displayMonthNumber],
+        queryFn: () =>
+          checkInService.getMonthlyCheckIns(displayYear, displayMonthNumber),
+      },
+      {
+        queryKey: [
+          "check-in",
+          "monthly",
+          nextMonthDate.getFullYear(),
+          nextMonthDate.getMonth() + 1,
+        ],
+        queryFn: () =>
+          checkInService.getMonthlyCheckIns(
+            nextMonthDate.getFullYear(),
+            nextMonthDate.getMonth() + 1,
+          ),
+      },
+    ],
   });
+
+  const monthlyData = monthlyQueries.flatMap((q) => q.data || []);
+  const isMonthlyLoading = monthlyQueries.some((q) => q.isLoading);
 
   // Get day consumption when date changes
   const dayConsumptionQuery = useQuery({
     queryKey: ["check-in", "consumption", selectedDate?.toISOString()],
     queryFn: () => {
       if (!selectedDate) return null;
-      const dateStr = formatDateForAPI(selectedDate);
+      const dateStr = formatDateInCheckinTZ(selectedDate);
       return checkInService.getDayConsumption(dateStr);
     },
     enabled: !!selectedDate,
   });
 
   const [isCheckingIn, setIsCheckingIn] = useState(false);
+  const [direction, setDirection] = useState(0);
+
+  const variants = {
+    enter: (direction: number) => ({
+      x: direction > 0 ? 20 : -20,
+      opacity: 0,
+    }),
+    center: {
+      x: 0,
+      opacity: 1,
+    },
+    exit: (direction: number) => ({
+      x: direction > 0 ? -20 : 20,
+      opacity: 0,
+    }),
+  };
+
+  // function handlePreviousMonth() {
+  //   setDirection(-1);
+  //   setDisplayMonth((prev) => {
+  //     const newDate = new Date(prev);
+  //     newDate.setMonth(prev.getMonth() - 1);
+  //     return newDate;
+  //   });
+  // }
+
+  // function handleNextMonth() {
+  //   setDirection(1);
+  //   setDisplayMonth((prev) => {
+  //     const newDate = new Date(prev);
+  //     newDate.setMonth(prev.getMonth() + 1);
+  //     return newDate;
+  //   });
+  // }
 
   // Format date to YYYY-MM-DD
   function formatDateForAPI(date: Date): string {
@@ -69,21 +168,21 @@ export function CheckInCalendar({ onCheckInSuccess }: CheckInCalendarProps) {
 
   // Check if a date has been checked in
   function isDateCheckedIn(date: Date): boolean {
-    if (!monthlyQuery.data) return false;
-    const dateStr = formatDateForAPI(date);
-    return monthlyQuery.data.some(
+    if (monthlyData.length === 0) return false;
+    const dateStr = formatDateInCheckinTZ(date);
+    return monthlyData.some(
       (record: CheckInRecordResponse) =>
-        formatDateForAPI(new Date(record.check_in_date)) === dateStr,
+        formatDateInCheckinTZ(new Date(record.check_in_date)) === dateStr,
     );
   }
 
   // Get check-in record for a date
   function getCheckInForDate(date: Date): CheckInRecordResponse | undefined {
-    if (!monthlyQuery.data) return undefined;
-    const dateStr = formatDateForAPI(date);
-    return monthlyQuery.data.find(
+    if (monthlyData.length === 0) return undefined;
+    const dateStr = formatDateInCheckinTZ(date);
+    return monthlyData.find(
       (record: CheckInRecordResponse) =>
-        formatDateForAPI(new Date(record.check_in_date)) === dateStr,
+        formatDateInCheckinTZ(new Date(record.check_in_date)) === dateStr,
     );
   }
 
@@ -118,7 +217,7 @@ export function CheckInCalendar({ onCheckInSuccess }: CheckInCalendarProps) {
 
   const selectedIsToday =
     !!selectedDate &&
-    formatDateForAPI(selectedDate) === formatDateForAPI(today);
+    formatDateInCheckinTZ(selectedDate) === formatDateInCheckinTZ(today);
 
   const selectedDateLabel = selectedDate?.toLocaleDateString("zh-CN", {
     year: "numeric",
@@ -147,7 +246,7 @@ export function CheckInCalendar({ onCheckInSuccess }: CheckInCalendarProps) {
     const outputDashOffset = circumference - inputDash;
 
     return (
-      <div className="relative h-[92px] w-[92px] shrink-0">
+      <div className="relative h-23 w-23 shrink-0">
         <svg
           width={size}
           height={size}
@@ -202,31 +301,31 @@ export function CheckInCalendar({ onCheckInSuccess }: CheckInCalendarProps) {
   }
 
   // Loading state
-  if (statusQuery.isLoading || monthlyQuery.isLoading) {
+  if (statusQuery.isLoading || isMonthlyLoading) {
     return (
-      <div className="mx-auto w-full p-6">
-        <div className="grid grid-cols-1 gap-6 lg:grid-cols-[400px_1fr]">
+      <div className="mx-auto w-full h-full p-6">
+        <div className="grid h-full grid-cols-1 gap-6 lg:grid-cols-[400px_1fr]">
           {/* Left: Calendar */}
-          <Card className="backdrop-blur-sm">
-            <CardContent className="p-6">
-              <div className="mb-4 flex items-center justify-between">
+          <Card className="backdrop-blur-sm h-full">
+            <CardContent className="p-6 h-full flex flex-col">
+              <div className="mb-4 flex items-center justify-between shrink-0">
                 <div className="flex items-center gap-2">
                   <div className="h-6 w-6 animate-pulse rounded-full bg-neutral-200 dark:bg-neutral-700" />
                   <div className="h-6 w-24 animate-pulse rounded bg-neutral-200 dark:bg-neutral-700" />
                 </div>
               </div>
-              <div className="h-[320px] animate-pulse rounded-lg bg-neutral-100 dark:bg-neutral-800" />
+              <div className="flex-1 animate-pulse rounded-lg bg-neutral-100 dark:bg-neutral-800" />
             </CardContent>
           </Card>
 
           {/* Right: Stats & Details */}
-          <div className="flex flex-col gap-6">
-            <div className="grid grid-cols-3 gap-4">
+          <div className="flex flex-col gap-6 h-full">
+            <div className="grid grid-cols-3 gap-4 shrink-0">
               <div className="h-24 animate-pulse rounded-lg bg-white/60 backdrop-blur-sm dark:bg-neutral-900/60" />
               <div className="h-24 animate-pulse rounded-lg bg-white/60 backdrop-blur-sm dark:bg-neutral-900/60" />
               <div className="h-24 animate-pulse rounded-lg bg-white/60 backdrop-blur-sm dark:bg-neutral-900/60" />
             </div>
-            <div className="h-40 animate-pulse rounded-lg bg-white/60 backdrop-blur-sm dark:bg-neutral-900/60" />
+            <div className="flex-1 animate-pulse rounded-lg bg-white/60 backdrop-blur-sm dark:bg-neutral-900/60" />
           </div>
         </div>
       </div>
@@ -238,7 +337,7 @@ export function CheckInCalendar({ onCheckInSuccess }: CheckInCalendarProps) {
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.25, ease: "easeOut" }}
-      className="mx-auto w-full p-4 md:p-6 h-fit lg:max-h-[70vh]"
+      className="mx-auto w-full h-full"
     >
       <motion.div
         layout
@@ -246,11 +345,11 @@ export function CheckInCalendar({ onCheckInSuccess }: CheckInCalendarProps) {
         className="grid h-full grid-cols-1 gap-6 lg:grid-cols-[420px_1fr]"
       >
         {/* Left Panel: Calendar */}
-        <Card className="h-fit backdrop-blur-md bg-white/70 dark:bg-neutral-900/70 border-white/20 dark:border-neutral-700/30 shadow-xl">
+        <Card className="h-auto lg:h-full backdrop-blur-md bg-white/70 dark:bg-neutral-900/70 border-white/20 dark:border-neutral-700/30 shadow-xl">
           <CardContent className="flex h-full flex-col p-4 sm:p-6">
-            <div className="mb-6 flex items-center justify-between">
+            <div className="mb-6 flex items-center justify-between shrink-0">
               <div className="flex items-center gap-3">
-                <div className="rounded-lg bg-gradient-to-br from-indigo-500 to-purple-600 p-2 shadow-lg shadow-indigo-500/30 transition-transform hover:scale-105">
+                <div className="rounded-lg bg-linear-to-br from-indigo-500 to-purple-600 p-2 shadow-lg shadow-indigo-500/30 transition-transform hover:scale-105">
                   <CalendarIcon className="h-5 w-5 text-white" />
                 </div>
                 <h3 className="text-lg font-bold text-neutral-900 dark:text-white">
@@ -268,34 +367,73 @@ export function CheckInCalendar({ onCheckInSuccess }: CheckInCalendarProps) {
             <motion.div
               layout
               transition={{ type: "spring", stiffness: 220, damping: 28 }}
-              className="flex-1 rounded-xl border border-neutral-200/60 bg-white/80 p-2 shadow-sm backdrop-blur-sm sm:p-4 dark:border-neutral-700/60 dark:bg-neutral-800/80"
+              className="flex-1 rounded-xl border border-neutral-200/60 bg-white/80 p-2 shadow-sm backdrop-blur-sm sm:p-4 dark:border-neutral-700/60 dark:bg-neutral-800/80 overflow-hidden flex flex-col"
             >
-              <Calendar
-                mode="single"
-                selected={selectedDate}
-                onSelect={setSelectedDate}
-                className="w-full rounded-lg mx-auto"
-                classNames={{
-                  root: "w-full",
-                  months: "w-full",
-                  month: "w-full",
-                  table: "w-full",
-                  weekdays: "flex gap-0.5 sm:gap-1 w-full",
-                  weekday: "flex-1 text-center",
-                  week: "flex w-full mt-1.5 gap-0.5 sm:mt-2 sm:gap-1",
-                  day: "flex-1",
-                  day_button:
-                    "w-full h-auto aspect-square rounded-md transition-[transform,background-color,box-shadow] duration-150 focus:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 text-neutral-900 dark:text-white hover:bg-neutral-900/5 dark:hover:bg-white/5 hover:shadow-sm data-[selected-single=true]:bg-transparent data-[selected-single=true]:shadow-none data-[selected-single=true]:ring-2 data-[selected-single=true]:ring-white data-[selected-single=true]:shadow-sm",
-                }}
-                modifiers={{
-                  checkedIn: (date) => isDateCheckedIn(date),
-                }}
-                modifiersClassNames={{
-                  checkedIn:
-                    "[&>button]:bg-gradient-to-br [&>button]:from-indigo-500 [&>button]:to-purple-600 [&>button]:text-white [&>button]:font-semibold [&>button]:shadow-md [&>button]:transition-[transform,filter,box-shadow] [&>button:hover]:-translate-y-px [&>button:hover]:brightness-110 [&>button:hover]:shadow-lg dark:[&>button]:from-indigo-600 dark:[&>button]:to-purple-700 [&>button[data-selected-single=true]]:ring-2 [&>button[data-selected-single=true]]:ring-white/60 [&>button[data-selected-single=true]]:shadow-lg",
-                }}
-                disabled={(date) => date > today}
-              />
+              <AnimatePresence mode="wait" custom={direction}>
+                <motion.div
+                  key={displayMonth.toISOString()}
+                  custom={direction}
+                  variants={variants}
+                  initial="enter"
+                  animate="center"
+                  exit="exit"
+                  transition={{
+                    x: { type: "spring", stiffness: 300, damping: 30 },
+                    opacity: { duration: 0.2 },
+                  }}
+                  className="w-full"
+                >
+                  <Calendar
+                    mode="single"
+                    selected={selectedDate}
+                    month={displayMonth}
+                    onMonthChange={(date) => {
+                      if (date > displayMonth) setDirection(1);
+                      else if (date < displayMonth) setDirection(-1);
+                      setDisplayMonth(date);
+                    }}
+                    showOutsideDays={true}
+                    onSelect={(date) => {
+                      setSelectedDate(date);
+                      if (date) {
+                        const newMonth = new Date(
+                          date.getFullYear(),
+                          date.getMonth(),
+                          1,
+                        );
+                        if (newMonth.getTime() !== displayMonth.getTime()) {
+                          if (newMonth > displayMonth) setDirection(1);
+                          else setDirection(-1);
+                          setDisplayMonth(newMonth);
+                        }
+                      }
+                    }}
+                    className="w-full rounded-lg mx-auto"
+                    classNames={{
+                      root: "w-full",
+                      months: "w-full flex flex-col",
+                      month: "w-full flex flex-col gap-4",
+                      table: "w-full",
+                      weekdays: "flex gap-0.5 sm:gap-1 w-full",
+                      weekday: "flex-1 text-center",
+                      week: "flex w-full mt-2 gap-0.5 sm:gap-1",
+                      day: "flex-1 p-0",
+                      day_outside:
+                        "opacity-40 aria-selected:bg-accent/50 aria-selected:text-muted-foreground",
+                      day_button:
+                        "w-full h-auto aspect-square rounded-md transition-[transform,background-color,box-shadow] duration-150 focus:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 text-neutral-900 dark:text-white hover:bg-neutral-900/5 dark:hover:bg-white/5 hover:shadow-sm data-[selected-single=true]:bg-transparent data-[selected-single=true]:shadow-none data-[selected-single=true]:ring-2 data-[selected-single=true]:ring-white data-[selected-single=true]:shadow-sm",
+                    }}
+                    modifiers={{
+                      checkedIn: (date) => isDateCheckedIn(date),
+                    }}
+                    modifiersClassNames={{
+                      checkedIn:
+                        "[&>button]:bg-gradient-to-br [&>button]:from-indigo-500 [&>button]:to-purple-600 [&>button]:text-white [&>button]:font-semibold [&>button]:shadow-md [&>button]:transition-[transform,filter,box-shadow] [&>button:hover]:-translate-y-px [&>button:hover]:brightness-110 [&>button:hover]:shadow-lg dark:[&>button]:from-indigo-600 dark:[&>button]:to-purple-700 [&>button[data-selected-single=true]]:ring-2 [&>button[data-selected-single=true]]:ring-white/60 [&>button[data-selected-single=true]]:shadow-lg [&:has(>button.day-outside)>button]:opacity-60 [&:has(>button.day-outside)>button]:bg-none [&:has(>button.day-outside)>button]:bg-indigo-500/20 [&:has(>button.day-outside)>button]:text-indigo-700 dark:[&:has(>button.day-outside)>button]:text-indigo-300",
+                    }}
+                    disabled={(date) => date > today}
+                  />
+                </motion.div>
+              </AnimatePresence>
             </motion.div>
 
             {/* Check-in Button (height transition) */}
@@ -307,7 +445,7 @@ export function CheckInCalendar({ onCheckInSuccess }: CheckInCalendarProps) {
                   animate={{ height: "auto", opacity: 1 }}
                   exit={{ height: 0, opacity: 0 }}
                   transition={{ duration: 0.25, ease: "easeOut" }}
-                  className="overflow-hidden"
+                  className="overflow-hidden shrink-0"
                 >
                   <div className="pt-6">
                     <Button
@@ -329,9 +467,9 @@ export function CheckInCalendar({ onCheckInSuccess }: CheckInCalendarProps) {
         </Card>
 
         {/* Right Panel: Stats & Details */}
-        <div className="flex flex-col gap-6">
+        <div className="flex flex-col gap-6 h-auto lg:h-full">
           {/* Stats Grid */}
-          <div className="grid grid-cols-3 gap-4">
+          <div className="grid grid-cols-3 gap-4 shrink-0">
             <Card className="group cursor-pointer backdrop-blur-md bg-white/70 dark:bg-neutral-900/70 border-white/20 dark:border-neutral-700/30 shadow-lg transition-all hover:scale-105 hover:shadow-xl">
               <CardContent className="p-5 text-center">
                 <div className="text-xs font-medium text-neutral-600 dark:text-neutral-400">
@@ -379,14 +517,14 @@ export function CheckInCalendar({ onCheckInSuccess }: CheckInCalendarProps) {
           </div>
 
           {/* Selected Date Details */}
-          <Card className="backdrop-blur-md bg-white/70 dark:bg-neutral-900/70 border-white/20 dark:border-neutral-700/30 shadow-lg">
-            <CardContent className="p-6">
+          <Card className="backdrop-blur-md bg-white/70 dark:bg-neutral-900/70 border-white/20 dark:border-neutral-700/30 shadow-lg flex-1 flex flex-col">
+            <CardContent className="p-6 flex-1 flex flex-col">
               <motion.div
                 key={selectedDate?.toDateString() ?? "none"}
                 initial={{ opacity: 0, y: 6 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.22, ease: "easeOut" }}
-                className="mb-5 flex items-center justify-between"
+                className="mb-5 flex items-center justify-between shrink-0"
               >
                 <div className="flex items-center gap-3">
                   <div className="rounded-xl border border-white/20 bg-white/70 p-2 shadow-sm backdrop-blur-sm dark:border-neutral-700/40 dark:bg-neutral-900/50">
@@ -409,11 +547,11 @@ export function CheckInCalendar({ onCheckInSuccess }: CheckInCalendarProps) {
                 ) : null}
               </motion.div>
 
-              <div className="mb-5 h-px bg-gradient-to-r from-transparent via-neutral-200/70 to-transparent dark:via-white/10" />
+              <div className="mb-5 h-px bg-gradient-to-r from-transparent via-neutral-200/70 to-transparent dark:via-white/10 shrink-0" />
 
-              <div className="space-y-4">
+              <div className="space-y-4 flex-1 flex flex-col">
                 {checkInRecord && (
-                  <div className="animate-in fade-in slide-in-from-bottom-3 duration-500 group relative overflow-hidden rounded-xl border border-indigo-200/60 bg-gradient-to-br from-indigo-50/90 to-purple-50/90 p-5 shadow-sm transition-all hover:shadow-md dark:border-indigo-700/60 dark:from-indigo-950/50 dark:to-purple-950/50">
+                  <div className="animate-in fade-in slide-in-from-bottom-3 duration-500 group relative overflow-hidden rounded-xl border border-indigo-200/60 bg-gradient-to-br from-indigo-50/90 to-purple-50/90 p-5 shadow-sm transition-all hover:shadow-md dark:border-indigo-700/60 dark:from-indigo-950/50 dark:to-purple-950/50 shrink-0">
                     <div className="absolute inset-y-4 left-4 w-1 rounded-full bg-gradient-to-b from-indigo-500 to-purple-600 shadow-sm transition-all group-hover:w-1.5" />
                     <div className="pl-4">
                       <div className="flex items-center gap-2">
@@ -438,7 +576,7 @@ export function CheckInCalendar({ onCheckInSuccess }: CheckInCalendarProps) {
                 )}
 
                 {consumption && (
-                  <div className="animate-in fade-in slide-in-from-bottom-3 duration-500 group relative overflow-hidden rounded-xl border border-neutral-200/60 bg-white/90 p-5 shadow-sm backdrop-blur-sm transition-all hover:shadow-md dark:border-neutral-700/60 dark:bg-neutral-800/90">
+                  <div className="animate-in fade-in slide-in-from-bottom-3 duration-500 group relative overflow-hidden rounded-xl border border-neutral-200/60 bg-white/90 p-5 shadow-sm backdrop-blur-sm transition-all hover:shadow-md dark:border-neutral-700/60 dark:bg-neutral-800/90 shrink-0">
                     <div className="absolute inset-y-4 left-4 w-1 rounded-full bg-gradient-to-b from-neutral-400 to-neutral-500 shadow-sm transition-all group-hover:w-1.5 dark:from-neutral-600 dark:to-neutral-700" />
                     <div className="pl-4">
                       <div className="font-bold text-neutral-900 dark:text-neutral-100">
@@ -492,7 +630,7 @@ export function CheckInCalendar({ onCheckInSuccess }: CheckInCalendarProps) {
                 {!checkInRecord &&
                   !consumption &&
                   dayConsumptionQuery.isLoading && (
-                    <div className="flex items-center justify-center gap-2 rounded-xl border border-neutral-200/60 bg-white/90 py-12 backdrop-blur-sm dark:border-neutral-700/60 dark:bg-neutral-800/90">
+                    <div className="flex flex-1 items-center justify-center gap-2 rounded-xl border border-neutral-200/60 bg-white/90 py-12 backdrop-blur-sm dark:border-neutral-700/60 dark:bg-neutral-800/90">
                       <div className="h-2 w-2 animate-bounce rounded-full bg-indigo-600 [animation-delay:-0.3s] dark:bg-indigo-400" />
                       <div className="h-2 w-2 animate-bounce rounded-full bg-purple-600 [animation-delay:-0.15s] dark:bg-purple-400" />
                       <div className="h-2 w-2 animate-bounce rounded-full bg-pink-600 dark:bg-pink-400" />
@@ -503,7 +641,7 @@ export function CheckInCalendar({ onCheckInSuccess }: CheckInCalendarProps) {
                   !consumption &&
                   !dayConsumptionQuery.isLoading &&
                   selectedDate && (
-                    <div className="animate-in fade-in duration-500 rounded-xl border border-dashed border-neutral-300/60 bg-neutral-50/90 p-8 text-center backdrop-blur-sm dark:border-neutral-600/60 dark:bg-neutral-800/90">
+                    <div className="flex-1 flex items-center justify-center animate-in fade-in duration-500 rounded-xl border border-dashed border-neutral-300/60 bg-neutral-50/90 p-8 text-center backdrop-blur-sm dark:border-neutral-600/60 dark:bg-neutral-800/90">
                       <div className="text-sm font-medium text-neutral-600 dark:text-neutral-400">
                         {formatDateForAPI(selectedDate) ===
                         formatDateForAPI(today)
