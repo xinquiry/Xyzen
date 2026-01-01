@@ -337,7 +337,7 @@ export function CheckInCalendar({ onCheckInSuccess }: CheckInCalendarProps) {
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.25, ease: "easeOut" }}
-      className="mx-auto w-full h-full p-4 md:p-6"
+      className="mx-auto w-full h-full"
     >
       <motion.div
         layout
@@ -345,7 +345,7 @@ export function CheckInCalendar({ onCheckInSuccess }: CheckInCalendarProps) {
         className="grid h-full grid-cols-1 gap-6 lg:grid-cols-[420px_1fr]"
       >
         {/* Left Panel: Calendar */}
-        <Card className="h-full backdrop-blur-md bg-white/70 dark:bg-neutral-900/70 border-white/20 dark:border-neutral-700/30 shadow-xl">
+        <Card className="h-auto lg:h-full backdrop-blur-md bg-white/70 dark:bg-neutral-900/70 border-white/20 dark:border-neutral-700/30 shadow-xl">
           <CardContent className="flex h-full flex-col p-4 sm:p-6">
             <div className="mb-6 flex items-center justify-between shrink-0">
               <div className="flex items-center gap-3">
@@ -381,7 +381,7 @@ export function CheckInCalendar({ onCheckInSuccess }: CheckInCalendarProps) {
                     x: { type: "spring", stiffness: 300, damping: 30 },
                     opacity: { duration: 0.2 },
                   }}
-                  className="flex-1"
+                  className="w-full"
                 >
                   <Calendar
                     mode="single"
@@ -410,19 +410,18 @@ export function CheckInCalendar({ onCheckInSuccess }: CheckInCalendarProps) {
                     }}
                     className="w-full rounded-lg mx-auto"
                     classNames={{
-                      root: "w-full h-full",
-                      months: "w-full h-full flex flex-col",
-                      month: "w-full h-full flex flex-col",
-                      table: "w-full flex-1 flex flex-col",
-                      tbody: "flex-1 flex flex-col",
-                      weekdays: "flex gap-0.5 sm:gap-1 w-full shrink-0",
-                      weekday: "flex-1 text-center py-2",
-                      week: "flex w-full flex-1 gap-0.5 sm:gap-1",
-                      day: "flex-1 h-full w-full p-0",
+                      root: "w-full",
+                      months: "w-full flex flex-col",
+                      month: "w-full flex flex-col gap-4",
+                      table: "w-full",
+                      weekdays: "flex gap-0.5 sm:gap-1 w-full",
+                      weekday: "flex-1 text-center",
+                      week: "flex w-full mt-2 gap-0.5 sm:gap-1",
+                      day: "flex-1 p-0",
                       day_outside:
                         "opacity-40 aria-selected:bg-accent/50 aria-selected:text-muted-foreground",
                       day_button:
-                        "w-full h-full rounded-md transition-[transform,background-color,box-shadow] duration-150 focus:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 text-neutral-900 dark:text-white hover:bg-neutral-900/5 dark:hover:bg-white/5 hover:shadow-sm data-[selected-single=true]:bg-transparent data-[selected-single=true]:shadow-none data-[selected-single=true]:ring-2 data-[selected-single=true]:ring-white data-[selected-single=true]:shadow-sm flex items-center justify-center",
+                        "w-full h-auto aspect-square rounded-md transition-[transform,background-color,box-shadow] duration-150 focus:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 text-neutral-900 dark:text-white hover:bg-neutral-900/5 dark:hover:bg-white/5 hover:shadow-sm data-[selected-single=true]:bg-transparent data-[selected-single=true]:shadow-none data-[selected-single=true]:ring-2 data-[selected-single=true]:ring-white data-[selected-single=true]:shadow-sm",
                     }}
                     modifiers={{
                       checkedIn: (date) => isDateCheckedIn(date),
@@ -468,7 +467,7 @@ export function CheckInCalendar({ onCheckInSuccess }: CheckInCalendarProps) {
         </Card>
 
         {/* Right Panel: Stats & Details */}
-        <div className="flex flex-col gap-6 h-full">
+        <div className="flex flex-col gap-6 h-auto lg:h-full">
           {/* Stats Grid */}
           <div className="grid grid-cols-3 gap-4 shrink-0">
             <Card className="group cursor-pointer backdrop-blur-md bg-white/70 dark:bg-neutral-900/70 border-white/20 dark:border-neutral-700/30 shadow-lg transition-all hover:scale-105 hover:shadow-xl">

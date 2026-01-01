@@ -16,7 +16,7 @@ export function CheckInModal({
 }: CheckInModalProps) {
   return (
     <ModalTitleLess isOpen={isOpen} onClose={onClose} maxWidth="max-w-5xl">
-      <div className="relative h-200 max-h-[90vh] w-full overflow-y-auto rounded-xl bg-white/50 dark:bg-black/50">
+      <div className="relative h-180 max-h-[90vh] w-full overflow-hidden rounded-xl bg-white/50 flex flex-col dark:bg-black/50">
         <BubbleBackground
           className="absolute inset-0 opacity-30 dark:opacity-20"
           colors={{
@@ -28,7 +28,7 @@ export function CheckInModal({
             sixth: "217,70,239", // fuchsia-500
           }}
         />
-        <div className="relative h-full w-full p-6">
+        <div className="relative z-10 h-full w-full overflow-y-auto p-3 sm:p-6">
           <CheckInCalendar onCheckInSuccess={onCheckInSuccess} />
         </div>
       </div>
