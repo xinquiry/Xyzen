@@ -36,7 +36,7 @@ export default defineConfig(() => {
             display_override: ["window-controls-overlay"],
             icons: [
               {
-                src: "pwa-icon-light.png",
+                src: "icon.png",
                 sizes: "192x192 256x256 512x512",
                 type: "image/png",
               },
