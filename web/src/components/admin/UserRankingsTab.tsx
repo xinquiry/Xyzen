@@ -1,3 +1,4 @@
+import { DEFAULT_TIMEZONE } from "@/configs/common";
 import type { ConsumeRecordResponse } from "@/service/redemptionService";
 import { redemptionService } from "@/service/redemptionService";
 import {
@@ -5,6 +6,8 @@ import {
   TrophyIcon,
   UserIcon,
 } from "@heroicons/react/24/outline";
+import { startOfDay, subDays } from "date-fns";
+import { toZonedTime } from "date-fns-tz";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 interface UserRankingsTabProps {
@@ -33,12 +36,48 @@ export function UserRankingsTab({ adminSecret }: UserRankingsTabProps) {
     setLoading(true);
     setError(null);
 
+    const now = new Date();
+    const zonedNow = toZonedTime(now, DEFAULT_TIMEZONE);
+    const todayYmd = startOfDay(zonedNow);
+
+    const formatYmd = (d: Date) => {
+      const y = d.getFullYear();
+      const m = String(d.getMonth() + 1).padStart(2, "0");
+      const day = String(d.getDate()).padStart(2, "0");
+      return `${y}-${m}-${day}`;
+    };
+
+    const { startDate, endDate } = (() => {
+      switch (timeRange) {
+        case "today": {
+          const ymd = formatYmd(todayYmd);
+          return { startDate: ymd, endDate: ymd };
+        }
+        case "week": {
+          const start = subDays(todayYmd, 6);
+          return { startDate: formatYmd(start), endDate: formatYmd(todayYmd) };
+        }
+        case "month": {
+          const start = subDays(todayYmd, 29);
+          return { startDate: formatYmd(start), endDate: formatYmd(todayYmd) };
+        }
+        case "all":
+        default:
+          return { startDate: undefined, endDate: undefined };
+      }
+    })();
+
     try {
       console.log(
         "Fetching consume records with adminSecret:",
         adminSecret ? "***" : "missing",
       );
-      const data = await redemptionService.getConsumeRecords(adminSecret);
+      const data = await redemptionService.getConsumeRecords(
+        adminSecret,
+        startDate,
+        endDate,
+        DEFAULT_TIMEZONE,
+      );
       console.log("Fetched consume records:", data.length, "records");
       setRecords(data);
     } catch (err) {
@@ -49,7 +88,7 @@ export function UserRankingsTab({ adminSecret }: UserRankingsTabProps) {
     } finally {
       setLoading(false);
     }
-  }, [adminSecret]);
+  }, [adminSecret, timeRange]);
 
   useEffect(() => {
     fetchRecords();
@@ -66,44 +105,15 @@ export function UserRankingsTab({ adminSecret }: UserRankingsTabProps) {
     return userId;
   };
 
-  // Calculate date range
-  const getDateRange = (range: TimeRange): Date => {
-    const now = new Date();
-    switch (range) {
-      case "today":
-        return new Date(now.setHours(0, 0, 0, 0));
-      case "week": {
-        const weekAgo = new Date();
-        weekAgo.setDate(weekAgo.getDate() - 7);
-        return weekAgo;
-      }
-      case "month": {
-        const monthAgo = new Date();
-        monthAgo.setMonth(monthAgo.getMonth() - 1);
-        return monthAgo;
-      }
-      case "all":
-      default:
-        return new Date(0); // Beginning of time
-    }
-  };
-
   // Aggregate and rank users
   const userRankings = useMemo(() => {
-    const startDate = getDateRange(timeRange);
     const userMap = new Map<string, UserRanking>();
 
     console.log(
       `Processing ${records.length} records for time range: ${timeRange}`,
     );
-    console.log(`Start date for filtering:`, startDate);
 
     records.forEach((record) => {
-      const recordDate = new Date(record.created_at);
-      if (recordDate < startDate) {
-        return;
-      }
-
       const existing = userMap.get(record.user_id) || {
         user_id: record.user_id,
         username: extractUsername(record.user_id),
@@ -225,13 +235,13 @@ export function UserRankingsTab({ adminSecret }: UserRankingsTabProps) {
       </div>
 
       {/* Time Range Selector */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        <div className="flex items-center gap-2 w-full sm:w-auto overflow-x-auto pb-2 sm:pb-0 scrollbar-hidden">
           {(["today", "week", "month", "all"] as TimeRange[]).map((range) => (
             <button
               key={range}
               onClick={() => setTimeRange(range)}
-              className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+              className={`px-4 py-2 rounded-md text-sm font-medium transition-colors whitespace-nowrap ${
                 timeRange === range
                   ? "bg-blue-500 text-white"
                   : "bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 hover:bg-neutral-200 dark:hover:bg-neutral-700"
@@ -249,7 +259,7 @@ export function UserRankingsTab({ adminSecret }: UserRankingsTabProps) {
 
       {/* Summary Stats */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="bg-gradient-to-br from-amber-50 to-amber-100 dark:from-amber-950/30 dark:to-amber-900/30 rounded-lg p-4 border border-amber-200 dark:border-amber-800">
+        <div className="bg-linear-to-br from-amber-50 to-amber-100 dark:from-amber-950/30 dark:to-amber-900/30 rounded-lg p-4 border border-amber-200 dark:border-amber-800">
           <div className="flex items-center gap-2 mb-1">
             <TrophyIcon className="h-5 w-5 text-amber-600 dark:text-amber-400" />
             <h3 className="text-sm font-medium text-amber-900 dark:text-amber-100">
@@ -261,7 +271,7 @@ export function UserRankingsTab({ adminSecret }: UserRankingsTabProps) {
           </p>
         </div>
 
-        <div className="bg-gradient-to-br from-cyan-50 to-cyan-100 dark:from-cyan-950/30 dark:to-cyan-900/30 rounded-lg p-4 border border-cyan-200 dark:border-cyan-800">
+        <div className="bg-linear-to-br from-cyan-50 to-cyan-100 dark:from-cyan-950/30 dark:to-cyan-900/30 rounded-lg p-4 border border-cyan-200 dark:border-cyan-800">
           <div className="flex items-center gap-2 mb-1">
             <ChartBarIcon className="h-5 w-5 text-cyan-600 dark:text-cyan-400" />
             <h3 className="text-sm font-medium text-cyan-900 dark:text-cyan-100">
@@ -273,7 +283,7 @@ export function UserRankingsTab({ adminSecret }: UserRankingsTabProps) {
           </p>
         </div>
 
-        <div className="bg-gradient-to-br from-emerald-50 to-emerald-100 dark:from-emerald-950/30 dark:to-emerald-900/30 rounded-lg p-4 border border-emerald-200 dark:border-emerald-800">
+        <div className="bg-linear-to-br from-emerald-50 to-emerald-100 dark:from-emerald-950/30 dark:to-emerald-900/30 rounded-lg p-4 border border-emerald-200 dark:border-emerald-800">
           <div className="flex items-center gap-2 mb-1">
             <UserIcon className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
             <h3 className="text-sm font-medium text-emerald-900 dark:text-emerald-100">
@@ -303,7 +313,7 @@ export function UserRankingsTab({ adminSecret }: UserRankingsTabProps) {
                 <th className="px-6 py-3 text-left text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">
                   User
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase tracking-wider hidden md:table-cell">
                   Provider
                 </th>
                 <th className="px-6 py-3 text-right text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">
@@ -315,7 +325,7 @@ export function UserRankingsTab({ adminSecret }: UserRankingsTabProps) {
                 <th className="px-6 py-3 text-right text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">
                   Requests
                 </th>
-                <th className="px-6 py-3 text-right text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">
+                <th className="px-6 py-3 text-right text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase tracking-wider hidden lg:table-cell">
                   Avg/Request
                 </th>
               </tr>
@@ -330,11 +340,11 @@ export function UserRankingsTab({ adminSecret }: UserRankingsTabProps) {
                     <div
                       className={`inline-flex items-center justify-center w-10 h-10 rounded-full font-bold text-sm ${
                         index === 0
-                          ? "bg-gradient-to-br from-yellow-400 to-yellow-600 text-white shadow-lg"
+                          ? "bg-linear-to-br from-yellow-400 to-yellow-600 text-white shadow-lg"
                           : index === 1
-                            ? "bg-gradient-to-br from-gray-300 to-gray-500 text-white shadow-md"
+                            ? "bg-linear-to-br from-gray-300 to-gray-500 text-white shadow-md"
                             : index === 2
-                              ? "bg-gradient-to-br from-orange-400 to-orange-600 text-white shadow-md"
+                              ? "bg-linear-to-br from-orange-400 to-orange-600 text-white shadow-md"
                               : "bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-400"
                       }`}
                     >
@@ -357,7 +367,7 @@ export function UserRankingsTab({ adminSecret }: UserRankingsTabProps) {
                       </div>
                     </div>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
+                  <td className="px-6 py-4 whitespace-nowrap hidden md:table-cell">
                     <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-indigo-100 dark:bg-indigo-900/30 text-indigo-800 dark:text-indigo-200">
                       {user.auth_provider}
                     </span>
@@ -371,7 +381,7 @@ export function UserRankingsTab({ adminSecret }: UserRankingsTabProps) {
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-right text-neutral-700 dark:text-neutral-300">
                     {formatNumber(user.total_count)}
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-right text-neutral-600 dark:text-neutral-400">
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-right text-neutral-600 dark:text-neutral-400 hidden lg:table-cell">
                     {formatNumber(
                       Math.round(user.total_amount / user.total_count),
                     )}

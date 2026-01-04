@@ -300,7 +300,7 @@ const UnifiedMcpMarketList: React.FC<UnifiedMcpMarketListProps> = ({
             className="w-full rounded-lg border border-neutral-200 bg-white py-2 pl-9 pr-4 text-sm text-neutral-900 placeholder-neutral-400 transition-colors focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 dark:border-neutral-600 dark:bg-neutral-800 dark:text-white dark:placeholder-neutral-500"
           />
         </form>
-        <div className="flex gap-2 flex-shrink-0">
+        <div className="flex gap-2 shrink-0">
           {/* Source Dropdown */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>

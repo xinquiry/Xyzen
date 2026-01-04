@@ -1,6 +1,7 @@
 import logging
 from typing import Any
 from uuid import UUID
+from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 from sqlalchemy import func
 from sqlmodel import col, select
@@ -328,7 +329,9 @@ class ConsumeRepository:
         logger.debug(f"Successful consumption count for user {user_id}: {count}")
         return count
 
-    async def get_daily_token_stats(self, date_str: str, user_id: str | None = None) -> dict[str, Any]:
+    async def get_daily_token_stats(
+        self, date_str: str, user_id: str | None = None, tz: str | None = None
+    ) -> dict[str, Any]:
         """
         Get token consumption statistics for a specific day.
 
@@ -341,12 +344,17 @@ class ConsumeRepository:
         """
         from datetime import datetime, timezone
 
-        # Parse date string
-        target_date = datetime.strptime(date_str, "%Y-%m-%d").replace(tzinfo=timezone.utc)
+        zone = ZoneInfo("UTC")
+        if tz:
+            try:
+                zone = ZoneInfo(tz)
+            except ZoneInfoNotFoundError as e:
+                raise ValueError(f"Invalid timezone: {tz}") from e
 
-        # Get start and end of day
-        start_of_day = target_date
-        end_of_day = target_date.replace(hour=23, minute=59, second=59, microsecond=999999)
+        start_local = datetime.strptime(date_str, "%Y-%m-%d").replace(tzinfo=zone)
+        end_local = start_local.replace(hour=23, minute=59, second=59, microsecond=999999)
+        start_of_day = start_local.astimezone(timezone.utc)
+        end_of_day = end_local.astimezone(timezone.utc)
 
         logger.debug(f"Getting daily token stats for {start_of_day} to {end_of_day}, user_id: {user_id}")
 
@@ -369,7 +377,7 @@ class ConsumeRepository:
 
         row = result.one()
         stats: dict[str, Any] = {
-            "date": start_of_day.strftime("%Y-%m-%d"),
+            "date": date_str,
             "total_tokens": int(row.total_tokens),  # type: ignore
             "input_tokens": int(row.input_tokens),  # type: ignore
             "output_tokens": int(row.output_tokens),  # type: ignore
@@ -416,7 +424,11 @@ class ConsumeRepository:
         return users
 
     async def list_all_consume_records(
-        self, start_date: str | None = None, end_date: str | None = None, limit: int = 10000
+        self,
+        start_date: str | None = None,
+        end_date: str | None = None,
+        tz: str | None = None,
+        limit: int = 10000,
     ) -> list[ConsumeRecord]:
         """
         Get all consumption records with optional date filtering.
@@ -424,6 +436,7 @@ class ConsumeRepository:
         Args:
             start_date: Start date in YYYY-MM-DD format (optional)
             end_date: End date in YYYY-MM-DD format (optional)
+            tz: Timezone name (IANA), used to interpret start_date/end_date (optional, defaults to UTC)
             limit: Maximum number of records to return (default: 10000)
 
         Returns:
@@ -435,13 +448,24 @@ class ConsumeRepository:
 
         query = select(ConsumeRecord)
 
+        zone = ZoneInfo("UTC")
+        if tz:
+            try:
+                zone = ZoneInfo(tz)
+            except ZoneInfoNotFoundError as e:
+                raise ValueError(f"Invalid timezone: {tz}") from e
+
         # Apply date filters if provided
         if start_date:
-            start_dt = datetime.strptime(start_date, "%Y-%m-%d").replace(tzinfo=timezone.utc)
+            start_local = datetime.strptime(start_date, "%Y-%m-%d").replace(tzinfo=zone)
+            start_dt = start_local.astimezone(timezone.utc)
             query = query.where(ConsumeRecord.created_at >= start_dt)
 
         if end_date:
-            end_dt = datetime.strptime(end_date, "%Y-%m-%d").replace(hour=23, minute=59, second=59, tzinfo=timezone.utc)  # noqa: E501
+            end_local = datetime.strptime(end_date, "%Y-%m-%d").replace(
+                hour=23, minute=59, second=59, microsecond=999999, tzinfo=zone
+            )
+            end_dt = end_local.astimezone(timezone.utc)
             query = query.where(ConsumeRecord.created_at <= end_dt)
 
         # Order by creation time ascending for chronological trend analysis
@@ -451,11 +475,4 @@ class ConsumeRepository:
         records = list(result.all())
 
         logger.debug(f"Found {len(records)} consume records")
-        return records
-        return records
-        return records
-        return records
-        return records
-        return records
-        return records
         return records

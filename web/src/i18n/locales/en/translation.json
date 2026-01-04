@@ -1,6 +1,10 @@
 {
   "app": {
     "title": "Xyzen",
+    "pwa": {
+      "installTitle": "Install App",
+      "installDescription": "Click the install icon in your address bar for a better experience."
+    },
     "chat": {
       "assistantsTitle": "Assistants",
       "chooseAgentHint": "Choose an agent to start",

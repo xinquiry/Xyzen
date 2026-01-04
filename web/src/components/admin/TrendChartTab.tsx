@@ -1,6 +1,9 @@
+import { DEFAULT_TIMEZONE } from "@/configs/common";
 import type { ConsumeRecordResponse } from "@/service/redemptionService";
 import { redemptionService } from "@/service/redemptionService";
 import { ArrowTrendingUpIcon, CalendarIcon } from "@heroicons/react/24/outline";
+import { format } from "date-fns";
+import { toZonedTime } from "date-fns-tz";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 interface TrendChartTabProps {
@@ -52,7 +55,10 @@ export function TrendChartTab({ adminSecret }: TrendChartTabProps) {
     const dataMap = new Map<string, DailyData>();
 
     records.forEach((record) => {
-      const date = new Date(record.created_at).toISOString().split("T")[0];
+      const date = format(
+        toZonedTime(new Date(record.created_at), DEFAULT_TIMEZONE),
+        "yyyy-MM-dd",
+      );
       const existing = dataMap.get(date) || {
         date,
         amount: 0,
@@ -102,8 +108,8 @@ export function TrendChartTab({ adminSecret }: TrendChartTabProps) {
   };
 
   const formatDate = (dateStr: string) => {
-    const date = new Date(dateStr);
-    return `${date.getMonth() + 1}/${date.getDate()}`;
+    const [, m, d] = dateStr.split("-");
+    return `${Number(m)}/${Number(d)}`;
   };
 
   if (loading) {
@@ -201,7 +207,7 @@ export function TrendChartTab({ adminSecret }: TrendChartTabProps) {
 
       {/* Summary Stats */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-950/30 dark:to-purple-900/30 rounded-lg p-4 border border-purple-200 dark:border-purple-800">
+        <div className="bg-linear-to-br from-purple-50 to-purple-100 dark:from-purple-950/30 dark:to-purple-900/30 rounded-lg p-4 border border-purple-200 dark:border-purple-800">
           <div className="flex items-center gap-2 mb-1">
             <ArrowTrendingUpIcon className="h-5 w-5 text-purple-600 dark:text-purple-400" />
             <h3 className="text-sm font-medium text-purple-900 dark:text-purple-100">
@@ -220,7 +226,7 @@ export function TrendChartTab({ adminSecret }: TrendChartTabProps) {
           </p>
         </div>
 
-        <div className="bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-950/30 dark:to-blue-900/30 rounded-lg p-4 border border-blue-200 dark:border-blue-800">
+        <div className="bg-linear-to-br from-blue-50 to-blue-100 dark:from-blue-950/30 dark:to-blue-900/30 rounded-lg p-4 border border-blue-200 dark:border-blue-800">
           <div className="flex items-center gap-2 mb-1">
             <CalendarIcon className="h-5 w-5 text-blue-600 dark:text-blue-400" />
             <h3 className="text-sm font-medium text-blue-900 dark:text-blue-100">
@@ -239,7 +245,7 @@ export function TrendChartTab({ adminSecret }: TrendChartTabProps) {
           </p>
         </div>
 
-        <div className="bg-gradient-to-br from-green-50 to-green-100 dark:from-green-950/30 dark:to-green-900/30 rounded-lg p-4 border border-green-200 dark:border-green-800">
+        <div className="bg-linear-to-br from-green-50 to-green-100 dark:from-green-950/30 dark:to-green-900/30 rounded-lg p-4 border border-green-200 dark:border-green-800">
           <div className="flex items-center gap-2 mb-1">
             <CalendarIcon className="h-5 w-5 text-green-600 dark:text-green-400" />
             <h3 className="text-sm font-medium text-green-900 dark:text-green-100">
@@ -272,7 +278,7 @@ export function TrendChartTab({ adminSecret }: TrendChartTabProps) {
                 <div className="flex items-center gap-2">
                   <div className="flex-1 h-8 bg-neutral-100 dark:bg-neutral-800 rounded-md overflow-hidden relative">
                     <div
-                      className="h-full bg-gradient-to-r from-purple-500 to-purple-600 dark:from-purple-600 dark:to-purple-700 rounded-md transition-all duration-300"
+                      className="h-full bg-linear-to-r from-purple-500 to-purple-600 dark:from-purple-600 dark:to-purple-700 rounded-md transition-all duration-300"
                       style={{
                         width: `${(day.amount / maxAmount) * 100}%`,
                       }}
@@ -308,7 +314,7 @@ export function TrendChartTab({ adminSecret }: TrendChartTabProps) {
                 <div className="flex items-center gap-2">
                   <div className="flex-1 h-8 bg-neutral-100 dark:bg-neutral-800 rounded-md overflow-hidden relative">
                     <div
-                      className="h-full bg-gradient-to-r from-blue-500 to-cyan-600 dark:from-blue-600 dark:to-cyan-700 rounded-md transition-all duration-300"
+                      className="h-full bg-linear-to-r from-blue-500 to-cyan-600 dark:from-blue-600 dark:to-cyan-700 rounded-md transition-all duration-300"
                       style={{
                         width: `${(day.tokens / maxTokens) * 100}%`,
                       }}

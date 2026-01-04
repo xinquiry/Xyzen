@@ -1,6 +1,10 @@
 {
   "app": {
     "title": "Xyzen",
+    "pwa": {
+      "installTitle": "安装应用",
+      "installDescription": "点击地址栏的安装图标，获得更好的使用体验。"
+    },
     "chat": {
       "assistantsTitle": "助手",
       "chooseAgentHint": "选择一个助手开始",

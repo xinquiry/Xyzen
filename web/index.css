@@ -174,6 +174,26 @@
   body {
     @apply bg-background text-foreground;
   }
+
+  /* Mobile/PWA: make controls feel more native (no long-press text selection/callout) */
+  button,
+  [role="button"] {
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    user-select: none;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  /* Ensure real text entry/selection areas stay selectable */
+  input,
+  textarea,
+  [contenteditable="true"],
+  [role="textbox"],
+  .prose {
+    -webkit-user-select: text;
+    user-select: text;
+  }
 }
 
 /* 头像容器的基础样式 */

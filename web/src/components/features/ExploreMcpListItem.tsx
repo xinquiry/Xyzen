@@ -33,7 +33,7 @@ const ExploreMcpListItem: React.FC<{
     <div className="flex items-start gap-4 rounded-lg border border-neutral-200 bg-white p-4 hover:bg-neutral-50 dark:border-neutral-800 dark:bg-neutral-900 dark:hover:bg-neutral-800/60 transition-colors">
       <img
         src={bannerUrl}
-        className="h-20 w-32 rounded-md object-cover flex-shrink-0"
+        className="h-20 w-32 rounded-md object-cover shrink-0"
         alt={mcp.name}
       />
       <div className="flex-1 min-w-0">
@@ -41,7 +41,7 @@ const ExploreMcpListItem: React.FC<{
           <h4 className="text-base font-semibold text-neutral-800 dark:text-white truncate">
             {mcp.name}
           </h4>
-          <div className="flex items-center gap-2 flex-shrink-0">
+          <div className="flex items-center gap-2 shrink-0">
             {getSourceBadge(mcp.source)}
             <Badge variant="blue" className="text-xs">
               MCP

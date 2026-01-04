@@ -1,30 +1,30 @@
 "use client";
 
-import { useState } from "react";
+import { PlateReadmeEditor } from "@/components/editor/PlateReadmeEditor";
+import { PlateReadmeViewer } from "@/components/editor/PlateReadmeViewer";
+import ConfirmationModal from "@/components/modals/ConfirmationModal";
 import {
-  useMarketplaceListing,
-  useUnpublishAgent,
   useListingHistory,
+  useMarketplaceListing,
   usePublishVersion,
+  useUnpublishAgent,
 } from "@/hooks/useMarketplace";
+import type { AgentSnapshot } from "@/service/marketplaceService";
 import { marketplaceService } from "@/service/marketplaceService";
-import { useQueryClient } from "@tanstack/react-query";
 import {
   ArrowLeftIcon,
   ArrowPathIcon,
-  ClockIcon,
-  EyeIcon,
-  HeartIcon,
-  TrashIcon,
-  PencilIcon,
   CheckCircleIcon,
+  ClockIcon,
   DocumentTextIcon,
+  EyeIcon,
   GlobeAltIcon,
+  HeartIcon,
+  PencilIcon,
+  TrashIcon,
 } from "@heroicons/react/24/outline";
-import ConfirmationModal from "@/components/modals/ConfirmationModal";
-import { PlateReadmeEditor } from "@/components/editor/PlateReadmeEditor";
-import { PlateReadmeViewer } from "@/components/editor/PlateReadmeViewer";
-import type { AgentSnapshot } from "@/service/marketplaceService";
+import { useQueryClient } from "@tanstack/react-query";
+import { useState } from "react";
 
 interface AgentMarketplaceManageProps {
   marketplaceId: string;
@@ -216,7 +216,7 @@ export default function AgentMarketplaceManage({
                   className="h-20 w-20 rounded-xl object-cover ring-2 ring-neutral-100 dark:ring-neutral-800"
                 />
               ) : (
-                <div className="flex h-20 w-20 items-center justify-center rounded-xl bg-gradient-to-br from-purple-500 via-pink-500 to-indigo-500 text-2xl font-bold text-white shadow-md">
+                <div className="flex h-20 w-20 items-center justify-center rounded-xl bg-linear-to-br from-purple-500 via-pink-500 to-indigo-500 text-2xl font-bold text-white shadow-md">
                   {listing.name.charAt(0).toUpperCase()}
                 </div>
               )}
@@ -356,7 +356,7 @@ export default function AgentMarketplaceManage({
                           : "border-neutral-200 bg-white hover:border-neutral-300 dark:border-neutral-800 dark:bg-neutral-900 dark:hover:border-neutral-700"
                       }`}
                     >
-                      <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-neutral-100 dark:bg-neutral-800">
+                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-neutral-100 dark:bg-neutral-800">
                         <span className="font-mono text-sm font-bold text-neutral-600 dark:text-neutral-400">
                           v{snapshot.version}
                         </span>

@@ -1,3 +1,4 @@
+import { DEFAULT_TIMEZONE } from "@/configs/common";
 import type { DailyTokenStatsResponse } from "@/service/redemptionService";
 import { redemptionService } from "@/service/redemptionService";
 import {
@@ -5,20 +6,23 @@ import {
   CurrencyDollarIcon,
   DocumentTextIcon,
 } from "@heroicons/react/24/outline";
-import { useCallback, useEffect, useState } from "react";
+import { format } from "date-fns";
+import { toZonedTime } from "date-fns-tz";
+import { useCallback, useEffect, useState, type ChangeEvent } from "react";
 
 interface DailyStatsTabProps {
   adminSecret: string;
   backendUrl: string;
 }
 
+const getShanghaiYmd = () =>
+  format(toZonedTime(new Date(), DEFAULT_TIMEZONE), "yyyy-MM-dd");
+
 export function DailyStatsTab({ adminSecret }: DailyStatsTabProps) {
   const [stats, setStats] = useState<DailyTokenStatsResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [selectedDate, setSelectedDate] = useState<string>(
-    new Date().toISOString().split("T")[0],
-  );
+  const [selectedDate, setSelectedDate] = useState<string>(getShanghaiYmd());
 
   const fetchStats = useCallback(
     async (date?: string) => {
@@ -29,6 +33,7 @@ export function DailyStatsTab({ adminSecret }: DailyStatsTabProps) {
         const data = await redemptionService.getDailyTokenStats(
           adminSecret,
           date,
+          DEFAULT_TIMEZONE,
         );
         setStats(data);
       } catch (err) {
@@ -46,7 +51,7 @@ export function DailyStatsTab({ adminSecret }: DailyStatsTabProps) {
     fetchStats(selectedDate);
   }, [selectedDate, fetchStats]);
 
-  const handleDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleDateChange = (e: ChangeEvent<HTMLInputElement>) => {
     setSelectedDate(e.target.value);
   };
 
@@ -91,7 +96,7 @@ export function DailyStatsTab({ adminSecret }: DailyStatsTabProps) {
           type="date"
           value={selectedDate}
           onChange={handleDateChange}
-          max={new Date().toISOString().split("T")[0]}
+          max={getShanghaiYmd()}
           className="rounded-md border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 px-3 py-2 text-sm text-neutral-900 dark:text-white focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
         />
       </div>
@@ -99,7 +104,7 @@ export function DailyStatsTab({ adminSecret }: DailyStatsTabProps) {
       {/* Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {/* Total Tokens */}
-        <div className="bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-950/30 dark:to-blue-900/30 rounded-lg p-6 border border-blue-200 dark:border-blue-800">
+        <div className="bg-linear-to-br from-blue-50 to-blue-100 dark:from-blue-950/30 dark:to-blue-900/30 rounded-lg p-6 border border-blue-200 dark:border-blue-800">
           <div className="flex items-center gap-3 mb-2">
             <div className="p-2 bg-blue-500 dark:bg-blue-600 rounded-lg">
               <ChartBarIcon className="h-6 w-6 text-white" />
@@ -124,7 +129,7 @@ export function DailyStatsTab({ adminSecret }: DailyStatsTabProps) {
         </div>
 
         {/* Total Amount */}
-        <div className="bg-gradient-to-br from-green-50 to-green-100 dark:from-green-950/30 dark:to-green-900/30 rounded-lg p-6 border border-green-200 dark:border-green-800">
+        <div className="bg-linear-to-br from-green-50 to-green-100 dark:from-green-950/30 dark:to-green-900/30 rounded-lg p-6 border border-green-200 dark:border-green-800">
           <div className="flex items-center gap-3 mb-2">
             <div className="p-2 bg-green-500 dark:bg-green-600 rounded-lg">
               <CurrencyDollarIcon className="h-6 w-6 text-white" />
@@ -142,7 +147,7 @@ export function DailyStatsTab({ adminSecret }: DailyStatsTabProps) {
         </div>
 
         {/* Record Count */}
-        <div className="bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-950/30 dark:to-purple-900/30 rounded-lg p-6 border border-purple-200 dark:border-purple-800">
+        <div className="bg-linear-to-br from-purple-50 to-purple-100 dark:from-purple-950/30 dark:to-purple-900/30 rounded-lg p-6 border border-purple-200 dark:border-purple-800">
           <div className="flex items-center gap-3 mb-2">
             <div className="p-2 bg-purple-500 dark:bg-purple-600 rounded-lg">
               <DocumentTextIcon className="h-6 w-6 text-white" />

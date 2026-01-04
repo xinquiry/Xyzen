@@ -10,8 +10,8 @@ import {
   PlayIcon,
 } from "@heroicons/react/24/outline";
 import { AnimatePresence, motion } from "framer-motion";
-import { useEffect, useRef, useState } from "react";
 import * as monaco from "monaco-editor";
+import { useEffect, useRef, useState } from "react";
 
 interface ToolTestModalProps {
   isOpen: boolean;
@@ -286,7 +286,7 @@ export const ToolTestModal: React.FC<ToolTestModalProps> = ({
             {/* Right Panel Header with Test Button */}
             <div className="mb-4 flex items-center justify-between">
               <div className="flex items-center space-x-2">
-                <div className="h-5 w-5 rounded-full bg-gradient-to-r from-green-500 to-emerald-500 flex items-center justify-center">
+                <div className="h-5 w-5 rounded-full bg-linear-to-r from-green-500 to-emerald-500 flex items-center justify-center">
                   <span className="text-white text-xs font-bold">R</span>
                 </div>
                 <h3 className="font-medium text-neutral-900 dark:text-white">
@@ -298,7 +298,7 @@ export const ToolTestModal: React.FC<ToolTestModalProps> = ({
               <Button
                 onClick={handleTestTool}
                 disabled={isRunning || !!parametersError}
-                className="inline-flex items-center gap-2 rounded-sm bg-gradient-to-r from-indigo-600 to-indigo-700 px-4 py-2 text-sm font-medium text-white shadow-lg transition-all hover:from-indigo-500 hover:to-indigo-600 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="inline-flex items-center gap-2 rounded-sm bg-linear-to-r from-indigo-600 to-indigo-700 px-4 py-2 text-sm font-medium text-white shadow-lg transition-all hover:from-indigo-500 hover:to-indigo-600 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {isRunning ? (
                   <>
@@ -388,7 +388,7 @@ export const ToolTestModal: React.FC<ToolTestModalProps> = ({
                             <span className="text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2 block">
                               Result:
                             </span>
-                            <pre className="overflow-auto rounded-sm bg-neutral-900 p-4 text-sm text-green-400 dark:bg-neutral-800 max-h-96 whitespace-pre-wrap break-words">
+                            <pre className="overflow-auto rounded-sm bg-neutral-900 p-4 text-sm text-green-400 dark:bg-neutral-800 max-h-96 whitespace-pre-wrap wrap-break-word">
                               {typeof result.result === "string"
                                 ? result.result
                                 : (JSON.stringify(result.result, null, 2) ??
@@ -402,7 +402,7 @@ export const ToolTestModal: React.FC<ToolTestModalProps> = ({
                           <span className="text-sm font-medium text-red-700 dark:text-red-300 mb-2 block">
                             Error:
                           </span>
-                          <pre className="overflow-auto rounded-sm bg-neutral-900 p-4 text-sm text-red-400 dark:bg-neutral-800 max-h-96 whitespace-pre-wrap break-words">
+                          <pre className="overflow-auto rounded-sm bg-neutral-900 p-4 text-sm text-red-400 dark:bg-neutral-800 max-h-96 whitespace-pre-wrap wrap-break-word">
                             {result.error}
                           </pre>
                         </div>
@@ -416,7 +416,7 @@ export const ToolTestModal: React.FC<ToolTestModalProps> = ({
         </div>
 
         {/* Fixed Bottom Area with Close Button */}
-        <div className="flex-shrink-0 flex justify-end pt-4 border-t border-neutral-200 dark:border-neutral-700">
+        <div className="shrink-0 flex justify-end pt-4 border-t border-neutral-200 dark:border-neutral-700">
           <Button
             onClick={handleClose}
             disabled={isRunning}

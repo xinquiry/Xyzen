@@ -45,14 +45,14 @@ const ServerStatusIndicator: React.FC<ServerStatusIndicatorProps> = ({
   const isOnline = status === "online";
   return (
     <div
-      className={`flex items-center px-1.5 py-0.5 rounded-full border flex-shrink-0 ${
+      className={`flex items-center px-1.5 py-0.5 rounded-full border shrink-0 ${
         isOnline
           ? "bg-green-50 border-green-200 dark:bg-green-900/20 dark:border-green-900"
           : "bg-red-50 border-red-200 dark:bg-red-900/20 dark:border-red-900"
       }`}
     >
       <span
-        className={`h-1.5 w-1.5 rounded-full flex-shrink-0 ${
+        className={`h-1.5 w-1.5 rounded-full shrink-0 ${
           isOnline ? "bg-green-500" : "bg-red-500"
         }`}
       />
@@ -118,7 +118,7 @@ const McpServerCard: React.FC<McpServerCardProps> = ({
     >
       {/* Header */}
       <div className="flex items-start p-3 gap-3">
-        <div className="flex-shrink-0 rounded-sm bg-gradient-to-br from-indigo-500 to-purple-600 p-2 mt-0.5">
+        <div className="shrink-0 rounded-sm bg-linear-to-br from-indigo-500 to-purple-600 p-2 mt-0.5">
           <ServerStackIcon className="h-5 w-5 text-white" />
         </div>
         <div className="flex-1 min-w-0">
@@ -150,13 +150,13 @@ const McpServerCard: React.FC<McpServerCardProps> = ({
       <div className="flex items-center justify-between border-t border-neutral-100 bg-neutral-50 px-4 py-2 dark:border-neutral-800 dark:bg-neutral-800/50">
         <div className="flex items-center gap-2 text-xs flex-1 min-w-0 mr-2">
           <div className="flex items-center space-x-1.5 text-neutral-600 dark:text-neutral-400 flex-1 min-w-0">
-            <GlobeAltIcon className="h-4 w-4 flex-shrink-0" />
+            <GlobeAltIcon className="h-4 w-4 shrink-0" />
             <span className="truncate">{server.url}</span>
           </div>
           <button
             onClick={handleToggleExpand}
             disabled={toolCount === 0}
-            className="flex items-center space-x-1 text-indigo-600 hover:text-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed dark:text-indigo-400 dark:hover:text-indigo-300 flex-shrink-0"
+            className="flex items-center space-x-1 text-indigo-600 hover:text-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed dark:text-indigo-400 dark:hover:text-indigo-300 shrink-0"
           >
             <CommandLineIcon className="h-4 w-4" />
             <span>{toolCount}</span>
@@ -171,7 +171,7 @@ const McpServerCard: React.FC<McpServerCardProps> = ({
           </button>
         </div>
 
-        <div className="flex items-center space-x-1 flex-shrink-0">
+        <div className="flex items-center space-x-1 shrink-0">
           <motion.button
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
@@ -223,7 +223,7 @@ const McpServerCard: React.FC<McpServerCardProps> = ({
                   className="flex items-center justify-between rounded-sm bg-neutral-50 p-2 dark:bg-neutral-800/50"
                 >
                   <div className="flex items-center space-x-2 flex-1 min-w-0">
-                    <CommandLineIcon className="h-4 w-4 flex-shrink-0 text-indigo-500" />
+                    <CommandLineIcon className="h-4 w-4 shrink-0 text-indigo-500" />
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium text-neutral-900 dark:text-white truncate">
                         {tool.name}
@@ -239,7 +239,7 @@ const McpServerCard: React.FC<McpServerCardProps> = ({
                     onClick={() =>
                       onTestTool(server, tool.name, tool.description)
                     }
-                    className="ml-2 flex-shrink-0 rounded-sm p-1 text-neutral-500 hover:bg-indigo-50 hover:text-indigo-600 dark:text-neutral-400 dark:hover:bg-indigo-900/20 dark:hover:text-indigo-400"
+                    className="ml-2 shrink-0 rounded-sm p-1 text-neutral-500 hover:bg-indigo-50 hover:text-indigo-600 dark:text-neutral-400 dark:hover:bg-indigo-900/20 dark:hover:text-indigo-400"
                     title={t("mcp.added.test")}
                   >
                     <PlayIcon className="h-4 w-4" />
@@ -367,7 +367,7 @@ export function McpListModal() {
           >
             <div className="flex items-center justify-between gap-4">
               <div className="flex items-center space-x-3 overflow-hidden">
-                <div className="rounded-sm bg-gradient-to-r from-indigo-500 to-purple-500 p-2 shadow-lg flex-shrink-0">
+                <div className="rounded-sm bg-linear-to-r from-indigo-500 to-purple-500 p-2 shadow-lg shrink-0">
                   <ServerStackIcon className="h-5 w-5 sm:h-6 sm:w-6 text-white" />
                 </div>
                 <div className="min-w-0 flex-1">
@@ -380,7 +380,7 @@ export function McpListModal() {
                 </div>
               </div>
 
-              <div className="flex items-center space-x-2 flex-shrink-0">
+              <div className="flex items-center space-x-2 shrink-0">
                 {/* Mobile Toggle Button */}
                 <Button
                   onClick={() =>
@@ -412,7 +412,7 @@ export function McpListModal() {
                   onClick={openAddMcpServerModal}
                   className="bg-primary text-primary-foreground text-sm font-medium px-2.5 sm:px-4 py-2 h-9 sm:h-10 flex items-center rounded-sm"
                 >
-                  <PlusIcon className="h-4 w-4 sm:mr-2 flex-shrink-0" />
+                  <PlusIcon className="h-4 w-4 sm:mr-2 shrink-0" />
                   <span className="whitespace-nowrap hidden sm:inline">
                     {t("mcp.addCustom")}
                   </span>
@@ -449,7 +449,7 @@ export function McpListModal() {
 
             {/* RIGHT: Added Servers */}
             <div
-              className={`w-full lg:w-[350px] flex-shrink-0 ${showAddedServersMobile ? "block" : "hidden lg:block"}`}
+              className={`w-full lg:w-[350px] shrink-0 ${showAddedServersMobile ? "block" : "hidden lg:block"}`}
             >
               <div className="mb-4 flex items-center space-x-2">
                 <ServerStackIcon className="h-5 w-5 text-indigo-500" />
@@ -525,7 +525,7 @@ export function McpListModal() {
                       </p>
                       <Button
                         onClick={openAddMcpServerModal}
-                        className="mt-6 inline-flex items-center gap-2 rounded-sm bg-gradient-to-r from-indigo-600 to-indigo-700 px-6 py-3 text-sm font-semibold text-white transition-all duration-200 hover:from-indigo-500 hover:to-indigo-600 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
+                        className="mt-6 inline-flex items-center gap-2 rounded-sm bg-linear-to-r from-indigo-600 to-indigo-700 px-6 py-3 text-sm font-semibold text-white transition-all duration-200 hover:from-indigo-500 hover:to-indigo-600 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
                       >
                         <PlusIcon className="h-5 w-5" />
                         <span className="whitespace-nowrap">

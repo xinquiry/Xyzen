@@ -50,10 +50,10 @@ export function PointsInfoModal({ isOpen, onClose }: PointsInfoModalProps) {
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ delay: 0.2 }}
-          className="group relative overflow-hidden rounded-2xl border border-indigo-100 bg-gradient-to-br from-white to-indigo-50/30 p-1 dark:border-indigo-500/30 dark:from-neutral-900 dark:to-neutral-800"
+          className="group relative overflow-hidden rounded-2xl border border-indigo-100 bg-linear-to-br from-white to-indigo-50/30 p-1 dark:border-indigo-500/30 dark:from-neutral-900 dark:to-neutral-800"
         >
           {/* 流光边框效果 */}
-          <div className="absolute inset-0 bg-gradient-to-r from-transparent via-indigo-500/10 to-transparent opacity-0 transition-opacity duration-1000 group-hover:animate-shimmer group-hover:opacity-100 dark:via-indigo-400/20" />
+          <div className="absolute inset-0 bg-linear-to-r from-transparent via-indigo-500/10 to-transparent opacity-0 transition-opacity duration-1000 group-hover:animate-shimmer group-hover:opacity-100 dark:via-indigo-400/20" />
 
           <div className="relative rounded-xl bg-white/50 p-5 dark:bg-neutral-900/80">
             <div className="mb-5 flex items-center justify-between">
@@ -70,7 +70,7 @@ export function PointsInfoModal({ isOpen, onClose }: PointsInfoModalProps) {
                   </p>
                 </div>
               </div>
-              <span className="rounded-full bg-gradient-to-r from-orange-500 to-red-500 px-3 py-1 text-xs font-bold text-white shadow-lg shadow-orange-500/30">
+              <span className="rounded-full bg-linear-to-r from-orange-500 to-red-500 px-3 py-1 text-xs font-bold text-white shadow-lg shadow-orange-500/30">
                 1.5 折
               </span>
             </div>

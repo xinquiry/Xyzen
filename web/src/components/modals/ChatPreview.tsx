@@ -66,7 +66,7 @@ const ChatPreview: React.FC<ChatPreviewProps> = ({
           <div
             className={`max-w-11/12 px-5 py-4 rounded-2xl shadow-md backdrop-blur-xl transition-all ${
               isUser
-                ? "bg-gradient-to-br from-blue-500/60 to-indigo-600/60 text-white rounded-tr-sm border border-white/20 shadow-[inset_0_1px_1px_rgba(255,255,255,0.3)]"
+                ? "bg-linear-to-br from-blue-500/60 to-indigo-600/60 text-white rounded-tr-sm border border-white/20 shadow-[inset_0_1px_1px_rgba(255,255,255,0.3)]"
                 : "bg-white/60 dark:bg-neutral-800/60 text-neutral-900 dark:text-neutral-100 rounded-tl-sm border border-white/40 dark:border-white/10 shadow-[inset_0_1px_1px_rgba(255,255,255,0.4)]"
             }`}
           >
@@ -76,14 +76,14 @@ const ChatPreview: React.FC<ChatPreviewProps> = ({
             >
               {/* 头像 */}
               {isUser ? (
-                <div className="w-6 h-6 rounded-full bg-gradient-to-tr from-blue-400 to-indigo-500 flex items-center justify-center shadow-sm flex-shrink-0 border border-white/20">
+                <div className="w-6 h-6 rounded-full bg-linear-to-tr from-blue-400 to-indigo-500 flex items-center justify-center shadow-sm shrink-0 border border-white/20">
                   <UserIcon className="w-3.5 h-3.5 text-white" />
                 </div>
               ) : (
                 <img
                   src={robotAvatarUrl}
                   alt="AI"
-                  className="w-5 h-5 object-cover rounded-full shadow-sm flex-shrink-0 border border-white/20 bg-white/10"
+                  className="w-5 h-5 object-cover rounded-full shadow-sm shrink-0 border border-white/20 bg-white/10"
                 />
               )}
 
@@ -141,7 +141,7 @@ const ChatPreview: React.FC<ChatPreviewProps> = ({
         <div className="border-b border-white/20 bg-white/40 p-6 backdrop-blur-md dark:bg-black/40">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
-              <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-500 to-purple-600 shadow-lg text-white">
+              <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-linear-to-br from-blue-500 to-purple-600 shadow-lg text-white">
                 <svg
                   className="w-7 h-7"
                   fill="none"
@@ -221,7 +221,7 @@ const ChatPreview: React.FC<ChatPreviewProps> = ({
         <div className="border-t border-white/20 bg-white/40 p-5 backdrop-blur-md dark:bg-black/40">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <div className="h-8 w-8 rounded-full bg-gradient-to-tr from-blue-400 to-purple-500 flex items-center justify-center text-white text-xs font-bold">
+              <div className="h-8 w-8 rounded-full bg-linear-to-tr from-blue-400 to-purple-500 flex items-center justify-center text-white text-xs font-bold">
                 AI
               </div>
               <div className="flex flex-col">

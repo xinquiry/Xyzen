@@ -76,7 +76,7 @@ export const McpServerListItem: React.FC<McpServerCardProps> = ({
       onClick={onClick}
       className="flex items-start p-3 rounded-lg border border-neutral-200 bg-white dark:border-neutral-800 dark:bg-neutral-900 hover:bg-neutral-50 dark:hover:bg-neutral-800/50 cursor-pointer transition-colors gap-3"
     >
-      <div className="relative h-12 w-12 flex-shrink-0 overflow-hidden rounded-md bg-neutral-100 dark:bg-neutral-800 mt-0.5">
+      <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded-md bg-neutral-100 dark:bg-neutral-800 mt-0.5">
         <img
           src={getCoverImage(server)}
           alt={server.name}
@@ -89,7 +89,7 @@ export const McpServerListItem: React.FC<McpServerCardProps> = ({
           <h4 className="font-semibold text-sm text-neutral-900 dark:text-neutral-100 truncate">
             {server.name}
           </h4>
-          <div className="flex-shrink-0 scale-75 origin-left">
+          <div className="shrink-0 scale-75 origin-left">
             {getSourceBadge(server)}
           </div>
         </div>
@@ -99,7 +99,7 @@ export const McpServerListItem: React.FC<McpServerCardProps> = ({
       </div>
 
       {isStarred && (
-        <StarIconSolid className="h-4 w-4 text-yellow-400 flex-shrink-0 mt-1" />
+        <StarIconSolid className="h-4 w-4 text-yellow-400 shrink-0 mt-1" />
       )}
     </div>
   );
@@ -138,14 +138,14 @@ const McpServerCard: React.FC<McpServerCardProps> = ({
         <div className="space-y-2 pb-2">
           {/* Title & Badge */}
           <div className="flex items-start justify-between gap-2">
-            <h3 className="flex-1 text-sm sm:text-base font-bold text-white line-clamp-2 sm:line-clamp-1 break-words">
+            <h3 className="flex-1 text-sm sm:text-base font-bold text-white line-clamp-2 sm:line-clamp-1 wrap-break-word">
               {server.name}
             </h3>
-            <div className="flex-shrink-0">{getSourceBadge(server)}</div>
+            <div className="shrink-0">{getSourceBadge(server)}</div>
           </div>
 
           {/* Description - 限制为2行 */}
-          <p className="text-xs text-neutral-300 line-clamp-2 leading-relaxed break-words">
+          <p className="text-xs text-neutral-300 line-clamp-2 leading-relaxed wrap-break-word">
             {server.description}
           </p>
 

@@ -196,7 +196,8 @@ async def get_my_providers(
         HTTPException: None - this endpoint always succeeds, returning empty list if no providers
     """
     provider_repo = ProviderRepository(db)
-    providers = await provider_repo.get_providers_by_user(user_id, include_system=True)
+    # Only return user-scoped providers; system providers are not shown in the UI.
+    providers = await provider_repo.get_providers_by_user(user_id, include_system=False)
     return [_sanitize_provider_read(p) for p in providers]
 
 

@@ -24,6 +24,7 @@ import React, {
   useCallback,
   useEffect,
   useImperativeHandle,
+  useRef,
   useState,
 } from "react";
 import { useTranslation } from "react-i18next";
@@ -287,6 +288,71 @@ export const FileList = React.memo(
         });
         setSelectedId(item.id);
       };
+
+      // Mobile: long-press to open context menu (touch only)
+      const longPressTimerRef = useRef<number | null>(null);
+      const longPressStartRef = useRef<{ x: number; y: number } | null>(null);
+      const didLongPressRef = useRef(false);
+
+      const clearLongPress = useCallback(() => {
+        if (longPressTimerRef.current !== null) {
+          window.clearTimeout(longPressTimerRef.current);
+          longPressTimerRef.current = null;
+        }
+        longPressStartRef.current = null;
+      }, []);
+
+      const createLongPressHandlers = useCallback(
+        (item: Folder | FileUploadResponse, type: ContextMenuType) => {
+          const onPointerDown = (e: React.PointerEvent) => {
+            if (e.pointerType !== "touch") return;
+            didLongPressRef.current = false;
+            longPressStartRef.current = { x: e.clientX, y: e.clientY };
+
+            clearLongPress();
+            longPressTimerRef.current = window.setTimeout(() => {
+              didLongPressRef.current = true;
+              // Haptic feedback (best-effort)
+              try {
+                if ("vibrate" in navigator) {
+                  navigator.vibrate(10);
+                }
+              } catch {
+                // ignore
+              }
+              setContextMenu({
+                type,
+                item,
+                position: { x: e.clientX, y: e.clientY },
+              });
+              setSelectedId(item.id);
+            }, 550);
+          };
+
+          const onPointerMove = (e: React.PointerEvent) => {
+            if (e.pointerType !== "touch") return;
+            const start = longPressStartRef.current;
+            if (!start) return;
+            const dx = e.clientX - start.x;
+            const dy = e.clientY - start.y;
+            // Cancel if user is scrolling/dragging
+            if (Math.hypot(dx, dy) > 10) {
+              clearLongPress();
+            }
+          };
+
+          const onPointerUp = () => {
+            clearLongPress();
+          };
+
+          const onPointerCancel = () => {
+            clearLongPress();
+          };
+
+          return { onPointerDown, onPointerMove, onPointerUp, onPointerCancel };
+        },
+        [clearLongPress],
+      );
 
       const handleRename = async (
         item: Folder | FileUploadResponse,
@@ -574,7 +640,17 @@ export const FileList = React.memo(
       }
 
       return (
-        <div className="h-full w-full" onClick={() => setSelectedId(null)}>
+        <div
+          className="h-full w-full"
+          onClick={() => {
+            // If a long-press just opened the menu, ignore the synthetic click.
+            if (didLongPressRef.current) {
+              didLongPressRef.current = false;
+              return;
+            }
+            setSelectedId(null);
+          }}
+        >
           {viewMode === "list" ? (
             <div className="min-w-full inline-block align-middle">
               <div className="border-b border-neutral-200 dark:border-neutral-800">
@@ -597,12 +673,17 @@ export const FileList = React.memo(
                     key={`folder-${folder.id}`}
                     onClick={(e) => {
                       e.stopPropagation();
+                      if (didLongPressRef.current) {
+                        didLongPressRef.current = false;
+                        return;
+                      }
                       setSelectedId(folder.id);
                     }}
                     onDoubleClick={() => handleFolderClick(folder.id)}
                     onContextMenu={(e) =>
                       handleContextMenu(e, folder, "folder")
                     }
+                    {...createLongPressHandlers(folder, "folder")}
                     className={`group grid grid-cols-12 gap-4 px-4 py-2 text-sm items-center cursor-default ${
                       selectedId === folder.id
                         ? "bg-indigo-600 text-white"
@@ -671,10 +752,15 @@ export const FileList = React.memo(
                       key={file.id}
                       onClick={(e) => {
                         e.stopPropagation();
+                        if (didLongPressRef.current) {
+                          didLongPressRef.current = false;
+                          return;
+                        }
                         setSelectedId(file.id);
                       }}
                       onDoubleClick={() => handlePreview(file)}
                       onContextMenu={(e) => handleContextMenu(e, file, "file")}
+                      {...createLongPressHandlers(file, "file")}
                       className={`group grid grid-cols-12 gap-4 px-4 py-2 text-sm items-center cursor-default ${
                         isSelected
                           ? "bg-indigo-600 text-white"
@@ -689,7 +775,7 @@ export const FileList = React.memo(
                             className="h-5 w-5"
                           />
                         </div>
-                        <span className="truncate">
+                        <span className="truncate select-none">
                           {file.original_filename}
                         </span>
                       </div>
@@ -777,10 +863,15 @@ export const FileList = React.memo(
                   key={`folder-${folder.id}`}
                   onClick={(e) => {
                     e.stopPropagation();
+                    if (didLongPressRef.current) {
+                      didLongPressRef.current = false;
+                      return;
+                    }
                     setSelectedId(folder.id);
                   }}
                   onDoubleClick={() => handleFolderClick(folder.id)}
                   onContextMenu={(e) => handleContextMenu(e, folder, "folder")}
+                  {...createLongPressHandlers(folder, "folder")}
                   className={`group flex flex-col items-center gap-2 rounded-md p-3 text-center cursor-default ${
                     selectedId === folder.id
                       ? "bg-indigo-100 ring-2 ring-indigo-500 dark:bg-indigo-900/50"
@@ -806,10 +897,15 @@ export const FileList = React.memo(
                     key={file.id}
                     onClick={(e) => {
                       e.stopPropagation();
+                      if (didLongPressRef.current) {
+                        didLongPressRef.current = false;
+                        return;
+                      }
                       setSelectedId(file.id);
                     }}
                     onDoubleClick={() => handlePreview(file)}
                     onContextMenu={(e) => handleContextMenu(e, file, "file")}
+                    {...createLongPressHandlers(file, "file")}
                     className={`group flex flex-col items-center gap-2 rounded-md p-3 text-center cursor-default ${
                       isSelected
                         ? "bg-indigo-100 ring-2 ring-indigo-500 dark:bg-indigo-900/50"

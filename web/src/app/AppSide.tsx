@@ -240,8 +240,8 @@ export function AppSide({
   return (
     <>
       <div
-        className={`flex flex-col bg-white dark:bg-black dark:border dark:border-neutral-800 overflow-visible ${
-          !isMobile ? "rounded-xl border border-neutral-200" : ""
+        className={`flex flex-col bg-white dark:bg-black overflow-visible ${
+          !isMobile ? "rounded-xl" : ""
         }`}
         style={isMobile ? mobileStyle : desktopStyle}
       >
@@ -341,7 +341,7 @@ export function AppSide({
                 </div>
               ) : (
                 <div className="h-full bg-white dark:bg-neutral-950 flex flex-col">
-                  <div className="border-b border-neutral-200 p-4 dark:border-neutral-800 shrink-0">
+                  <div className="sm:border-b border-neutral-200 p-4 dark:border-neutral-800 shrink-0">
                     <h2 className="text-sm font-semibold text-neutral-900 dark:text-white">
                       {t("app.chat.assistantsTitle")}
                     </h2>

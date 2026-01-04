@@ -284,7 +284,7 @@ export default function XyzenTopics() {
                   >
                     <div className="flex items-center gap-2">
                       {topic.isPinned && (
-                        <MapPinIcon className="h-3.5 w-3.5 flex-shrink-0 rotate-45 text-indigo-500 dark:text-indigo-400" />
+                        <MapPinIcon className="h-3.5 w-3.5 shrink-0 rotate-45 text-indigo-500 dark:text-indigo-400" />
                       )}
                       <div className="flex-1 overflow-hidden">
                         <EditableTitle

@@ -160,12 +160,16 @@ class RedemptionService {
   async getDailyTokenStats(
     adminSecret: string,
     date?: string,
+    tz?: string,
   ): Promise<DailyTokenStatsResponse> {
     const url = new URL(
       `${this.getBackendUrl()}/xyzen/api/v1/redemption/admin/stats/daily-tokens`,
     );
     if (date) {
       url.searchParams.append("date", date);
+    }
+    if (tz) {
+      url.searchParams.append("tz", tz);
     }
 
     const response = await fetch(url.toString(), {
@@ -221,6 +225,7 @@ class RedemptionService {
     adminSecret: string,
     startDate?: string,
     endDate?: string,
+    tz?: string,
     limit = 10000,
   ): Promise<ConsumeRecordResponse[]> {
     const url = new URL(
@@ -231,6 +236,9 @@ class RedemptionService {
     }
     if (endDate) {
       url.searchParams.append("end_date", endDate);
+    }
+    if (tz) {
+      url.searchParams.append("tz", tz);
     }
     url.searchParams.append("limit", limit.toString());
 

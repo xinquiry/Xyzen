@@ -7,11 +7,11 @@ import { Modal } from "@/components/animate-ui/primitives/headless/modal";
 import { Input } from "@/components/base/Input";
 import { useXyzen } from "@/store";
 import type { McpServerCreate } from "@/types/mcp";
-import { Field, Label, RadioGroup, Radio } from "@headlessui/react";
+import { Field, Label, Radio, RadioGroup } from "@headlessui/react";
 import {
   CheckCircleIcon,
-  ServerStackIcon,
   KeyIcon,
+  ServerStackIcon,
   UserIcon,
 } from "@heroicons/react/24/outline";
 import { AnimatePresence, motion } from "framer-motion";
@@ -118,7 +118,7 @@ export function AddMcpServerModal() {
                 stiffness: 200,
                 damping: 15,
               }}
-              className="mb-6 rounded-full bg-gradient-to-br from-green-100 to-green-50 p-4 shadow-lg dark:from-green-900/30 dark:to-green-800/20"
+              className="mb-6 rounded-full bg-linear-to-br from-green-100 to-green-50 p-4 shadow-lg dark:from-green-900/30 dark:to-green-800/20"
             >
               <CheckCircleIcon className="h-8 w-8 text-green-600 dark:text-green-400" />
             </motion.div>
@@ -146,7 +146,7 @@ export function AddMcpServerModal() {
           >
             {/* Header */}
             <div className="flex items-center space-x-3 border-b border-neutral-200 pb-4 dark:border-neutral-700">
-              <div className="rounded-sm bg-gradient-to-br from-indigo-500 to-purple-600 p-2">
+              <div className="rounded-sm bg-linear-to-br from-indigo-500 to-purple-600 p-2">
                 <ServerStackIcon className="h-6 w-6 text-white" />
               </div>
               <div>
@@ -439,7 +439,7 @@ export function AddMcpServerModal() {
                 disabled={
                   isCreating || !newServer.name.trim() || !newServer.url.trim()
                 }
-                className="bg-gradient-to-r from-indigo-600 to-indigo-700 px-6 py-2 text-white hover:from-indigo-500 hover:to-indigo-600 disabled:cursor-not-allowed disabled:opacity-50"
+                className="bg-linear-to-r from-indigo-600 to-indigo-700 px-6 py-2 text-white hover:from-indigo-500 hover:to-indigo-600 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {isCreating ? (
                   <span className="inline-flex items-center gap-2">

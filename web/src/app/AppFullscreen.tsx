@@ -13,6 +13,7 @@ import KnowledgeBase from "@/components/layouts/KnowledgeBase";
 import XyzenAgent from "@/components/layouts/XyzenAgent";
 import XyzenChat from "@/components/layouts/XyzenChat";
 
+import { PwaInstallPrompt } from "@/components/features/PwaInstallPrompt";
 import { SettingsModal } from "@/components/modals/SettingsModal";
 
 import { DEFAULT_BACKEND_URL } from "@/configs";
@@ -128,6 +129,7 @@ export function AppFullscreen({
 
       <McpListModal />
       <SettingsModal />
+      <PwaInstallPrompt />
     </>
   );
   return createPortal(fullscreenContent, document.body);

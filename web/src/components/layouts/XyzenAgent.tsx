@@ -141,8 +141,13 @@ const AgentCard: React.FC<AgentCardProps> = ({
     longPressTimer.current = setTimeout(() => {
       isLongPress.current = true;
       setContextMenu({ x: clientX, y: clientY });
-      if (typeof navigator !== "undefined" && navigator.vibrate) {
-        navigator.vibrate(50);
+      // Haptic feedback (best-effort)
+      try {
+        if ("vibrate" in navigator) {
+          navigator.vibrate(10);
+        }
+      } catch {
+        // ignore
       }
     }, 500);
   };
@@ -209,7 +214,7 @@ const AgentCard: React.FC<AgentCardProps> = ({
       `}
       >
         {/* 头像 */}
-        <div className="h-10 w-10 flex-shrink-0 avatar-glow">
+        <div className="h-10 w-10 shrink-0 avatar-glow">
           <img
             src={
               agent.avatar ||
@@ -223,10 +228,10 @@ const AgentCard: React.FC<AgentCardProps> = ({
         </div>
 
         {/* 内容 */}
-        <div className="flex flex-1 flex-col min-w-0">
+        <div className="flex flex-1 flex-col min-w-0 select-none">
           <div className="flex items-center gap-2">
             <h3
-              className="text-sm font-semibold text-neutral-800 dark:text-white truncate flex-shrink"
+              className="text-sm font-semibold text-neutral-800 dark:text-white truncate shrink"
               title={agent.name}
             >
               {agent.name}
@@ -236,7 +241,7 @@ const AgentCard: React.FC<AgentCardProps> = ({
             {agent.mcp_servers && agent.mcp_servers.length > 0 && (
               <Badge
                 variant="blue"
-                className="flex items-center gap-1 flex-shrink-0"
+                className="flex items-center gap-1 shrink-0"
               >
                 <McpIcon className="h-3 w-3" />
                 {agent.mcp_servers.length}
@@ -248,7 +253,7 @@ const AgentCard: React.FC<AgentCardProps> = ({
               <div title={`Bound to knowledge set: ${knowledgeSetName}`}>
                 <Badge
                   variant="purple"
-                  className="flex items-center gap-1 flex-shrink-0"
+                  className="flex items-center gap-1 shrink-0"
                 >
                   📚 {knowledgeSetName}
                 </Badge>
@@ -301,6 +306,7 @@ export default function XyzenAgent({
   const [editingAgent, setEditingAgent] = useState<Agent | null>(null);
   const [isConfirmModalOpen, setConfirmModalOpen] = useState(false);
   const [agentToDelete, setAgentToDelete] = useState<Agent | null>(null);
+  const hasAttemptedProviderFetchRef = useRef(false);
   const {
     agents,
     fetchAgents,
@@ -329,11 +335,15 @@ export default function XyzenAgent({
 
   // Ensure providers are loaded on mount (only if authenticated)
   useEffect(() => {
-    if (isAuthenticated && llmProviders.length === 0 && !llmProvidersLoading) {
-      fetchMyProviders().catch((error) => {
-        console.error("Failed to fetch providers:", error);
-      });
-    }
+    if (!isAuthenticated) return;
+    if (hasAttemptedProviderFetchRef.current) return;
+    if (llmProviders.length > 0) return;
+    if (llmProvidersLoading) return;
+
+    hasAttemptedProviderFetchRef.current = true;
+    fetchMyProviders().catch((error) => {
+      console.error("Failed to fetch providers:", error);
+    });
   }, [
     isAuthenticated,
     llmProviders.length,

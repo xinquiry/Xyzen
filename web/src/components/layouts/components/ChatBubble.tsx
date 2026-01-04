@@ -5,7 +5,7 @@ import Markdown from "@/lib/Markdown";
 import { useXyzen } from "@/store";
 import type { Message } from "@/store/types";
 import { motion } from "framer-motion";
-import { useMemo, useRef, useEffect } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import LoadingMessage from "./LoadingMessage";
 import MessageAttachments from "./MessageAttachments";
 import { SearchCitations } from "./SearchCitations";
@@ -198,7 +198,7 @@ function ChatBubble({ message }: ChatBubbleProps) {
             )}
 
             <div
-              className={`prose prose-neutral dark:prose-invert prose-sm max-w-none min-w-0 overflow-x-auto ${
+              className={`prose prose-neutral dark:prose-invert prose-sm max-w-none min-w-0 overflow-x-auto select-text ${
                 isUserMessage
                   ? "text-sm text-neutral-800 dark:text-neutral-200"
                   : "text-sm text-neutral-700 dark:text-neutral-300"

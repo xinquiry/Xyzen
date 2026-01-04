@@ -152,7 +152,7 @@ function AuthErrorScreen({
   // Container classes vary by layout variant
   const outerCls =
     variant === "fullscreen"
-      ? "flex min-h-screen items-center justify-center bg-gradient-to-br from-background via-muted/40 to-background p-4"
+      ? "flex min-h-screen items-center justify-center bg-linear-to-br from-background via-muted/40 to-background p-4"
       : "p-3";
   const cardCls =
     variant === "fullscreen"

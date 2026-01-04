@@ -1,18 +1,18 @@
 "use client";
 
-import { useState } from "react";
+import ConfirmationModal from "@/components/modals/ConfirmationModal";
 import {
   useMyMarketplaceListings,
-  useUnpublishAgent,
   usePrefetchMarketplaceListing,
+  useUnpublishAgent,
 } from "@/hooks/useMarketplace";
+import type { MarketplaceListing } from "@/service/marketplaceService";
 import {
-  HeartIcon,
   ArrowPathIcon,
   EyeSlashIcon,
+  HeartIcon,
 } from "@heroicons/react/24/outline";
-import ConfirmationModal from "@/components/modals/ConfirmationModal";
-import type { MarketplaceListing } from "@/service/marketplaceService";
+import { useState } from "react";
 
 interface MyMarketplaceListingsProps {
   onSelectListing: (marketplaceId: string) => void;
@@ -105,8 +105,8 @@ export default function MyMarketplaceListings({
     return (
       <div className="flex flex-col items-center justify-center py-20">
         <div className="relative mb-8">
-          <div className="absolute inset-0 animate-pulse rounded-full bg-gradient-to-r from-purple-400 via-pink-400 to-indigo-400 opacity-20 blur-2xl"></div>
-          <div className="relative flex h-32 w-32 items-center justify-center rounded-full bg-gradient-to-br from-purple-500 to-pink-500">
+          <div className="absolute inset-0 animate-pulse rounded-full bg-linear-to-r from-purple-400 via-pink-400 to-indigo-400 opacity-20 blur-2xl"></div>
+          <div className="relative flex h-32 w-32 items-center justify-center rounded-full bg-linear-to-br from-purple-500 to-pink-500">
             <svg
               className="h-16 w-16 text-white"
               fill="none"
@@ -135,13 +135,13 @@ export default function MyMarketplaceListings({
           </h4>
           <ol className="space-y-2 text-sm text-neutral-600 dark:text-neutral-400">
             <li className="flex items-start gap-2">
-              <span className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-indigo-100 text-xs font-bold text-indigo-600 dark:bg-indigo-900 dark:text-indigo-400">
+              <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-indigo-100 text-xs font-bold text-indigo-600 dark:bg-indigo-900 dark:text-indigo-400">
                 1
               </span>
               <span>Go to the Chat panel and create or edit an agent</span>
             </li>
             <li className="flex items-start gap-2">
-              <span className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-indigo-100 text-xs font-bold text-indigo-600 dark:bg-indigo-900 dark:text-indigo-400">
+              <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-indigo-100 text-xs font-bold text-indigo-600 dark:bg-indigo-900 dark:text-indigo-400">
                 2
               </span>
               <span>
@@ -149,7 +149,7 @@ export default function MyMarketplaceListings({
               </span>
             </li>
             <li className="flex items-start gap-2">
-              <span className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-indigo-100 text-xs font-bold text-indigo-600 dark:bg-indigo-900 dark:text-indigo-400">
+              <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-indigo-100 text-xs font-bold text-indigo-600 dark:bg-indigo-900 dark:text-indigo-400">
                 3
               </span>
               <span>Click "Publish to Marketplace" button</span>
@@ -240,7 +240,7 @@ function MyMarketplaceListingCard({
       onClick={handleCardClick}
     >
       {/* Gradient overlay on hover */}
-      <div className="absolute inset-0 bg-gradient-to-br from-purple-500/5 via-pink-500/5 to-indigo-500/5 opacity-0 transition-opacity duration-300 group-hover:opacity-100"></div>
+      <div className="absolute inset-0 bg-linear-to-br from-purple-500/5 via-pink-500/5 to-indigo-500/5 opacity-0 transition-opacity duration-300 group-hover:opacity-100"></div>
 
       {/* Management Actions Overlay */}
       <div className="absolute top-2 right-2 flex gap-1 opacity-0 transition-opacity group-hover:opacity-100">
@@ -268,7 +268,7 @@ function MyMarketplaceListingCard({
                 className="h-14 w-14 rounded-xl object-cover ring-2 ring-neutral-200 dark:ring-neutral-800"
               />
             ) : (
-              <div className="flex h-14 w-14 items-center justify-center rounded-xl bg-gradient-to-br from-purple-500 via-pink-500 to-indigo-500 text-xl font-bold text-white shadow-lg">
+              <div className="flex h-14 w-14 items-center justify-center rounded-xl bg-linear-to-br from-purple-500 via-pink-500 to-indigo-500 text-xl font-bold text-white shadow-lg">
                 {listing.name.charAt(0).toUpperCase()}
               </div>
             )}
@@ -356,7 +356,7 @@ function MyMarketplaceListingCard({
       </div>
 
       {/* Hover indicator */}
-      <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-purple-500 via-pink-500 to-indigo-500 opacity-0 transition-opacity duration-300 group-hover:opacity-100"></div>
+      <div className="absolute bottom-0 left-0 right-0 h-1 bg-linear-to-r from-purple-500 via-pink-500 to-indigo-500 opacity-0 transition-opacity duration-300 group-hover:opacity-100"></div>
     </div>
   );
 }

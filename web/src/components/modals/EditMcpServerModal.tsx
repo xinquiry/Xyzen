@@ -121,7 +121,7 @@ export function EditMcpServerModal() {
                 stiffness: 200,
                 damping: 15,
               }}
-              className="mb-6 rounded-full bg-gradient-to-br from-green-100 to-green-50 p-4 shadow-lg dark:from-green-900/30 dark:to-green-800/20"
+              className="mb-6 rounded-full bg-linear-to-br from-green-100 to-green-50 p-4 shadow-lg dark:from-green-900/30 dark:to-green-800/20"
             >
               <CheckCircleIcon className="h-8 w-8 text-green-600 dark:text-green-400" />
             </motion.div>
@@ -144,7 +144,7 @@ export function EditMcpServerModal() {
             exit={{ opacity: 0 }}
           >
             <div className="mb-6 flex items-center space-x-3">
-              <div className="rounded-sm bg-gradient-to-br from-indigo-500 to-purple-600 p-2">
+              <div className="rounded-sm bg-linear-to-br from-indigo-500 to-purple-600 p-2">
                 <ServerStackIcon className="h-5 w-5 text-white" />
               </div>
               <div>
@@ -398,7 +398,7 @@ export function EditMcpServerModal() {
                 disabled={
                   isEditing || !server?.name?.trim() || !server?.url?.trim()
                 }
-                className="inline-flex items-center gap-2 rounded-sm bg-gradient-to-r from-indigo-600 to-indigo-700 px-4 py-2 text-sm font-medium text-white shadow-sm transition-all hover:from-indigo-500 hover:to-indigo-600 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="inline-flex items-center gap-2 rounded-sm bg-linear-to-r from-indigo-600 to-indigo-700 px-4 py-2 text-sm font-medium text-white shadow-sm transition-all hover:from-indigo-500 hover:to-indigo-600 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {isEditing ? (
                   <>

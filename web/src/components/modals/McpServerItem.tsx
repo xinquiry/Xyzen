@@ -33,7 +33,7 @@ export const McpServerItem: React.FC<McpServerItemProps> = ({
       <div className="flex-grow">
         <div className="flex items-center space-x-2">
           <div
-            className={clsx("h-2.5 w-2.5 flex-shrink-0 rounded-full", {
+            className={clsx("h-2.5 w-2.5 shrink-0 rounded-full", {
               "bg-green-500": !isOffline,
               "bg-neutral-500": isOffline,
             })}

@@ -1,27 +1,27 @@
 "use client";
 
-import { useState } from "react";
+import ForkAgentModal from "@/components/features/ForkAgentModal";
 import {
   useMarketplaceListing,
   useMarketplaceRequirements,
   useToggleLike,
 } from "@/hooks/useMarketplace";
-import ReactMarkdown from "react-markdown";
-import remarkGfm from "remark-gfm";
+import { useIsMarketplaceOwner } from "@/utils/marketplace";
 import {
-  HeartIcon,
   ArrowLeftIcon,
-  EyeIcon,
-  InformationCircleIcon,
   CheckCircleIcon,
-  PencilIcon,
-  DocumentTextIcon,
   Cog6ToothIcon,
   CubeIcon,
+  DocumentTextIcon,
+  EyeIcon,
+  HeartIcon,
+  InformationCircleIcon,
+  PencilIcon,
 } from "@heroicons/react/24/outline";
 import { HeartIcon as HeartSolidIcon } from "@heroicons/react/24/solid";
-import ForkAgentModal from "@/components/features/ForkAgentModal";
-import { useIsMarketplaceOwner } from "@/utils/marketplace";
+import { useState } from "react";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 
 interface AgentMarketplaceDetailProps {
   marketplaceId: string;
@@ -102,7 +102,7 @@ export default function AgentMarketplaceDetail({
       <div className="flex h-full items-center justify-center p-4">
         <div className="max-w-md relative w-full rounded-lg border border-red-500/50 bg-red-50 p-4 text-red-900 dark:bg-red-950/50 dark:text-red-400">
           <div className="flex gap-2">
-            <InformationCircleIcon className="h-4 w-4 flex-shrink-0" />
+            <InformationCircleIcon className="h-4 w-4 shrink-0" />
             <div className="text-sm">
               Failed to load agent details. Please try again.
             </div>
@@ -133,7 +133,7 @@ export default function AgentMarketplaceDetail({
             {/* Agent Header */}
             <div className="relative overflow-hidden rounded-2xl border border-neutral-200 bg-white shadow-lg dark:border-neutral-800 dark:bg-neutral-950">
               {/* Gradient background */}
-              <div className="absolute inset-0 bg-gradient-to-br from-purple-500/10 via-pink-500/10 to-indigo-500/10"></div>
+              <div className="absolute inset-0 bg-linear-to-br from-purple-500/10 via-pink-500/10 to-indigo-500/10"></div>
 
               <div className="relative flex flex-col space-y-1.5 p-8">
                 <div className="flex items-start gap-6">
@@ -144,7 +144,7 @@ export default function AgentMarketplaceDetail({
                       className="h-24 w-24 rounded-2xl object-cover ring-4 ring-white dark:ring-neutral-800"
                     />
                   ) : (
-                    <div className="flex h-24 w-24 items-center justify-center rounded-2xl bg-gradient-to-br from-purple-500 via-pink-500 to-indigo-500 text-3xl font-bold text-white shadow-xl">
+                    <div className="flex h-24 w-24 items-center justify-center rounded-2xl bg-linear-to-br from-purple-500 via-pink-500 to-indigo-500 text-3xl font-bold text-white shadow-xl">
                       {listing.name.charAt(0).toUpperCase()}
                     </div>
                   )}
@@ -372,7 +372,7 @@ export default function AgentMarketplaceDetail({
                         {requirements.provider_needed && (
                           <div className="relative w-full rounded-lg border border-amber-500/50 bg-amber-50 p-4 text-amber-900 dark:bg-amber-950/50 dark:text-amber-400">
                             <div className="flex gap-2">
-                              <InformationCircleIcon className="h-4 w-4 flex-shrink-0" />
+                              <InformationCircleIcon className="h-4 w-4 shrink-0" />
                               <div className="text-sm">
                                 <strong>LLM Provider Required:</strong> You'll
                                 need to configure an AI provider (OpenAI,
@@ -419,7 +419,7 @@ export default function AgentMarketplaceDetail({
                         {requirements.knowledge_base && (
                           <div className="relative w-full rounded-lg border border-blue-500/50 bg-blue-50 p-4 text-blue-900 dark:bg-blue-950/50 dark:text-blue-400">
                             <div className="flex gap-2">
-                              <InformationCircleIcon className="h-4 w-4 flex-shrink-0" />
+                              <InformationCircleIcon className="h-4 w-4 shrink-0" />
                               <div className="text-sm">
                                 <strong>Knowledge Base:</strong> The original
                                 agent uses{" "}
@@ -437,7 +437,7 @@ export default function AgentMarketplaceDetail({
                           !requirements.knowledge_base && (
                             <div className="relative w-full rounded-lg border border-green-500/50 bg-green-50 p-4 text-green-900 dark:bg-green-950/50 dark:text-green-400">
                               <div className="flex gap-2">
-                                <CheckCircleIcon className="h-4 w-4 flex-shrink-0 text-green-600" />
+                                <CheckCircleIcon className="h-4 w-4 shrink-0 text-green-600" />
                                 <div className="text-sm">
                                   No special requirements! This agent is ready
                                   to use after forking.
@@ -469,9 +469,9 @@ export default function AgentMarketplaceDetail({
                 <div className="space-y-3">
                   <button
                     onClick={handleFork}
-                    className="group relative w-full overflow-hidden rounded-xl bg-gradient-to-r from-purple-600 via-pink-600 to-indigo-600 px-4 py-4 text-base font-bold text-white shadow-lg transition-all hover:shadow-xl hover:scale-[1.02]"
+                    className="group relative w-full overflow-hidden rounded-xl bg-linear-to-r from-purple-600 via-pink-600 to-indigo-600 px-4 py-4 text-base font-bold text-white shadow-lg transition-all hover:shadow-xl hover:scale-[1.02]"
                   >
-                    <div className="absolute inset-0 bg-gradient-to-r from-purple-700 via-pink-700 to-indigo-700 opacity-0 transition-opacity group-hover:opacity-100"></div>
+                    <div className="absolute inset-0 bg-linear-to-r from-purple-700 via-pink-700 to-indigo-700 opacity-0 transition-opacity group-hover:opacity-100"></div>
                     <div className="relative flex items-center justify-center gap-2">
                       <svg
                         className="h-5 w-5"
@@ -558,9 +558,9 @@ export default function AgentMarketplaceDetail({
             </div>
 
             {/* Info Card */}
-            <div className="rounded-2xl border border-blue-200 bg-gradient-to-br from-blue-50 to-indigo-50 p-6 shadow-lg dark:border-blue-900/50 dark:from-blue-950/30 dark:to-indigo-950/30">
+            <div className="rounded-2xl border border-blue-200 bg-linear-to-br from-blue-50 to-indigo-50 p-6 shadow-lg dark:border-blue-900/50 dark:from-blue-950/30 dark:to-indigo-950/30">
               <div className="flex gap-3">
-                <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-blue-500 text-white">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-blue-500 text-white">
                   <InformationCircleIcon className="h-6 w-6" />
                 </div>
                 <div>

@@ -28,7 +28,7 @@ export const Switch: React.FC<SwitchProps> = ({
       onChange={onChange}
       disabled={disabled}
       className={clsx(
-        "group relative inline-flex h-6 w-11 flex-shrink-0 rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 dark:focus:ring-offset-neutral-900",
+        "group relative inline-flex h-6 w-11 shrink-0 rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 dark:focus:ring-offset-neutral-900",
         className,
         {
           "cursor-pointer": !disabled,

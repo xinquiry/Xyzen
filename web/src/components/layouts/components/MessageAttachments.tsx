@@ -1,13 +1,13 @@
+import { useXyzen } from "@/store";
+import type { MessageAttachment } from "@/store/types";
 import {
   DocumentIcon,
   MusicalNoteIcon,
   PhotoIcon,
 } from "@heroicons/react/24/outline";
-import type { MessageAttachment } from "@/store/types";
-import { useState, useEffect, useCallback } from "react";
 import clsx from "clsx";
-import { useXyzen } from "@/store";
-import { motion, AnimatePresence } from "framer-motion";
+import { AnimatePresence, motion } from "framer-motion";
+import { useCallback, useEffect, useState } from "react";
 
 import { MarkdownRenderer } from "@/components/preview/renderers/MarkdownRenderer";
 
@@ -218,7 +218,7 @@ export default function MessageAttachments({
               {imageLoadingStates[image.id] ? (
                 <div className="w-full h-full relative overflow-hidden bg-neutral-200 dark:bg-neutral-800">
                   <motion.div
-                    className="absolute inset-0 bg-gradient-to-r from-transparent via-white/50 dark:via-white/10 to-transparent"
+                    className="absolute inset-0 bg-linear-to-r from-transparent via-white/50 dark:via-white/10 to-transparent"
                     animate={{
                       x: ["-100%", "200%"],
                     }}
@@ -286,7 +286,7 @@ export default function MessageAttachments({
               {fileLoadingStates[doc.id] ? (
                 <div className="w-full h-full relative overflow-hidden bg-neutral-200 dark:bg-neutral-800">
                   <motion.div
-                    className="absolute inset-0 bg-gradient-to-r from-transparent via-white/50 dark:via-white/10 to-transparent"
+                    className="absolute inset-0 bg-linear-to-r from-transparent via-white/50 dark:via-white/10 to-transparent"
                     animate={{
                       x: ["-100%", "200%"],
                     }}
@@ -358,7 +358,7 @@ export default function MessageAttachments({
               key={aud.id}
               className="flex items-center gap-3 px-3 py-2 rounded-lg border border-neutral-200 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-800/50"
             >
-              <div className="flex-shrink-0 text-purple-600 dark:text-purple-400">
+              <div className="shrink-0 text-purple-600 dark:text-purple-400">
                 {getFileIcon("audio")}
               </div>
               <div className="flex-1 min-w-0">
@@ -377,7 +377,7 @@ export default function MessageAttachments({
                 ) : (
                   <div className="w-full h-10 mt-1 bg-neutral-200 dark:bg-neutral-700 rounded relative overflow-hidden">
                     <motion.div
-                      className="absolute inset-0 bg-gradient-to-r from-transparent via-white/40 dark:via-white/10 to-transparent"
+                      className="absolute inset-0 bg-linear-to-r from-transparent via-white/40 dark:via-white/10 to-transparent"
                       animate={{
                         x: ["-100%", "200%"],
                       }}
@@ -411,7 +411,7 @@ export default function MessageAttachments({
               }}
               className="flex items-center gap-3 px-3 py-2 rounded-lg border border-neutral-200 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-800/50 hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors"
             >
-              <div className="flex-shrink-0 text-neutral-600 dark:text-neutral-400">
+              <div className="shrink-0 text-neutral-600 dark:text-neutral-400">
                 {getFileIcon("others")}
               </div>
               <div className="flex-1 min-w-0">

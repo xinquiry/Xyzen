@@ -15,6 +15,8 @@ from app.core.redemption import RedemptionService
 from app.infra.database import get_session as get_db_session
 from app.middleware.auth import get_current_user
 
+from ...repos.consume import ConsumeRepository
+
 logger = logging.getLogger(__name__)
 
 router = APIRouter(tags=["redemption"])
@@ -516,6 +518,7 @@ class UserConsumptionResponse(BaseModel):
 async def get_daily_token_stats(
     admin_secret: str = Header(..., alias="X-Admin-Secret"),
     date: Optional[str] = None,
+    tz: Optional[str] = None,
     db: AsyncSession = Depends(get_db_session),
 ):
     """
@@ -526,12 +529,13 @@ async def get_daily_token_stats(
     Args:
         admin_secret: Admin secret key from header
         date: Date in YYYY-MM-DD format (optional, defaults to today)
+        tz: Timezone name (IANA), used to interpret date (optional, defaults to UTC)
         db: Database session
 
     Returns:
         Daily token statistics
     """
-    logger.info(f"Admin fetching daily token stats for date: {date or 'today'}")
+    logger.info(f"Admin fetching daily token stats for date: {date or 'today'}, tz: {tz}")
 
     # Verify admin secret
     if admin_secret != configs.Admin.secret:
@@ -542,13 +546,16 @@ async def get_daily_token_stats(
         )
 
     try:
-        from app.repos.consume import ConsumeRepository
-
         if date is None:
-            date = datetime.utcnow().strftime("%Y-%m-%d")
+            if tz:
+                from zoneinfo import ZoneInfo
+
+                date = datetime.now(ZoneInfo(tz)).strftime("%Y-%m-%d")
+            else:
+                date = datetime.utcnow().strftime("%Y-%m-%d")
 
         consume_repo = ConsumeRepository(db)
-        stats = await consume_repo.get_daily_token_stats(date)
+        stats = await consume_repo.get_daily_token_stats(date, None, tz)
 
         return DailyTokenStatsResponse(**stats)
 
@@ -596,8 +603,6 @@ async def get_top_users_by_consumption(
         )
 
     try:
-        from app.repos.consume import ConsumeRepository
-
         consume_repo = ConsumeRepository(db)
         users = await consume_repo.get_top_users_by_consumption(limit)
 
@@ -657,6 +662,7 @@ async def get_consume_records(
     admin_secret: str = Header(..., alias="X-Admin-Secret"),
     start_date: Optional[str] = None,
     end_date: Optional[str] = None,
+    tz: Optional[str] = None,
     limit: int = 10000,
     db: AsyncSession = Depends(get_db_session),
 ):
@@ -669,13 +675,14 @@ async def get_consume_records(
         admin_secret: Admin secret key from header
         start_date: Start date in YYYY-MM-DD format (optional)
         end_date: End date in YYYY-MM-DD format (optional)
+        tz: Timezone name (IANA), used to interpret start_date/end_date (optional, defaults to UTC)
         limit: Maximum number of records to return (default: 10000)
         db: Database session
 
     Returns:
         List of consume records
     """
-    logger.info(f"Admin fetching consume records from {start_date} to {end_date}, limit: {limit}")
+    logger.info(f"Admin fetching consume records from {start_date} to {end_date}, tz: {tz}, limit: {limit}")
 
     # Verify admin secret
     if admin_secret != configs.Admin.secret:
@@ -686,10 +693,13 @@ async def get_consume_records(
         )
 
     try:
-        from app.repos.consume import ConsumeRepository
-
         consume_repo = ConsumeRepository(db)
-        records = await consume_repo.list_all_consume_records(start_date, end_date, limit)
+        records = await consume_repo.list_all_consume_records(
+            start_date,
+            end_date,
+            tz,
+            limit,
+        )
 
         return [
             ConsumeRecordResponse(

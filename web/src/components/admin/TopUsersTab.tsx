@@ -95,7 +95,7 @@ export function TopUsersTab({ adminSecret }: TopUsersTabProps) {
 
       {/* Stats Summary */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="bg-gradient-to-br from-orange-50 to-orange-100 dark:from-orange-950/30 dark:to-orange-900/30 rounded-lg p-4 border border-orange-200 dark:border-orange-800">
+        <div className="bg-linear-to-br from-orange-50 to-orange-100 dark:from-orange-950/30 dark:to-orange-900/30 rounded-lg p-4 border border-orange-200 dark:border-orange-800">
           <div className="flex items-center gap-2 mb-1">
             <ChartBarIcon className="h-5 w-5 text-orange-600 dark:text-orange-400" />
             <h3 className="text-sm font-medium text-orange-900 dark:text-orange-100">
@@ -107,7 +107,7 @@ export function TopUsersTab({ adminSecret }: TopUsersTabProps) {
           </p>
         </div>
 
-        <div className="bg-gradient-to-br from-cyan-50 to-cyan-100 dark:from-cyan-950/30 dark:to-cyan-900/30 rounded-lg p-4 border border-cyan-200 dark:border-cyan-800">
+        <div className="bg-linear-to-br from-cyan-50 to-cyan-100 dark:from-cyan-950/30 dark:to-cyan-900/30 rounded-lg p-4 border border-cyan-200 dark:border-cyan-800">
           <div className="flex items-center gap-2 mb-1">
             <CheckCircleIcon className="h-5 w-5 text-cyan-600 dark:text-cyan-400" />
             <h3 className="text-sm font-medium text-cyan-900 dark:text-cyan-100">
@@ -119,7 +119,7 @@ export function TopUsersTab({ adminSecret }: TopUsersTabProps) {
           </p>
         </div>
 
-        <div className="bg-gradient-to-br from-indigo-50 to-indigo-100 dark:from-indigo-950/30 dark:to-indigo-900/30 rounded-lg p-4 border border-indigo-200 dark:border-indigo-800">
+        <div className="bg-linear-to-br from-indigo-50 to-indigo-100 dark:from-indigo-950/30 dark:to-indigo-900/30 rounded-lg p-4 border border-indigo-200 dark:border-indigo-800">
           <div className="flex items-center gap-2 mb-1">
             <UserIcon className="h-5 w-5 text-indigo-600 dark:text-indigo-400" />
             <h3 className="text-sm font-medium text-indigo-900 dark:text-indigo-100">

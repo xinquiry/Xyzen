@@ -428,7 +428,7 @@ export function CheckInCalendar({ onCheckInSuccess }: CheckInCalendarProps) {
                     }}
                     modifiersClassNames={{
                       checkedIn:
-                        "[&>button]:bg-gradient-to-br [&>button]:from-indigo-500 [&>button]:to-purple-600 [&>button]:text-white [&>button]:font-semibold [&>button]:shadow-md [&>button]:transition-[transform,filter,box-shadow] [&>button:hover]:-translate-y-px [&>button:hover]:brightness-110 [&>button:hover]:shadow-lg dark:[&>button]:from-indigo-600 dark:[&>button]:to-purple-700 [&>button[data-selected-single=true]]:ring-2 [&>button[data-selected-single=true]]:ring-white/60 [&>button[data-selected-single=true]]:shadow-lg [&:has(>button.day-outside)>button]:opacity-60 [&:has(>button.day-outside)>button]:bg-none [&:has(>button.day-outside)>button]:bg-indigo-500/20 [&:has(>button.day-outside)>button]:text-indigo-700 dark:[&:has(>button.day-outside)>button]:text-indigo-300",
+                        "[&>button]:bg-linear-to-br [&>button]:from-indigo-500 [&>button]:to-purple-600 [&>button]:text-white [&>button]:font-semibold [&>button]:shadow-md [&>button]:transition-[transform,filter,box-shadow] [&>button:hover]:-translate-y-px [&>button:hover]:brightness-110 [&>button:hover]:shadow-lg dark:[&>button]:from-indigo-600 dark:[&>button]:to-purple-700 [&>button[data-selected-single=true]]:ring-2 [&>button[data-selected-single=true]]:ring-white/60 [&>button[data-selected-single=true]]:shadow-lg [&:has(>button.day-outside)>button]:opacity-60 [&:has(>button.day-outside)>button]:bg-none [&:has(>button.day-outside)>button]:bg-indigo-500/20 [&:has(>button.day-outside)>button]:text-indigo-700 dark:[&:has(>button.day-outside)>button]:text-indigo-300",
                     }}
                     disabled={(date) => date > today}
                   />
@@ -451,9 +451,9 @@ export function CheckInCalendar({ onCheckInSuccess }: CheckInCalendarProps) {
                     <Button
                       onClick={handleCheckIn}
                       disabled={isCheckingIn}
-                      className="group relative w-full overflow-hidden bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 px-6 py-3 font-bold text-white shadow-lg shadow-indigo-500/30 transition-all hover:scale-[1.02] hover:shadow-xl hover:shadow-indigo-500/40 active:scale-95 disabled:opacity-50 disabled:hover:scale-100 dark:from-indigo-500 dark:via-purple-500 dark:to-pink-500 focus:outline-none focus-visible:ring-0 focus-visible:ring-offset-0"
+                      className="group relative w-full overflow-hidden bg-linear-to-r from-indigo-600 via-purple-600 to-pink-600 px-6 py-3 font-bold text-white shadow-lg shadow-indigo-500/30 transition-all hover:scale-[1.02] hover:shadow-xl hover:shadow-indigo-500/40 active:scale-95 disabled:opacity-50 disabled:hover:scale-100 dark:from-indigo-500 dark:via-purple-500 dark:to-pink-500 focus:outline-none focus-visible:ring-0 focus-visible:ring-offset-0"
                     >
-                      <span className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/20 to-white/0 opacity-0 transition-opacity group-hover:animate-shimmer group-hover:opacity-100" />
+                      <span className="absolute inset-0 bg-linear-to-r from-white/0 via-white/20 to-white/0 opacity-0 transition-opacity group-hover:animate-shimmer group-hover:opacity-100" />
                       <span className="relative flex items-center justify-center gap-2">
                         <SparklesIcon className="h-5 w-5 transition-transform group-hover:rotate-12" />
                         <span>{isCheckingIn ? "签到中..." : "立即签到"}</span>
@@ -498,7 +498,7 @@ export function CheckInCalendar({ onCheckInSuccess }: CheckInCalendarProps) {
               </CardContent>
             </Card>
 
-            <Card className="group cursor-pointer backdrop-blur-md bg-gradient-to-br from-indigo-500/20 to-purple-600/20 border-indigo-300/30 dark:border-indigo-600/30 shadow-lg transition-all hover:scale-105 hover:shadow-xl">
+            <Card className="group cursor-pointer backdrop-blur-md bg-linear-to-br from-indigo-500/20 to-purple-600/20 border-indigo-300/30 dark:border-indigo-600/30 shadow-lg transition-all hover:scale-105 hover:shadow-xl">
               <CardContent className="p-5 text-center">
                 <div className="text-xs font-medium text-indigo-700 dark:text-indigo-300">
                   明日奖励
@@ -541,17 +541,17 @@ export function CheckInCalendar({ onCheckInSuccess }: CheckInCalendarProps) {
                 </div>
 
                 {selectedIsToday ? (
-                  <div className="rounded-full bg-gradient-to-r from-indigo-500/90 to-purple-600/90 px-3 py-1 text-xs font-semibold text-white shadow-sm shadow-indigo-500/20">
+                  <div className="rounded-full bg-linear-to-r from-indigo-500/90 to-purple-600/90 px-3 py-1 text-xs font-semibold text-white shadow-sm shadow-indigo-500/20">
                     今日
                   </div>
                 ) : null}
               </motion.div>
 
-              <div className="mb-5 h-px bg-gradient-to-r from-transparent via-neutral-200/70 to-transparent dark:via-white/10 shrink-0" />
+              <div className="mb-5 h-px bg-linear-to-r from-transparent via-neutral-200/70 to-transparent dark:via-white/10 shrink-0" />
 
               <div className="space-y-4 flex-1 flex flex-col">
                 {checkInRecord && (
-                  <div className="animate-in fade-in slide-in-from-bottom-3 duration-500 group relative overflow-hidden rounded-xl border border-indigo-200/60 bg-gradient-to-br from-indigo-50/90 to-purple-50/90 p-5 shadow-sm transition-all hover:shadow-md dark:border-indigo-700/60 dark:from-indigo-950/50 dark:to-purple-950/50 shrink-0">
+                  <div className="animate-in fade-in slide-in-from-bottom-3 duration-500 group relative overflow-hidden rounded-xl border border-indigo-200/60 bg-linear-to-br from-indigo-50/90 to-purple-50/90 p-5 shadow-sm transition-all hover:shadow-md dark:border-indigo-700/60 dark:from-indigo-950/50 dark:to-purple-950/50 shrink-0">
                     <div className="absolute inset-y-4 left-4 w-1 rounded-full bg-gradient-to-b from-indigo-500 to-purple-600 shadow-sm transition-all group-hover:w-1.5" />
                     <div className="pl-4">
                       <div className="flex items-center gap-2">

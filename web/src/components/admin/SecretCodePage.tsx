@@ -108,15 +108,15 @@ export function SecretCodePage() {
 
   return (
     <div className="fixed inset-0 bg-neutral-950 overflow-y-auto">
-      <div className="max-w-7xl mx-auto p-6">
+      <div className="max-w-7xl mx-auto p-4 sm:p-6">
         {/* Header */}
-        <div className="mb-6 bg-white dark:bg-neutral-900 rounded-lg shadow-sm p-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-2xl font-bold text-neutral-900 dark:text-white">
+        <div className="mb-4 sm:mb-6 bg-white dark:bg-neutral-900 rounded-lg shadow-sm p-4 sm:p-6">
+          <div className="flex items-center justify-between gap-4">
+            <div className="min-w-0 flex-1">
+              <h1 className="text-xl sm:text-2xl font-bold text-neutral-900 dark:text-white truncate">
                 Admin Dashboard
               </h1>
-              <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-1">
+              <p className="text-xs sm:text-sm text-neutral-500 dark:text-neutral-400 mt-1">
                 Manage redemption codes and view consumption statistics
               </p>
             </div>
@@ -132,17 +132,19 @@ export function SecretCodePage() {
 
         {/* Tabs */}
         <Tabs defaultValue="daily-stats" className="w-full">
-          <TabsList>
-            <TabsTrigger value="daily-stats">📊 Daily Stats</TabsTrigger>
-            <TabsTrigger value="top-users">👥 Top Users</TabsTrigger>
-            <TabsTrigger value="trend">📈 Trend Chart</TabsTrigger>
-            <TabsTrigger value="rankings">🏆 Rankings</TabsTrigger>
-            <TabsTrigger value="codes">🎟️ Codes</TabsTrigger>
-          </TabsList>
+          <div className="overflow-x-auto scrollbar-hidden pb-2 -mx-2 px-2">
+            <TabsList className="min-w-max">
+              <TabsTrigger value="daily-stats">📊 Daily Stats</TabsTrigger>
+              <TabsTrigger value="top-users">👥 Top Users</TabsTrigger>
+              <TabsTrigger value="trend">📈 Trend Chart</TabsTrigger>
+              <TabsTrigger value="rankings">🏆 Rankings</TabsTrigger>
+              <TabsTrigger value="codes">🎟️ Codes</TabsTrigger>
+            </TabsList>
+          </div>
 
           <TabsContents>
             <TabsContent value="daily-stats">
-              <div className="bg-white dark:bg-neutral-900 rounded-lg shadow-sm p-6 mt-4">
+              <div className="bg-white dark:bg-neutral-900 rounded-lg shadow-sm p-4 sm:p-6 mt-4 overflow-hidden">
                 <DailyStatsTab
                   adminSecret={adminSecret!}
                   backendUrl={getBackendUrl()}
@@ -151,7 +153,7 @@ export function SecretCodePage() {
             </TabsContent>
 
             <TabsContent value="top-users">
-              <div className="bg-white dark:bg-neutral-900 rounded-lg shadow-sm p-6 mt-4">
+              <div className="bg-white dark:bg-neutral-900 rounded-lg shadow-sm p-4 sm:p-6 mt-4 overflow-hidden">
                 <TopUsersTab
                   adminSecret={adminSecret!}
                   backendUrl={getBackendUrl()}
@@ -160,7 +162,7 @@ export function SecretCodePage() {
             </TabsContent>
 
             <TabsContent value="trend">
-              <div className="bg-white dark:bg-neutral-900 rounded-lg shadow-sm p-6 mt-4">
+              <div className="bg-white dark:bg-neutral-900 rounded-lg shadow-sm p-4 sm:p-6 mt-4 overflow-hidden">
                 <TrendChartTab
                   adminSecret={adminSecret!}
                   backendUrl={getBackendUrl()}
@@ -169,7 +171,7 @@ export function SecretCodePage() {
             </TabsContent>
 
             <TabsContent value="rankings">
-              <div className="bg-white dark:bg-neutral-900 rounded-lg shadow-sm p-6 mt-4">
+              <div className="bg-white dark:bg-neutral-900 rounded-lg shadow-sm p-4 sm:p-6 mt-4 overflow-hidden">
                 <UserRankingsTab
                   adminSecret={adminSecret!}
                   backendUrl={getBackendUrl()}
@@ -178,7 +180,7 @@ export function SecretCodePage() {
             </TabsContent>
 
             <TabsContent value="codes">
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-4">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 mt-4 overflow-hidden">
                 {/* Generate Code Form */}
                 <CodeGenerationForm
                   adminSecret={adminSecret!}

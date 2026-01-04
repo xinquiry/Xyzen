@@ -118,7 +118,7 @@ function BaseChat({ config, historyEnabled = false }: BaseChatProps) {
 
         {/* Add toolbar even in empty state for history access */}
         <div className="border-t border-neutral-200 dark:border-neutral-800" />
-        <div className="flex-shrink-0">
+        <div className="shrink-0">
           <ChatToolbar
             onShowHistory={handleToggleHistory}
             onHeightChange={handleInputHeightChange}
@@ -141,9 +141,9 @@ function BaseChat({ config, historyEnabled = false }: BaseChatProps) {
       >
         {/* Agent Header */}
         {currentAgent ? (
-          <div className="relative flex-shrink-0 border-y border-neutral-200 bg-white px-4 py-3 dark:border-neutral-800 dark:bg-black">
+          <div className="relative shrink-0 sm:border-y border-neutral-200 bg-white px-4 py-3 dark:border-neutral-800 dark:bg-black">
             <div className="flex items-start gap-3">
-              <div className="mt-1 h-8 w-8 flex-shrink-0 avatar-glow">
+              <div className="mt-1 h-8 w-8 shrink-0 avatar-glow">
                 <img
                   src={
                     currentAgent.avatar ||
@@ -199,7 +199,7 @@ function BaseChat({ config, historyEnabled = false }: BaseChatProps) {
             </div>
           </div>
         ) : (
-          <div className="relative flex-shrink-0 border-b border-neutral-200 bg-white px-4 py-3 dark:border-neutral-800 dark:bg-black">
+          <div className="relative shrink-0 border-b border-neutral-200 bg-white px-4 py-3 dark:border-neutral-800 dark:bg-black">
             <EditableTitle
               title={currentChannel?.title || config.defaultTitle}
               onSave={(newTitle) => {
@@ -227,7 +227,7 @@ function BaseChat({ config, historyEnabled = false }: BaseChatProps) {
 
         {/* Connection Status */}
         {!connected && (
-          <div className="mb-1 flex flex-shrink-0 items-center justify-between rounded-sm bg-amber-50 px-3 py-1.5 dark:bg-amber-900/20">
+          <div className="mb-1 flex shrink-0 items-center justify-between rounded-sm bg-amber-50 px-3 py-1.5 dark:bg-amber-900/20">
             <span className="text-xs text-amber-700 dark:text-amber-200">
               {error || config.connectionMessages.connecting}
             </span>
@@ -296,7 +296,7 @@ function BaseChat({ config, historyEnabled = false }: BaseChatProps) {
         </div>
 
         {/* Input Area */}
-        <div className="flex-shrink-0">
+        <div className="shrink-0">
           <ChatToolbar
             onShowHistory={handleToggleHistory}
             onHeightChange={handleInputHeightChange}

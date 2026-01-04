@@ -1,16 +1,16 @@
 "use client";
 
-import { useState } from "react";
-import { useForkAgent } from "@/hooks/useMarketplace";
 import { Modal } from "@/components/animate-ui/primitives/headless/modal";
 import { Input } from "@/components/base/Input";
+import { useForkAgent } from "@/hooks/useMarketplace";
 import { Button, Field, Label } from "@headlessui/react";
 import {
+  ArrowRightIcon,
   CheckCircleIcon,
   ExclamationTriangleIcon,
   InformationCircleIcon,
-  ArrowRightIcon,
 } from "@heroicons/react/24/outline";
+import { useState } from "react";
 
 interface ForkAgentModalProps {
   open: boolean;
@@ -162,7 +162,7 @@ export default function ForkAgentModal({
             <div className="space-y-4">
               <div className="relative w-full rounded-lg border border-neutral-200 bg-white p-4 dark:border-neutral-800 dark:bg-neutral-950">
                 <div className="flex gap-2">
-                  <InformationCircleIcon className="h-4 w-4 flex-shrink-0" />
+                  <InformationCircleIcon className="h-4 w-4 shrink-0" />
                   <div className="text-sm">
                     Your forked agent will be completely independent. Changes
                     won't affect the original.
@@ -205,7 +205,7 @@ export default function ForkAgentModal({
             <div className="space-y-4">
               <div className="relative w-full rounded-lg border border-neutral-200 bg-white p-4 dark:border-neutral-800 dark:bg-neutral-950">
                 <div className="flex gap-2">
-                  <InformationCircleIcon className="h-4 w-4 flex-shrink-0" />
+                  <InformationCircleIcon className="h-4 w-4 shrink-0" />
                   <div className="text-sm">
                     This agent requires some setup before you can use it
                     effectively.
@@ -335,7 +335,7 @@ export default function ForkAgentModal({
                   requirements.knowledge_base.file_count === 0) && (
                   <div className="relative w-full rounded-lg border border-green-500/50 bg-green-50 p-4 text-green-900 dark:bg-green-950/50 dark:text-green-400">
                     <div className="flex gap-2">
-                      <CheckCircleIcon className="h-4 w-4 flex-shrink-0 text-green-600" />
+                      <CheckCircleIcon className="h-4 w-4 shrink-0 text-green-600" />
                       <div className="text-sm">
                         This agent has no special requirements. You can use it
                         right away after forking!
@@ -351,7 +351,7 @@ export default function ForkAgentModal({
             <div className="space-y-4">
               <div className="relative w-full rounded-lg border border-neutral-200 bg-white p-4 dark:border-neutral-800 dark:bg-neutral-950">
                 <div className="flex gap-2">
-                  <InformationCircleIcon className="h-4 w-4 flex-shrink-0" />
+                  <InformationCircleIcon className="h-4 w-4 shrink-0" />
                   <div className="text-sm">
                     Ready to fork? Your new agent will be created with the
                     following configuration:
@@ -408,7 +408,7 @@ export default function ForkAgentModal({
           {forkMutation.isError && (
             <div className="relative w-full rounded-lg border border-red-500/50 bg-red-50 p-4 text-red-900 dark:bg-red-950/50 dark:text-red-400">
               <div className="flex gap-2">
-                <ExclamationTriangleIcon className="h-4 w-4 flex-shrink-0" />
+                <ExclamationTriangleIcon className="h-4 w-4 shrink-0" />
                 <div className="text-sm">
                   {forkMutation.error instanceof Error
                     ? forkMutation.error.message

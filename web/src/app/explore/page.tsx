@@ -44,7 +44,7 @@ export default function Explorer() {
     <div className="flex flex-col">
       <Tabs defaultValue="agents" className="flex flex-col">
         {/* Header with Tabs */}
-        <div className="border-b border-neutral-200 dark:border-neutral-800 bg-gradient-to-r from-white to-neutral-50 dark:from-neutral-950 dark:to-neutral-900">
+        <div className="border-b border-neutral-200 dark:border-neutral-800 bg-linear-to-r from-white to-neutral-50 dark:from-neutral-950 dark:to-neutral-900">
           <div className="px-6 pt-6 pb-4">
             {/* Tab Navigation */}
             <TabsHighlight className="bg-white dark:bg-neutral-800 absolute z-0 inset-0 rounded-sm shadow-sm">

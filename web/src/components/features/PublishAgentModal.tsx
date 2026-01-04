@@ -1,14 +1,14 @@
 "use client";
 
-import { useState } from "react";
-import { usePublishAgent } from "@/hooks/useMarketplace";
 import { Modal } from "@/components/animate-ui/primitives/headless/modal";
+import { usePublishAgent } from "@/hooks/useMarketplace";
 import { Button, Field, Label, Switch } from "@headlessui/react";
 import {
   CheckCircleIcon,
   ExclamationTriangleIcon,
   InformationCircleIcon,
 } from "@heroicons/react/24/outline";
+import { useState } from "react";
 
 interface PublishAgentModalProps {
   open: boolean;
@@ -101,7 +101,7 @@ export default function PublishAgentModal({
           {!agentPrompt && (
             <div className="relative w-full rounded-lg border border-red-500/50 bg-red-50 p-4 text-red-900 dark:bg-red-950/50 dark:text-red-400">
               <div className="flex gap-2">
-                <ExclamationTriangleIcon className="h-4 w-4 flex-shrink-0" />
+                <ExclamationTriangleIcon className="h-4 w-4 shrink-0" />
                 <div className="text-sm">
                   Your agent must have a prompt before publishing to the
                   marketplace.
@@ -113,7 +113,7 @@ export default function PublishAgentModal({
           {/* Info Alert */}
           <div className="relative w-full rounded-lg border border-neutral-200 bg-white p-4 dark:border-neutral-800 dark:bg-neutral-950">
             <div className="flex gap-2">
-              <InformationCircleIcon className="h-4 w-4 flex-shrink-0" />
+              <InformationCircleIcon className="h-4 w-4 shrink-0" />
               <div className="text-sm">
                 <strong>What gets published:</strong> Agent configuration
                 (prompt, model, settings), MCP server requirements (names only),
@@ -289,7 +289,7 @@ export default function PublishAgentModal({
           {publishMutation.isSuccess && (
             <div className="relative w-full rounded-lg border border-green-500/50 bg-green-50 p-4 text-green-900 dark:bg-green-950/50 dark:text-green-400">
               <div className="flex gap-2">
-                <CheckCircleIcon className="h-4 w-4 flex-shrink-0 text-green-600" />
+                <CheckCircleIcon className="h-4 w-4 shrink-0 text-green-600" />
                 <div className="text-sm">
                   {isPublished
                     ? "Agent listing updated successfully!"
@@ -303,7 +303,7 @@ export default function PublishAgentModal({
           {publishMutation.isError && (
             <div className="relative w-full rounded-lg border border-red-500/50 bg-red-50 p-4 text-red-900 dark:bg-red-950/50 dark:text-red-400">
               <div className="flex gap-2">
-                <ExclamationTriangleIcon className="h-4 w-4 flex-shrink-0" />
+                <ExclamationTriangleIcon className="h-4 w-4 shrink-0" />
                 <div className="text-sm">
                   {publishMutation.error instanceof Error
                     ? publishMutation.error.message

@@ -234,7 +234,7 @@ export const ShareModal: React.FC<ShareModalProps> = ({
               {/* 头像 */}
               <div className="pt-0.5 shrink-0">
                 {isUser ? (
-                  <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-blue-400 to-indigo-500 flex items-center justify-center text-white">
+                  <div className="w-8 h-8 rounded-full bg-linear-to-tr from-blue-400 to-indigo-500 flex items-center justify-center text-white">
                     <UserIcon className="w-4 h-4" />
                   </div>
                 ) : (
@@ -261,7 +261,7 @@ export const ShareModal: React.FC<ShareModalProps> = ({
                     )}
                   </span>
                 </div>
-                <div className="text-sm text-neutral-600 dark:text-neutral-300 line-clamp-3 break-words">
+                <div className="text-sm text-neutral-600 dark:text-neutral-300 line-clamp-3 wrap-break-word">
                   {/* 简单渲染 Markdown 内容，移除复杂的样式 */}
                   <div className="prose dark:prose-invert prose-sm max-w-none">
                     <Markdown content={msg.content} />
