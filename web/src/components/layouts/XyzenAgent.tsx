@@ -306,7 +306,6 @@ export default function XyzenAgent({
   const [editingAgent, setEditingAgent] = useState<Agent | null>(null);
   const [isConfirmModalOpen, setConfirmModalOpen] = useState(false);
   const [agentToDelete, setAgentToDelete] = useState<Agent | null>(null);
-  const hasAttemptedProviderFetchRef = useRef(false);
   const {
     agents,
     fetchAgents,
@@ -335,15 +334,11 @@ export default function XyzenAgent({
 
   // Ensure providers are loaded on mount (only if authenticated)
   useEffect(() => {
-    if (!isAuthenticated) return;
-    if (hasAttemptedProviderFetchRef.current) return;
-    if (llmProviders.length > 0) return;
-    if (llmProvidersLoading) return;
-
-    hasAttemptedProviderFetchRef.current = true;
-    fetchMyProviders().catch((error) => {
-      console.error("Failed to fetch providers:", error);
-    });
+    if (isAuthenticated && llmProviders.length === 0 && !llmProvidersLoading) {
+      fetchMyProviders().catch((error) => {
+        console.error("Failed to fetch providers:", error);
+      });
+    }
   }, [
     isAuthenticated,
     llmProviders.length,
