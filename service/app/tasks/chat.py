@@ -17,7 +17,7 @@ from app.infra.database import ASYNC_DATABASE_URL
 from app.models.citation import CitationCreate
 from app.models.message import Message, MessageCreate
 from app.repos import CitationRepository, FileRepository, MessageRepository, TopicRepository
-from app.schemas.chat_event_types import CitationData, StreamingEvent
+from app.schemas.chat_event_types import CitationData
 from app.schemas.chat_events import ChatEventType
 
 logger = logging.getLogger(__name__)
@@ -79,8 +79,8 @@ def process_chat_message(
     """
     # Create a new event loop for this task since Celery tasks are synchronous by default
     loop = asyncio.new_event_loop()
-    asyncio.set_event_loop(loop)
     try:
+        asyncio.set_event_loop(loop)
         loop.run_until_complete(
             _process_chat_message_async(
                 session_id_str,
@@ -94,7 +94,27 @@ def process_chat_message(
             )
         )
     finally:
-        loop.close()
+        try:
+            # Give libraries a chance to schedule cleanup callbacks (e.g. httpx client close).
+            loop.run_until_complete(asyncio.sleep(0))
+
+            pending = [t for t in asyncio.all_tasks(loop) if not t.done()]
+            if pending:
+                done, still_pending = loop.run_until_complete(asyncio.wait(pending, timeout=1.0))
+                # Cancel anything still pending to avoid hanging the worker.
+                for task in still_pending:
+                    task.cancel()
+                if still_pending:
+                    loop.run_until_complete(asyncio.gather(*still_pending, return_exceptions=True))
+                # Retrieve exceptions from tasks that finished during the wait.
+                if done:
+                    loop.run_until_complete(asyncio.gather(*done, return_exceptions=True))
+
+            loop.run_until_complete(loop.shutdown_asyncgens())
+            loop.run_until_complete(loop.shutdown_default_executor())
+        finally:
+            asyncio.set_event_loop(None)
+            loop.close()
 
 
 async def _process_chat_message_async(
@@ -163,7 +183,7 @@ async def _process_chat_message_async(
             async for stream_event in get_ai_response_stream(
                 db, message_text, topic, user_id, None, publisher, connection_id, context
             ):
-                stream_event: StreamingEvent  # Type annotation for better type narrowing
+                # stream_event: StreamingEvent  # Type annotation for better type narrowing
                 # Logic copied and adapted from chat.py
                 event_type = stream_event["type"]
 
@@ -262,7 +282,7 @@ async def _process_chat_message_async(
                 elif event_type == ChatEventType.SEARCH_CITATIONS:
                     citations = stream_event["data"].get("citations", [])
                     if citations:
-                        citations_data.extend(citations)
+                        citations_data.extend(citations)  # type: ignore
                     await publisher.publish(json.dumps(stream_event))
 
                 elif stream_event["type"] == ChatEventType.GENERATED_FILES:
