@@ -5,6 +5,7 @@ Xyzen is an AI Laboratory Server for multi-agent LLM orchestration, real-time ch
 ## Directory Structure
 
 ### Backend (`service/app/`)
+
 ```
 agents/
   ├── system/                    # Built-in system agents
@@ -39,6 +40,7 @@ tasks/                           # Celery background tasks
 ```
 
 ### Frontend (`web/src/`)
+
 ```
 app/                             # Page components and routing
 components/
@@ -80,11 +82,11 @@ types/
 
 ### Agent Types
 
-| Type | Key | Description |
-|------|-----|-------------|
-| ReAct | `react` | Default agent using LangChain's prebuilt `create_agent` |
-| Deep Research | `deep_research` | Multi-phase research with explicit graph nodes |
-| Custom | `graph` | User-defined graph configuration |
+| Type          | Key             | Description                                             |
+| ------------- | --------------- | ------------------------------------------------------- |
+| ReAct         | `react`         | Default agent using LangChain's prebuilt `create_agent` |
+| Deep Research | `deep_research` | Multi-phase research with explicit graph nodes          |
+| Custom        | `graph`         | User-defined graph configuration                        |
 
 ### Creating a System Agent
 
@@ -132,12 +134,12 @@ interface Message {
   id: string;
   content: string;
   agentExecution?: {
-    agentType: string;           // "react", "deep_research"
-    status: "running" | "completed" | "failed";
+    agentType: string; // "react", "deep_research"
+    status: 'running' | 'completed' | 'failed';
     phases: Array<{
-      id: string;                // Node ID
-      status: "running" | "completed";
-      streamedContent: string;   // Accumulated content
+      id: string; // Node ID
+      status: 'running' | 'completed';
+      streamedContent: string; // Accumulated content
     }>;
     currentNode?: string;
   };
@@ -154,12 +156,12 @@ interface Message {
 
 ### Key Files
 
-| File | Purpose |
-|------|---------|
-| `service/app/core/chat/langchain.py` | Streaming logic, event emission |
-| `service/app/core/chat/stream_handlers.py` | Event types and handlers |
-| `web/src/store/slices/chatSlice.ts` | Event handling, state updates |
-| `web/src/components/layouts/components/ChatBubble.tsx` | Message rendering |
+| File                                                   | Purpose                         |
+| ------------------------------------------------------ | ------------------------------- |
+| `service/app/core/chat/langchain.py`                   | Streaming logic, event emission |
+| `service/app/core/chat/stream_handlers.py`             | Event types and handlers        |
+| `web/src/store/slices/chatSlice.ts`                    | Event handling, state updates   |
+| `web/src/components/layouts/components/ChatBubble.tsx` | Message rendering               |
 
 ## Development Commands
 
@@ -185,3 +187,17 @@ yarn test                        # Vitest
 **TypeScript**: Strict typing, business logic in `core/` not components
 
 **Both**: Async by default, comprehensive error handling
+
+## Backend Environment Variables
+
+- Prefix: `XYZEN_` for all variables.
+- Nesting: Use `_` to separate levels; do not use `_` within a single segment.
+- Naming: Use camelCase that matches config field names.
+- Case: Parsing is case-insensitive, but prefer camelCase for clarity.
+
+Examples:
+
+- `XYZEN_SEARXNG_BaseUrl=http://127.0.0.1:8080` (correct)
+- `XYZEN_SEARXNG_Base_Url=...` (incorrect: extra underscore splits a new level)
+- `XYZEN_LLM_AZUREOPENAI_KEY=...` (provider segment is single camelCase token)
+- `XYZEN_LLM_PROVIDERS=azure_openai,google_vertex` (values may use underscores)
