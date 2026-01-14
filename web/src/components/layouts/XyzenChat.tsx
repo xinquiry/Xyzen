@@ -55,6 +55,9 @@ const ThemedWelcomeMessage: React.FC<{
               iconType: "chat",
               iconColor: "indigo",
               category: "general",
+              avatar:
+                currentAgent.avatar ||
+                "https://api.dicebear.com/7.x/avataaars/svg?seed=default",
             }
           : undefined
       }
@@ -115,19 +118,6 @@ function BaseChat({ config, historyEnabled = false }: BaseChatProps) {
     return (
       <div className="flex h-full flex-col">
         <ThemedEmptyState config={config} />
-
-        {/* Add toolbar even in empty state for history access */}
-        <div className="border-t border-neutral-200 dark:border-neutral-800" />
-        <div className="shrink-0">
-          <ChatToolbar
-            onShowHistory={handleToggleHistory}
-            onHeightChange={handleInputHeightChange}
-            showHistory={showHistory}
-            handleCloseHistory={handleCloseHistory}
-            handleSelectTopic={handleSelectTopic}
-            inputHeight={inputHeight}
-          />
-        </div>
       </div>
     );
   }
@@ -148,9 +138,7 @@ function BaseChat({ config, historyEnabled = false }: BaseChatProps) {
                 <img
                   src={
                     currentAgent.avatar ||
-                    (currentAgent.tags?.includes("default_chat")
-                      ? "/defaults/agents/avatar1.png"
-                      : "/defaults/agents/avatar2.png")
+                    "https://api.dicebear.com/7.x/avataaars/svg?seed=default"
                   }
                   alt={currentAgent.name}
                   className={`h-8 w-8 rounded-full border-2 ${themeStyles.agentBorder} object-cover shadow-sm`}
@@ -246,7 +234,7 @@ function BaseChat({ config, historyEnabled = false }: BaseChatProps) {
         )}
 
         {/* Messages Area */}
-        <div className="relative flex-grow overflow-y-auto min-w-0">
+        <div className="relative grow overflow-y-auto min-w-0">
           <div
             ref={messagesContainerRef}
             className="h-full overflow-y-auto overflow-x-hidden rounded-sm bg-neutral-50 pt-6 dark:bg-black custom-scrollbar"

@@ -1,5 +1,6 @@
 import { authService } from "@/service/authService";
 import { useXyzen } from "@/store";
+import type { AgentSpatialLayout } from "@/types/agents";
 
 export interface SessionCreate {
   name: string;
@@ -8,7 +9,10 @@ export interface SessionCreate {
   agent_id?: string;
   provider_id?: string;
   model?: string;
+  model_tier?: "ultra" | "pro" | "standard" | "lite";
   google_search_enabled?: boolean;
+  avatar?: string;
+  spatial_layout?: AgentSpatialLayout;
 }
 
 export interface SessionUpdate {
@@ -17,7 +21,10 @@ export interface SessionUpdate {
   is_active?: boolean;
   provider_id?: string;
   model?: string;
+  model_tier?: "ultra" | "pro" | "standard" | "lite";
   google_search_enabled?: boolean;
+  avatar?: string;
+  spatial_layout?: AgentSpatialLayout;
 }
 
 export interface SessionRead {
@@ -29,7 +36,10 @@ export interface SessionRead {
   user_id: string;
   provider_id?: string;
   model?: string;
+  model_tier?: "ultra" | "pro" | "standard" | "lite";
   google_search_enabled?: boolean;
+  avatar?: string;
+  spatial_layout?: AgentSpatialLayout;
   created_at: string;
   updated_at: string;
 }
