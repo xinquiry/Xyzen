@@ -254,7 +254,6 @@ function InnerWorkspace() {
   const [nodes, setNodes, onNodesChange] = useNodesState<AgentFlowNode>([]);
   const [edges, , onEdgesChange] = useEdgesState([]);
   const [focusedAgentId, setFocusedAgentId] = useState<string | null>(() => {
-    // Restore focused agent from localStorage
     try {
       return localStorage.getItem(STORAGE_KEY_FOCUSED_AGENT);
     } catch {
@@ -271,10 +270,9 @@ function InnerWorkspace() {
     zoom: number;
   } | null>(null);
   const { setViewport, getViewport, getNode, fitView } = useReactFlow();
-  const didInitialFitViewRef = useRef(false);
-  const cancelInitialFitRef = useRef(false);
-  const initialFitAttemptsRef = useRef(0);
-  const didInitialFocusRef = useRef(false);
+
+  // Single ref to track initialization state
+  const initStateRef = useRef<"pending" | "measuring" | "done">("pending");
 
   // Debounce save timers
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -345,35 +343,142 @@ function InnerWorkspace() {
 
   // Update nodes whenever agents or stats change
   useEffect(() => {
-    if (agents.length > 0) {
-      const flowNodes = agents.map((agent) => {
-        const stats = agentStats[agent.id];
-        const sessionId = sessionIdByAgentId[agent.id];
-        // Convert daily activity to the format expected by AgentNode
-        const agentDailyActivity = dailyActivity[agent.id]?.daily_counts?.map(
-          (d) => ({
-            date: d.date,
-            count: d.message_count,
-          }),
+    if (agents.length === 0) return;
+
+    const flowNodes = agents.map((agent) => {
+      const stats = agentStats[agent.id];
+      const sessionId = sessionIdByAgentId[agent.id];
+      const agentDailyActivity = dailyActivity[agent.id]?.daily_counts?.map(
+        (d) => ({
+          date: d.date,
+          count: d.message_count,
+        }),
+      );
+      const agentYesterdaySummary = yesterdaySummary[agent.id]
+        ? {
+            messageCount: yesterdaySummary[agent.id].message_count,
+            lastMessagePreview: yesterdaySummary[agent.id].last_message_content,
+          }
+        : undefined;
+      return agentToFlowNode(
+        agent,
+        stats,
+        sessionId,
+        agentDailyActivity,
+        agentYesterdaySummary,
+      );
+    });
+    setNodes(flowNodes);
+
+    // Handle initialization only once when nodes are first set
+    if (initStateRef.current !== "pending") return;
+    initStateRef.current = "measuring";
+
+    // Wait for ReactFlow to measure nodes, then set viewport
+    const initViewport = () => {
+      // Determine target: saved focus, new user default, or saved viewport
+      const savedFocusId = focusedAgentId;
+      const hasVisitedBefore =
+        localStorage.getItem(STORAGE_KEY_VIEWPORT) !== null;
+
+      // Validate saved focus still exists
+      let targetFocusId: string | null = null;
+      if (savedFocusId && agents.some((a) => a.id === savedFocusId)) {
+        targetFocusId = savedFocusId;
+      } else if (savedFocusId) {
+        // Clear invalid saved focus
+        try {
+          localStorage.removeItem(STORAGE_KEY_FOCUSED_AGENT);
+        } catch {
+          /* ignore */
+        }
+        setFocusedAgentId(null);
+      }
+
+      // For new users, auto-focus default agent
+      if (!targetFocusId && !hasVisitedBefore) {
+        const defaultAgent = agents.find((a) =>
+          a.tags?.includes("default_chat"),
         );
-        // Convert yesterday summary
-        const agentYesterdaySummary = yesterdaySummary[agent.id]
-          ? {
-              messageCount: yesterdaySummary[agent.id].message_count,
-              lastMessagePreview:
-                yesterdaySummary[agent.id].last_message_content,
+        if (defaultAgent) {
+          targetFocusId = defaultAgent.id;
+          setFocusedAgentId(defaultAgent.id);
+          try {
+            localStorage.setItem(STORAGE_KEY_FOCUSED_AGENT, defaultAgent.id);
+          } catch {
+            /* ignore */
+          }
+        }
+      }
+
+      // Apply viewport after a short delay to ensure DOM is ready
+      setTimeout(() => {
+        if (targetFocusId) {
+          // Animate to focused agent
+          const node = getNode(targetFocusId);
+          if (node) {
+            // When restoring focus from localStorage, use saved viewport as prevViewport
+            // This ensures closing focus returns to the correct position
+            if (!prevViewport) {
+              try {
+                const savedViewport =
+                  localStorage.getItem(STORAGE_KEY_VIEWPORT);
+                if (savedViewport) {
+                  const vp = JSON.parse(savedViewport) as Viewport;
+                  setPrevViewport(vp);
+                } else {
+                  // Fallback: calculate a reasonable viewport that shows all nodes
+                  setPrevViewport({ x: 0, y: 0, zoom: 0.85 });
+                }
+              } catch {
+                setPrevViewport({ x: 0, y: 0, zoom: 0.85 });
+              }
             }
-          : undefined;
-        return agentToFlowNode(
-          agent,
-          stats,
-          sessionId,
-          agentDailyActivity,
-          agentYesterdaySummary,
-        );
+            const targetZoom = 1.05;
+            const rect = containerRef.current?.getBoundingClientRect();
+            const containerW = rect?.width ?? window.innerWidth;
+            const containerH = rect?.height ?? window.innerHeight;
+            const leftPadding = Math.max(20, Math.min(56, containerW * 0.06));
+            const topPadding = Math.max(20, Math.min(64, containerH * 0.05));
+            const x = -node.position.x * targetZoom + leftPadding;
+            const y = -node.position.y * targetZoom + topPadding;
+            setViewport({ x, y, zoom: targetZoom }, { duration: 600 });
+          }
+        } else {
+          // Restore saved viewport or fit to view
+          try {
+            const savedViewport = localStorage.getItem(STORAGE_KEY_VIEWPORT);
+            if (savedViewport) {
+              const vp = JSON.parse(savedViewport) as Viewport;
+              setViewport(vp, { duration: 0 });
+              initStateRef.current = "done";
+              return;
+            }
+          } catch {
+            /* ignore */
+          }
+          fitView({ padding: 0.22, duration: 0 });
+        }
+        initStateRef.current = "done";
+      }, 100);
+    };
+
+    // Use requestAnimationFrame to wait for measurement
+    let attempts = 0;
+    const maxAttempts = 10;
+    const waitForMeasurement = () => {
+      attempts++;
+      const allMeasured = flowNodes.every((n) => {
+        const node = getNode(n.id);
+        return (node?.measured?.width ?? 0) > 0;
       });
-      setNodes(flowNodes);
-    }
+      if (allMeasured || attempts >= maxAttempts) {
+        initViewport();
+      } else {
+        requestAnimationFrame(waitForMeasurement);
+      }
+    };
+    requestAnimationFrame(waitForMeasurement);
   }, [
     agents,
     agentStats,
@@ -381,110 +486,18 @@ function InnerWorkspace() {
     dailyActivity,
     yesterdaySummary,
     setNodes,
+    focusedAgentId,
+    getNode,
+    getViewport,
+    prevViewport,
+    setViewport,
+    fitView,
   ]);
-
-  // Initial viewport/focus setup
-  useEffect(() => {
-    if (didInitialFitViewRef.current) return;
-    if (cancelInitialFitRef.current) return;
-    if (nodes.length === 0) return; // Don't fit empty viewport
-
-    let cancelled = false;
-    initialFitAttemptsRef.current = 0;
-
-    const tryFit = () => {
-      if (cancelled) return;
-      if (didInitialFitViewRef.current) return;
-      if (cancelInitialFitRef.current) return;
-
-      initialFitAttemptsRef.current += 1;
-
-      const allMeasured = nodes.every((n) => {
-        const node = getNode(n.id);
-        const w = node?.measured?.width ?? 0;
-        const h = node?.measured?.height ?? 0;
-        return w > 0 && h > 0;
-      });
-
-      // If measurement never comes through (rare), still do a best-effort fit.
-      if (allMeasured || initialFitAttemptsRef.current >= 12) {
-        didInitialFitViewRef.current = true;
-
-        // Check if we have a saved viewport in localStorage
-        try {
-          const savedViewport = localStorage.getItem(STORAGE_KEY_VIEWPORT);
-          if (savedViewport) {
-            const vp = JSON.parse(savedViewport) as Viewport;
-            setViewport(vp, { duration: 0 });
-            return;
-          }
-        } catch {
-          // Ignore parse errors, fall through to fitView
-        }
-
-        fitView({ padding: 0.22, duration: 0 });
-        return;
-      }
-
-      requestAnimationFrame(tryFit);
-    };
-
-    requestAnimationFrame(tryFit);
-    return () => {
-      cancelled = true;
-    };
-  }, [fitView, getNode, nodes, setViewport]);
-
-  // Handle initial focus state (from localStorage or default for new users)
-  useEffect(() => {
-    if (didInitialFocusRef.current) return;
-    if (agents.length === 0) return;
-
-    didInitialFocusRef.current = true;
-
-    // Check if we have a saved focus state
-    const savedFocusId = focusedAgentId;
-    if (savedFocusId) {
-      // Verify the agent still exists
-      const agentExists = agents.some((a) => a.id === savedFocusId);
-      if (agentExists) {
-        // Focus will be restored via state, no need to call handleFocus
-        return;
-      }
-      // Agent no longer exists, clear the saved state
-      try {
-        localStorage.removeItem(STORAGE_KEY_FOCUSED_AGENT);
-      } catch {
-        // Ignore storage errors
-      }
-      setFocusedAgentId(null);
-    }
-
-    // For new users (no saved state), focus the default assistant
-    const hasVisitedBefore =
-      localStorage.getItem(STORAGE_KEY_VIEWPORT) !== null;
-    if (!hasVisitedBefore) {
-      // Find the default_chat agent
-      const defaultAgent = agents.find((a) => a.tags?.includes("default_chat"));
-      if (defaultAgent) {
-        // Delay focus to ensure viewport is ready
-        setTimeout(() => {
-          setFocusedAgentId(defaultAgent.id);
-          try {
-            localStorage.setItem(STORAGE_KEY_FOCUSED_AGENT, defaultAgent.id);
-          } catch {
-            // Ignore storage errors
-          }
-        }, 100);
-      }
-    }
-  }, [agents, focusedAgentId]);
 
   const handleFocus = useCallback(
     (id: string) => {
-      // Don't allow the initial fit to run after the user has started interacting.
-      cancelInitialFitRef.current = true;
-      didInitialFitViewRef.current = true;
+      // Mark initialization as done to prevent any pending viewport changes
+      initStateRef.current = "done";
 
       if (!prevViewport) {
         setPrevViewport(getViewport());
@@ -502,18 +515,18 @@ function InnerWorkspace() {
       if (!node) return;
 
       // Focus layout: keep a consistent left padding and top padding regardless of node size.
-      const targetZoom = 1.35;
+      // Use moderate zoom to make the card appear appropriately sized in the corner
+      const targetZoom = 1.05;
       const rect = containerRef.current?.getBoundingClientRect();
       const containerW = rect?.width ?? window.innerWidth;
       const containerH = rect?.height ?? window.innerHeight;
 
       // Fixed left padding (responsive but clamped)
-      const leftPadding = Math.max(24, Math.min(64, containerW * 0.08));
+      const leftPadding = Math.max(20, Math.min(56, containerW * 0.06));
       const screenX = leftPadding;
 
       // Fixed top padding: consistent distance from top regardless of node size
-      // Use similar logic to leftPadding for responsive but clamped value
-      const topPadding = Math.max(24, Math.min(80, containerH * 0.06));
+      const topPadding = Math.max(20, Math.min(64, containerH * 0.05));
       const screenY = topPadding;
 
       // Align the node's left edge to screenX and top edge to screenY.
@@ -535,9 +548,14 @@ function InnerWorkspace() {
       // Ignore storage errors
     }
 
-    const restore = prevViewport ?? { x: 0, y: 0, zoom: 0.85 };
-    setViewport(restore, { duration: 900 });
-    setPrevViewport(null);
+    if (prevViewport) {
+      // Restore to saved previous viewport
+      setViewport(prevViewport, { duration: 900 });
+      setPrevViewport(null);
+    } else {
+      // No saved viewport - fit to show all nodes
+      fitView({ padding: 0.22, duration: 900 });
+    }
 
     // Save viewport to localStorage after closing focus
     setTimeout(() => {
@@ -548,7 +566,7 @@ function InnerWorkspace() {
         // Ignore storage errors
       }
     }, 1000); // Wait for animation to complete
-  }, [prevViewport, setViewport, getViewport]);
+  }, [prevViewport, setViewport, getViewport, fitView]);
 
   // Handle layout changes from AgentNode (e.g., resize) with anti-overlap
   const handleLayoutChange = useCallback(
@@ -826,7 +844,21 @@ function InnerWorkspace() {
       <div className="absolute bottom-4 right-4 z-10 flex items-center gap-2">
         {!focusedAgentId && (
           <FitViewButton
-            onClick={() => fitView({ padding: 0.22, duration: 500 })}
+            onClick={() => {
+              fitView({ padding: 0.22, duration: 500 });
+              // Save viewport after animation completes
+              setTimeout(() => {
+                try {
+                  const vp = getViewport();
+                  localStorage.setItem(
+                    STORAGE_KEY_VIEWPORT,
+                    JSON.stringify(vp),
+                  );
+                } catch {
+                  // Ignore storage errors
+                }
+              }, 600);
+            }}
             disabled={nodes.length === 0}
           />
         )}
