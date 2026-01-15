@@ -5,9 +5,14 @@ import {
   useEdgesState,
   useNodesState,
   useReactFlow,
+  type Viewport,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+
+// LocalStorage keys for persistence
+const STORAGE_KEY_FOCUSED_AGENT = "xyzen_spatial_focused_agent";
+const STORAGE_KEY_VIEWPORT = "xyzen_spatial_viewport";
 
 import AddAgentModal from "@/components/modals/AddAgentModal";
 import EditAgentModal from "@/components/modals/EditAgentModal";
@@ -20,6 +25,7 @@ import type {
 import { AnimatePresence } from "framer-motion";
 import { AddAgentButton } from "./spatial/AddAgentButton";
 import { AgentNode } from "./spatial/AgentNode";
+import { FitViewButton } from "./spatial/FitViewButton";
 import { FocusedView } from "./spatial/FocusedView";
 import {
   SaveStatusIndicator,
@@ -33,6 +39,158 @@ import type {
   FlowAgentNodeData,
   YesterdaySummaryData,
 } from "./spatial/types";
+
+// Constants for node sizing
+const NODE_SIZES = {
+  small: { w: 200, h: 160 },
+  medium: { w: 300, h: 220 },
+  large: { w: 400, h: 320 },
+} as const;
+
+const OVERLAP_PADDING = 24;
+const MAX_OVERLAP_ITERATIONS = 50; // Increased for multi-node chain resolution
+
+/**
+ * Calculate node size from gridSize or size property
+ */
+const calculateNodeSize = (
+  gridSize?: { w: number; h: number },
+  size?: "small" | "medium" | "large",
+): { w: number; h: number } => {
+  if (gridSize) {
+    const { w, h } = gridSize;
+    return {
+      w: w * 200 + (w - 1) * 16,
+      h: h * 160 + (h - 1) * 16,
+    };
+  }
+  return NODE_SIZES[size || "medium"];
+};
+
+/**
+ * Check if two rectangles overlap (with padding)
+ */
+const checkOverlap = (
+  a: { x: number; y: number; w: number; h: number },
+  b: { x: number; y: number; w: number; h: number },
+  padding: number,
+): { overlapX: number; overlapY: number } | null => {
+  const ax1 = a.x - padding;
+  const ay1 = a.y - padding;
+  const ax2 = a.x + a.w + padding;
+  const ay2 = a.y + a.h + padding;
+
+  const bx1 = b.x;
+  const by1 = b.y;
+  const bx2 = b.x + b.w;
+  const by2 = b.y + b.h;
+
+  const overlapX = Math.min(ax2, bx2) - Math.max(ax1, bx1);
+  const overlapY = Math.min(ay2, by2) - Math.max(ay1, by1);
+
+  if (overlapX > 0 && overlapY > 0) {
+    return { overlapX, overlapY };
+  }
+  return null;
+};
+
+/**
+ * Resolve all overlaps in the node array using iterative relaxation.
+ * Returns a map of node IDs to their new positions (only changed nodes).
+ */
+const resolveAllOverlaps = (
+  nodes: Array<{
+    id: string;
+    position: { x: number; y: number };
+    size: { w: number; h: number };
+  }>,
+  fixedNodeId?: string, // Node that should not move (e.g., just resized)
+): Map<string, { x: number; y: number }> => {
+  const positions = new Map(nodes.map((n) => [n.id, { ...n.position }]));
+  const sizes = new Map(nodes.map((n) => [n.id, n.size]));
+  const changedNodes = new Set<string>();
+
+  for (let iter = 0; iter < MAX_OVERLAP_ITERATIONS; iter++) {
+    let hasOverlap = false;
+
+    for (let i = 0; i < nodes.length; i++) {
+      for (let j = i + 1; j < nodes.length; j++) {
+        const nodeA = nodes[i];
+        const nodeB = nodes[j];
+
+        const posA = positions.get(nodeA.id)!;
+        const posB = positions.get(nodeB.id)!;
+        const sizeA = sizes.get(nodeA.id)!;
+        const sizeB = sizes.get(nodeB.id)!;
+
+        const overlap = checkOverlap(
+          { ...posA, ...sizeA },
+          { ...posB, ...sizeB },
+          OVERLAP_PADDING,
+        );
+
+        if (overlap) {
+          hasOverlap = true;
+
+          // Determine which node(s) to move
+          const aFixed = nodeA.id === fixedNodeId;
+          const bFixed = nodeB.id === fixedNodeId;
+
+          // Calculate push direction and amount
+          const aCenterX = posA.x + sizeA.w / 2;
+          const bCenterX = posB.x + sizeB.w / 2;
+          const aCenterY = posA.y + sizeA.h / 2;
+          const bCenterY = posB.y + sizeB.h / 2;
+
+          // Push along the axis with smaller overlap (more natural movement)
+          const pushX = overlap.overlapX <= overlap.overlapY;
+          const pushAmount = pushX ? overlap.overlapX : overlap.overlapY;
+
+          if (aFixed && !bFixed) {
+            // Only move B
+            if (pushX) {
+              posB.x += (bCenterX > aCenterX ? 1 : -1) * pushAmount;
+            } else {
+              posB.y += (bCenterY > aCenterY ? 1 : -1) * pushAmount;
+            }
+            changedNodes.add(nodeB.id);
+          } else if (bFixed && !aFixed) {
+            // Only move A
+            if (pushX) {
+              posA.x += (aCenterX > bCenterX ? 1 : -1) * pushAmount;
+            } else {
+              posA.y += (aCenterY > bCenterY ? 1 : -1) * pushAmount;
+            }
+            changedNodes.add(nodeA.id);
+          } else {
+            // Move both nodes equally (split the push)
+            const halfPush = pushAmount / 2;
+            if (pushX) {
+              const dirA = aCenterX < bCenterX ? -1 : 1;
+              posA.x += dirA * halfPush;
+              posB.x -= dirA * halfPush;
+            } else {
+              const dirA = aCenterY < bCenterY ? -1 : 1;
+              posA.y += dirA * halfPush;
+              posB.y -= dirA * halfPush;
+            }
+            changedNodes.add(nodeA.id);
+            changedNodes.add(nodeB.id);
+          }
+        }
+      }
+    }
+
+    if (!hasOverlap) break;
+  }
+
+  // Return only changed positions
+  const result = new Map<string, { x: number; y: number }>();
+  for (const id of changedNodes) {
+    result.set(id, positions.get(id)!);
+  }
+  return result;
+};
 
 /**
  * Convert AgentWithLayout to AgentFlowNode for ReactFlow rendering.
@@ -86,6 +244,7 @@ function InnerWorkspace() {
     fetchAgents,
     updateAgentLayout,
     updateAgentAvatar,
+    deleteAgent,
     agentStats,
     sessionIdByAgentId,
     dailyActivity,
@@ -94,7 +253,14 @@ function InnerWorkspace() {
 
   const [nodes, setNodes, onNodesChange] = useNodesState<AgentFlowNode>([]);
   const [edges, , onEdgesChange] = useEdgesState([]);
-  const [focusedAgentId, setFocusedAgentId] = useState<string | null>(null);
+  const [focusedAgentId, setFocusedAgentId] = useState<string | null>(() => {
+    // Restore focused agent from localStorage
+    try {
+      return localStorage.getItem(STORAGE_KEY_FOCUSED_AGENT);
+    } catch {
+      return null;
+    }
+  });
   const [saveStatus, setSaveStatus] = useState<SaveStatus>("idle");
   const [isAddModalOpen, setAddModalOpen] = useState(false);
   const [editingAgentId, setEditingAgentId] = useState<string | null>(null);
@@ -108,11 +274,15 @@ function InnerWorkspace() {
   const didInitialFitViewRef = useRef(false);
   const cancelInitialFitRef = useRef(false);
   const initialFitAttemptsRef = useRef(0);
+  const didInitialFocusRef = useRef(false);
 
   // Debounce save timers
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const pendingSavesRef = useRef<Map<string, AgentSpatialLayout>>(new Map());
   const savedTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const viewportSaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(
+    null,
+  );
 
   // Fetch agents on mount
   useEffect(() => {
@@ -132,7 +302,7 @@ function InnerWorkspace() {
       // Set saving status
       setSaveStatus("saving");
 
-      // Debounce: save after 800ms of no changes
+      // Debounce: save after 2000ms of no changes
       saveTimerRef.current = setTimeout(async () => {
         const saves = Array.from(pendingSavesRef.current.entries());
         pendingSavesRef.current.clear();
@@ -152,7 +322,7 @@ function InnerWorkspace() {
           console.error("Failed to save layouts:", error);
           setSaveStatus("failed");
         }
-      }, 800);
+      }, 2000);
     },
     [updateAgentLayout],
   );
@@ -213,6 +383,7 @@ function InnerWorkspace() {
     setNodes,
   ]);
 
+  // Initial viewport/focus setup
   useEffect(() => {
     if (didInitialFitViewRef.current) return;
     if (cancelInitialFitRef.current) return;
@@ -238,6 +409,19 @@ function InnerWorkspace() {
       // If measurement never comes through (rare), still do a best-effort fit.
       if (allMeasured || initialFitAttemptsRef.current >= 12) {
         didInitialFitViewRef.current = true;
+
+        // Check if we have a saved viewport in localStorage
+        try {
+          const savedViewport = localStorage.getItem(STORAGE_KEY_VIEWPORT);
+          if (savedViewport) {
+            const vp = JSON.parse(savedViewport) as Viewport;
+            setViewport(vp, { duration: 0 });
+            return;
+          }
+        } catch {
+          // Ignore parse errors, fall through to fitView
+        }
+
         fitView({ padding: 0.22, duration: 0 });
         return;
       }
@@ -249,7 +433,52 @@ function InnerWorkspace() {
     return () => {
       cancelled = true;
     };
-  }, [fitView, getNode, nodes]);
+  }, [fitView, getNode, nodes, setViewport]);
+
+  // Handle initial focus state (from localStorage or default for new users)
+  useEffect(() => {
+    if (didInitialFocusRef.current) return;
+    if (agents.length === 0) return;
+
+    didInitialFocusRef.current = true;
+
+    // Check if we have a saved focus state
+    const savedFocusId = focusedAgentId;
+    if (savedFocusId) {
+      // Verify the agent still exists
+      const agentExists = agents.some((a) => a.id === savedFocusId);
+      if (agentExists) {
+        // Focus will be restored via state, no need to call handleFocus
+        return;
+      }
+      // Agent no longer exists, clear the saved state
+      try {
+        localStorage.removeItem(STORAGE_KEY_FOCUSED_AGENT);
+      } catch {
+        // Ignore storage errors
+      }
+      setFocusedAgentId(null);
+    }
+
+    // For new users (no saved state), focus the default assistant
+    const hasVisitedBefore =
+      localStorage.getItem(STORAGE_KEY_VIEWPORT) !== null;
+    if (!hasVisitedBefore) {
+      // Find the default_chat agent
+      const defaultAgent = agents.find((a) => a.tags?.includes("default_chat"));
+      if (defaultAgent) {
+        // Delay focus to ensure viewport is ready
+        setTimeout(() => {
+          setFocusedAgentId(defaultAgent.id);
+          try {
+            localStorage.setItem(STORAGE_KEY_FOCUSED_AGENT, defaultAgent.id);
+          } catch {
+            // Ignore storage errors
+          }
+        }, 100);
+      }
+    }
+  }, [agents, focusedAgentId]);
 
   const handleFocus = useCallback(
     (id: string) => {
@@ -261,6 +490,13 @@ function InnerWorkspace() {
         setPrevViewport(getViewport());
       }
       setFocusedAgentId(id);
+
+      // Persist focused agent to localStorage
+      try {
+        localStorage.setItem(STORAGE_KEY_FOCUSED_AGENT, id);
+      } catch {
+        // Ignore storage errors
+      }
 
       const node = getNode(id);
       if (!node) return;
@@ -291,17 +527,90 @@ function InnerWorkspace() {
 
   const handleCloseFocus = useCallback(() => {
     setFocusedAgentId(null);
+
+    // Clear focused agent from localStorage
+    try {
+      localStorage.removeItem(STORAGE_KEY_FOCUSED_AGENT);
+    } catch {
+      // Ignore storage errors
+    }
+
     const restore = prevViewport ?? { x: 0, y: 0, zoom: 0.85 };
     setViewport(restore, { duration: 900 });
     setPrevViewport(null);
-  }, [prevViewport, setViewport]);
 
-  // Handle layout changes from AgentNode (e.g., resize)
+    // Save viewport to localStorage after closing focus
+    setTimeout(() => {
+      try {
+        const vp = getViewport();
+        localStorage.setItem(STORAGE_KEY_VIEWPORT, JSON.stringify(vp));
+      } catch {
+        // Ignore storage errors
+      }
+    }, 1000); // Wait for animation to complete
+  }, [prevViewport, setViewport, getViewport]);
+
+  // Handle layout changes from AgentNode (e.g., resize) with anti-overlap
   const handleLayoutChange = useCallback(
     (id: string, layout: AgentSpatialLayout) => {
+      // Get current node sizes for overlap resolution
+      const getNodeSize = (nodeId: string, newLayout?: AgentSpatialLayout) => {
+        if (newLayout && nodeId === id) {
+          return calculateNodeSize(newLayout.gridSize, newLayout.size);
+        }
+        const node = getNode(nodeId);
+        const measuredW = node?.measured?.width;
+        const measuredH = node?.measured?.height;
+        if (measuredW && measuredH) return { w: measuredW, h: measuredH };
+
+        const d = node?.data as FlowAgentNodeData | undefined;
+        return calculateNodeSize(d?.gridSize, d?.size);
+      };
+
+      setNodes((prev) => {
+        // Build node array for overlap resolution
+        const nodeRects = prev.map((n) => ({
+          id: n.id,
+          position: { ...n.position },
+          size: getNodeSize(n.id, n.id === id ? layout : undefined),
+        }));
+
+        // Resolve all overlaps, keeping the resized node fixed
+        const changes = resolveAllOverlaps(nodeRects, id);
+
+        if (changes.size === 0) return prev;
+
+        // Apply changes efficiently - only copy nodes that changed
+        const next = prev.map((n) => {
+          const newPos = changes.get(n.id);
+          if (!newPos) return n;
+
+          const updatedNode = {
+            ...n,
+            position: newPos,
+            data: {
+              ...(n.data as FlowAgentNodeData),
+              position: newPos,
+            },
+          };
+
+          // Schedule save for moved nodes
+          scheduleSave(n.id, {
+            position: newPos,
+            gridSize: (n.data as FlowAgentNodeData).gridSize,
+            size: (n.data as FlowAgentNodeData).size,
+          });
+
+          return updatedNode;
+        });
+
+        return next;
+      });
+
+      // Always save the resized node's layout
       scheduleSave(id, layout);
     },
-    [scheduleSave],
+    [getNode, setNodes, scheduleSave],
   );
 
   // Handle avatar changes from AgentNode
@@ -318,6 +627,43 @@ function InnerWorkspace() {
   const handleOpenAgentSettings = useCallback((agentId: string) => {
     setEditingAgentId(agentId);
   }, []);
+
+  // Handle deleting an agent
+  const handleDeleteAgent = useCallback(
+    async (agentId: string) => {
+      try {
+        await deleteAgent(agentId);
+        // Remove from local nodes state immediately
+        setNodes((prev) => prev.filter((n) => n.id !== agentId));
+      } catch (error) {
+        console.error("Failed to delete agent:", error);
+      }
+    },
+    [deleteAgent, setNodes],
+  );
+
+  // Save viewport to localStorage with debounce when user pans/zooms
+  const handleViewportChange = useCallback(
+    (_: unknown, viewport: Viewport) => {
+      // Don't save while focused on an agent (we save after closing focus)
+      if (focusedAgentId) return;
+
+      // Clear existing timer
+      if (viewportSaveTimerRef.current) {
+        clearTimeout(viewportSaveTimerRef.current);
+      }
+
+      // Debounce: save after 1000ms of no changes
+      viewportSaveTimerRef.current = setTimeout(() => {
+        try {
+          localStorage.setItem(STORAGE_KEY_VIEWPORT, JSON.stringify(viewport));
+        } catch {
+          // Ignore storage errors
+        }
+      }, 1000);
+    },
+    [focusedAgentId],
+  );
 
   // Inject handleFocus into node data
   const nodeTypes = useMemo(
@@ -337,6 +683,7 @@ function InnerWorkspace() {
         onLayoutChange: handleLayoutChange,
         onAvatarChange: handleAvatarChange,
         onOpenAgentSettings: handleOpenAgentSettings,
+        onDelete: handleDeleteAgent,
         isFocused: n.id === focusedAgentId,
       },
     }));
@@ -346,104 +693,94 @@ function InnerWorkspace() {
     handleLayoutChange,
     handleAvatarChange,
     handleOpenAgentSettings,
+    handleDeleteAgent,
     focusedAgentId,
   ]);
 
   const handleNodeDragStop = useCallback(
     (_: unknown, draggedNode: AgentFlowNode) => {
-      const padding = 24;
-
-      const getSize = (id: string) => {
-        const node = getNode(id);
+      // Get node size helper
+      const getNodeSize = (nodeId: string) => {
+        const node = getNode(nodeId);
         const measuredW = node?.measured?.width;
         const measuredH = node?.measured?.height;
         if (measuredW && measuredH) return { w: measuredW, h: measuredH };
 
         const d = node?.data as FlowAgentNodeData | undefined;
-        if (d?.gridSize) {
-          const { w, h } = d.gridSize;
-          return {
-            w: w * 200 + (w - 1) * 16,
-            h: h * 160 + (h - 1) * 16,
-          };
-        }
-
-        const size = d?.size;
-        if (size === "large") return { w: 400, h: 320 };
-        if (size === "medium") return { w: 300, h: 220 };
-        return { w: 200, h: 160 };
+        return calculateNodeSize(d?.gridSize, d?.size);
       };
 
       setNodes((prev) => {
-        const next = prev.map((n) => ({
-          ...n,
-          position: { ...n.position },
-          data: { ...(n.data as FlowAgentNodeData) },
-        }));
-        const moving = next.find((n) => n.id === draggedNode.id);
-        if (!moving) return prev;
+        // Only the dragged node should move to resolve overlaps
+        // All other nodes are treated as fixed obstacles
+        const draggedSize = getNodeSize(draggedNode.id);
+        const finalPos = { ...draggedNode.position };
 
-        // Iteratively push the dragged node out of overlaps.
-        for (let iter = 0; iter < 24; iter += 1) {
-          let movedThisIter = false;
+        // Get all other nodes as obstacles
+        const obstacles = prev
+          .filter((n) => n.id !== draggedNode.id)
+          .map((n) => ({
+            id: n.id,
+            position: { ...n.position },
+            size: getNodeSize(n.id),
+          }));
 
-          const aSize = getSize(moving.id);
-          const ax1 = moving.position.x;
-          const ay1 = moving.position.y;
-          const ax2 = ax1 + aSize.w;
-          const ay2 = ay1 + aSize.h;
+        // Iteratively push the dragged node away from overlaps
+        for (let iter = 0; iter < MAX_OVERLAP_ITERATIONS; iter++) {
+          let hasOverlap = false;
 
-          for (const other of next) {
-            if (other.id === moving.id) continue;
+          for (const obstacle of obstacles) {
+            const overlap = checkOverlap(
+              { ...finalPos, ...draggedSize },
+              { ...obstacle.position, ...obstacle.size },
+              OVERLAP_PADDING,
+            );
 
-            const bSize = getSize(other.id);
-            const bx1 = other.position.x;
-            const by1 = other.position.y;
-            const bx2 = bx1 + bSize.w;
-            const by2 = by1 + bSize.h;
+            if (overlap) {
+              hasOverlap = true;
 
-            const overlapX =
-              Math.min(ax2 + padding, bx2) - Math.max(ax1 - padding, bx1);
-            const overlapY =
-              Math.min(ay2 + padding, by2) - Math.max(ay1 - padding, by1);
+              // Calculate push direction (away from obstacle center)
+              const draggedCenterX = finalPos.x + draggedSize.w / 2;
+              const draggedCenterY = finalPos.y + draggedSize.h / 2;
+              const obstacleCenterX = obstacle.position.x + obstacle.size.w / 2;
+              const obstacleCenterY = obstacle.position.y + obstacle.size.h / 2;
 
-            if (overlapX > 0 && overlapY > 0) {
-              // Push along the smallest overlap axis.
-              if (overlapX < overlapY) {
-                const aCenterX = (ax1 + ax2) / 2;
-                const bCenterX = (bx1 + bx2) / 2;
-                const dir = aCenterX < bCenterX ? -1 : 1;
-                moving.position = {
-                  ...moving.position,
-                  x: moving.position.x + dir * overlapX,
-                };
+              // Push along the axis with smaller overlap
+              if (overlap.overlapX <= overlap.overlapY) {
+                finalPos.x +=
+                  (draggedCenterX > obstacleCenterX ? 1 : -1) *
+                  overlap.overlapX;
               } else {
-                const aCenterY = (ay1 + ay2) / 2;
-                const bCenterY = (by1 + by2) / 2;
-                const dir = aCenterY < bCenterY ? -1 : 1;
-                moving.position = {
-                  ...moving.position,
-                  y: moving.position.y + dir * overlapY,
-                };
+                finalPos.y +=
+                  (draggedCenterY > obstacleCenterY ? 1 : -1) *
+                  overlap.overlapY;
               }
-
-              movedThisIter = true;
-              break;
             }
           }
 
-          if (!movedThisIter) break;
+          if (!hasOverlap) break;
         }
 
-        // Keep persistable position in sync for future storage.
-        moving.data.position = { ...moving.position };
+        // Update only the dragged node
+        const next = prev.map((n) => {
+          if (n.id !== draggedNode.id) return n;
 
-        // Schedule auto-save for this agent
-        const agentData = moving.data as FlowAgentNodeData;
-        scheduleSave(moving.id, {
-          position: moving.position,
-          gridSize: agentData.gridSize,
-          size: agentData.size,
+          return {
+            ...n,
+            position: finalPos,
+            data: {
+              ...(n.data as FlowAgentNodeData),
+              position: finalPos,
+            },
+          };
+        });
+
+        // Schedule save for the dragged node only
+        const draggedData = draggedNode.data as FlowAgentNodeData;
+        scheduleSave(draggedNode.id, {
+          position: finalPos,
+          gridSize: draggedData.gridSize,
+          size: draggedData.size,
         });
 
         return next;
@@ -468,6 +805,7 @@ function InnerWorkspace() {
         onNodesChange={onNodesChange}
         onEdgesChange={onEdgesChange}
         onNodeDragStop={handleNodeDragStop}
+        onMoveEnd={handleViewportChange}
         nodeTypes={nodeTypes}
         defaultViewport={{ x: 0, y: 0, zoom: 0.85 }}
         proOptions={{ hideAttribution: true }}
@@ -484,8 +822,14 @@ function InnerWorkspace() {
       {/* Save Status Indicator */}
       <SaveStatusIndicator status={saveStatus} onRetry={handleRetrySave} />
 
-      {/* Add Agent Button - positioned at bottom right, below focus overlay */}
-      <div className="absolute bottom-4 right-4 z-10">
+      {/* Bottom right buttons - positioned below focus overlay */}
+      <div className="absolute bottom-4 right-4 z-10 flex items-center gap-2">
+        {!focusedAgentId && (
+          <FitViewButton
+            onClick={() => fitView({ padding: 0.22, duration: 500 })}
+            disabled={nodes.length === 0}
+          />
+        )}
         <AddAgentButton onClick={() => setAddModalOpen(true)} />
       </div>
 
@@ -496,6 +840,7 @@ function InnerWorkspace() {
             agents={nodes.map((n) => ({ id: n.id, ...n.data }))}
             onClose={handleCloseFocus}
             onSwitchAgent={(id) => handleFocus(id)}
+            onCanvasClick={handleCloseFocus}
           />
         )}
       </AnimatePresence>
