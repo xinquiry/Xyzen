@@ -241,7 +241,6 @@ const agentToFlowNode = (
 function InnerWorkspace() {
   const {
     agents,
-    fetchAgents,
     updateAgentLayout,
     updateAgentAvatar,
     deleteAgent,
@@ -282,10 +281,8 @@ function InnerWorkspace() {
     null,
   );
 
-  // Fetch agents on mount
-  useEffect(() => {
-    fetchAgents().catch((err) => console.error("Failed to fetch agents:", err));
-  }, [fetchAgents]);
+  // Note: fetchAgents is called in App.tsx during initial load
+  // No need to fetch again here - agents are already in the store
 
   // Debounced save function
   const scheduleSave = useCallback(
