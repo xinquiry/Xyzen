@@ -73,10 +73,15 @@
   },
   "tierSelector": {
     "title": "Select Model Tier",
-    "free": "Free",
+    "free": "0.0x",
     "rateFormat": "{{rate}}x",
+    "consumption": "Consumption",
     "infoModal": {
-      "title": "Model Tier Guide",
+      "title": "Select Intelligence Mode",
+      "subtitle": "Flexibly allocate AI computing power based on task difficulty",
+      "speed": "Response Speed",
+      "reasoning": "Reasoning Depth",
+      "availableModels": "Available Models",
       "imageGen": "Image Generation",
       "disclaimer": "* Models listed are for capability reference only and do not guarantee the actual model used."
     },
