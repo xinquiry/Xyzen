@@ -369,7 +369,8 @@ function InnerWorkspace() {
     }
   }, [updateAgentLayout]);
 
-  // Update nodes whenever agents or stats change
+  // Effect 1: Update nodes whenever agents or stats change
+  // This effect only handles node data synchronization, not viewport/focus logic
   useEffect(() => {
     if (agents.length === 0) return;
 
@@ -401,9 +402,24 @@ function InnerWorkspace() {
       );
     });
     setNodes(flowNodes);
+  }, [
+    agents,
+    agentStats,
+    sessionIdByAgentId,
+    dailyActivity,
+    yesterdaySummary,
+    lastConversationTimeByAgent,
+    publishedAgentIds,
+    setNodes,
+  ]);
 
-    // Handle initialization only once when nodes are first set
+  // Effect 2: Initialize viewport once when nodes are first measured
+  // This effect runs only once during component initialization
+  useEffect(() => {
+    // Only run initialization once
     if (initStateRef.current !== "pending") return;
+    if (agents.length === 0) return;
+
     initStateRef.current = "measuring";
 
     // Wait for ReactFlow to measure nodes, then set viewport
@@ -451,20 +467,17 @@ function InnerWorkspace() {
           if (node) {
             // When restoring focus from localStorage, use saved viewport as prevViewport
             // This ensures closing focus returns to the correct position
-            if (!prevViewport) {
-              try {
-                const savedViewport =
-                  localStorage.getItem(STORAGE_KEY_VIEWPORT);
-                if (savedViewport) {
-                  const vp = JSON.parse(savedViewport) as Viewport;
-                  setPrevViewport(vp);
-                } else {
-                  // Fallback: calculate a reasonable viewport that shows all nodes
-                  setPrevViewport({ x: 0, y: 0, zoom: 0.85 });
-                }
-              } catch {
+            try {
+              const savedViewport = localStorage.getItem(STORAGE_KEY_VIEWPORT);
+              if (savedViewport) {
+                const vp = JSON.parse(savedViewport) as Viewport;
+                setPrevViewport(vp);
+              } else {
+                // Fallback: calculate a reasonable viewport that shows all nodes
                 setPrevViewport({ x: 0, y: 0, zoom: 0.85 });
               }
+            } catch {
+              setPrevViewport({ x: 0, y: 0, zoom: 0.85 });
             }
             const targetZoom = 1.05;
             const rect = containerRef.current?.getBoundingClientRect();
@@ -500,8 +513,8 @@ function InnerWorkspace() {
     const maxAttempts = 10;
     const waitForMeasurement = () => {
       attempts++;
-      const allMeasured = flowNodes.every((n) => {
-        const node = getNode(n.id);
+      const allMeasured = agents.every((a) => {
+        const node = getNode(a.id);
         return (node?.measured?.width ?? 0) > 0;
       });
       if (allMeasured || attempts >= maxAttempts) {
@@ -511,22 +524,8 @@ function InnerWorkspace() {
       }
     };
     requestAnimationFrame(waitForMeasurement);
-  }, [
-    agents,
-    agentStats,
-    sessionIdByAgentId,
-    dailyActivity,
-    yesterdaySummary,
-    lastConversationTimeByAgent,
-    publishedAgentIds,
-    setNodes,
-    focusedAgentId,
-    getNode,
-    getViewport,
-    prevViewport,
-    setViewport,
-    fitView,
-  ]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [agents]); // Only depend on agents for initialization trigger
 
   const handleFocus = useCallback(
     (id: string) => {
