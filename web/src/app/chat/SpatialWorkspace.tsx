@@ -304,6 +304,19 @@ function InnerWorkspace() {
   // Single ref to track initialization state
   const initStateRef = useRef<"pending" | "measuring" | "done">("pending");
 
+  // Refs to avoid unnecessary re-renders in callbacks
+  const focusedAgentIdRef = useRef<string | null>(focusedAgentId);
+  const prevViewportRef = useRef(prevViewport);
+
+  // Keep refs in sync with state
+  useEffect(() => {
+    focusedAgentIdRef.current = focusedAgentId;
+  }, [focusedAgentId]);
+
+  useEffect(() => {
+    prevViewportRef.current = prevViewport;
+  }, [prevViewport]);
+
   // Debounce save timers
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const pendingSavesRef = useRef<Map<string, AgentSpatialLayout>>(new Map());
@@ -532,7 +545,7 @@ function InnerWorkspace() {
       // Mark initialization as done to prevent any pending viewport changes
       initStateRef.current = "done";
 
-      if (!prevViewport) {
+      if (!prevViewportRef.current) {
         setPrevViewport(getViewport());
       }
       setFocusedAgentId(id);
@@ -568,7 +581,7 @@ function InnerWorkspace() {
 
       setViewport({ x, y, zoom: targetZoom }, { duration: 900 });
     },
-    [getNode, getViewport, prevViewport, setViewport],
+    [getNode, getViewport, setViewport],
   );
 
   const handleCloseFocus = useCallback(() => {
@@ -581,9 +594,10 @@ function InnerWorkspace() {
       // Ignore storage errors
     }
 
-    if (prevViewport) {
+    const savedPrevViewport = prevViewportRef.current;
+    if (savedPrevViewport) {
       // Restore to saved previous viewport
-      setViewport(prevViewport, { duration: 900 });
+      setViewport(savedPrevViewport, { duration: 900 });
       setPrevViewport(null);
     } else {
       // No saved viewport - fit to show all nodes
@@ -599,7 +613,7 @@ function InnerWorkspace() {
         // Ignore storage errors
       }
     }, 1000); // Wait for animation to complete
-  }, [prevViewport, setViewport, getViewport, fitView]);
+  }, [setViewport, getViewport, fitView]);
 
   // Handle layout changes from AgentNode (e.g., resize) with anti-overlap
   const handleLayoutChange = useCallback(
@@ -689,27 +703,24 @@ function InnerWorkspace() {
   );
 
   // Save viewport to localStorage with debounce when user pans/zooms
-  const handleViewportChange = useCallback(
-    (_: unknown, viewport: Viewport) => {
-      // Don't save while focused on an agent (we save after closing focus)
-      if (focusedAgentId) return;
+  const handleViewportChange = useCallback((_: unknown, viewport: Viewport) => {
+    // Don't save while focused on an agent (we save after closing focus)
+    if (focusedAgentIdRef.current) return;
 
-      // Clear existing timer
-      if (viewportSaveTimerRef.current) {
-        clearTimeout(viewportSaveTimerRef.current);
+    // Clear existing timer
+    if (viewportSaveTimerRef.current) {
+      clearTimeout(viewportSaveTimerRef.current);
+    }
+
+    // Debounce: save after 1000ms of no changes
+    viewportSaveTimerRef.current = setTimeout(() => {
+      try {
+        localStorage.setItem(STORAGE_KEY_VIEWPORT, JSON.stringify(viewport));
+      } catch {
+        // Ignore storage errors
       }
-
-      // Debounce: save after 1000ms of no changes
-      viewportSaveTimerRef.current = setTimeout(() => {
-        try {
-          localStorage.setItem(STORAGE_KEY_VIEWPORT, JSON.stringify(viewport));
-        } catch {
-          // Ignore storage errors
-        }
-      }, 1000);
-    },
-    [focusedAgentId],
-  );
+    }, 1000);
+  }, []);
 
   // Inject handleFocus into node data
   const nodeTypes = useMemo(
