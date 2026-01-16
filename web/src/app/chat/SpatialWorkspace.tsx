@@ -15,7 +15,7 @@ const STORAGE_KEY_FOCUSED_AGENT = "xyzen_spatial_focused_agent";
 const STORAGE_KEY_VIEWPORT = "xyzen_spatial_viewport";
 
 import AddAgentModal from "@/components/modals/AddAgentModal";
-import EditAgentModal from "@/components/modals/EditAgentModal";
+import { useMyMarketplaceListings } from "@/hooks/useMarketplace";
 import { useXyzen } from "@/store";
 import type {
   AgentSpatialLayout,
@@ -203,6 +203,8 @@ const agentToFlowNode = (
   sessionId?: string,
   dailyActivity?: DailyActivityData[],
   yesterdaySummary?: YesterdaySummaryData,
+  lastConversationTime?: string,
+  isMarketplacePublished?: boolean,
 ): AgentFlowNode => {
   const statsDisplay: AgentStatsDisplay | undefined = stats
     ? {
@@ -220,6 +222,7 @@ const agentToFlowNode = (
     data: {
       agentId: agent.id,
       sessionId: sessionId,
+      agent: agent, // Full agent object for editing
       name: agent.name,
       role: (agent.description?.split("\n")[0] || "Agent") as string,
       desc: agent.description || "",
@@ -233,6 +236,8 @@ const agentToFlowNode = (
       stats: statsDisplay,
       dailyActivity,
       yesterdaySummary,
+      lastConversationTime,
+      isMarketplacePublished,
       onFocus: () => {},
     } as FlowAgentNodeData,
   };
@@ -248,7 +253,34 @@ function InnerWorkspace() {
     sessionIdByAgentId,
     dailyActivity,
     yesterdaySummary,
+    chatHistory,
+    channels,
   } = useXyzen();
+
+  // Marketplace hook to track published agents
+  const { data: myListings } = useMyMarketplaceListings();
+  const publishedAgentIds = useMemo(() => {
+    const ids = new Set<string>();
+    for (const listing of myListings ?? []) {
+      if (listing.is_published) ids.add(listing.agent_id);
+    }
+    return ids;
+  }, [myListings]);
+
+  // Compute last conversation time per agent from chat history
+  const lastConversationTimeByAgent = useMemo(() => {
+    const timeMap: Record<string, string> = {};
+    for (const topic of chatHistory) {
+      const channel = channels[topic.id];
+      if (!channel?.agentId) continue;
+      const agentId = channel.agentId;
+      const existing = timeMap[agentId];
+      if (!existing || topic.updatedAt > existing) {
+        timeMap[agentId] = topic.updatedAt;
+      }
+    }
+    return timeMap;
+  }, [chatHistory, channels]);
 
   const [nodes, setNodes, onNodesChange] = useNodesState<AgentFlowNode>([]);
   const [edges, , onEdgesChange] = useEdgesState([]);
@@ -261,7 +293,6 @@ function InnerWorkspace() {
   });
   const [saveStatus, setSaveStatus] = useState<SaveStatus>("idle");
   const [isAddModalOpen, setAddModalOpen] = useState(false);
-  const [editingAgentId, setEditingAgentId] = useState<string | null>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
   const [prevViewport, setPrevViewport] = useState<{
     x: number;
@@ -357,12 +388,16 @@ function InnerWorkspace() {
             lastMessagePreview: yesterdaySummary[agent.id].last_message_content,
           }
         : undefined;
+      const lastConversationTime = lastConversationTimeByAgent[agent.id];
+      const isMarketplacePublished = publishedAgentIds.has(agent.id);
       return agentToFlowNode(
         agent,
         stats,
         sessionId,
         agentDailyActivity,
         agentYesterdaySummary,
+        lastConversationTime,
+        isMarketplacePublished,
       );
     });
     setNodes(flowNodes);
@@ -482,6 +517,8 @@ function InnerWorkspace() {
     sessionIdByAgentId,
     dailyActivity,
     yesterdaySummary,
+    lastConversationTimeByAgent,
+    publishedAgentIds,
     setNodes,
     focusedAgentId,
     getNode,
@@ -638,11 +675,6 @@ function InnerWorkspace() {
     [updateAgentAvatar],
   );
 
-  // Handle opening agent settings (EditAgentModal)
-  const handleOpenAgentSettings = useCallback((agentId: string) => {
-    setEditingAgentId(agentId);
-  }, []);
-
   // Handle deleting an agent
   const handleDeleteAgent = useCallback(
     async (agentId: string) => {
@@ -697,7 +729,6 @@ function InnerWorkspace() {
         onFocus: handleFocus,
         onLayoutChange: handleLayoutChange,
         onAvatarChange: handleAvatarChange,
-        onOpenAgentSettings: handleOpenAgentSettings,
         onDelete: handleDeleteAgent,
         isFocused: n.id === focusedAgentId,
       },
@@ -707,7 +738,6 @@ function InnerWorkspace() {
     handleFocus,
     handleLayoutChange,
     handleAvatarChange,
-    handleOpenAgentSettings,
     handleDeleteAgent,
     focusedAgentId,
   ]);
@@ -878,17 +908,6 @@ function InnerWorkspace() {
       <AddAgentModal
         isOpen={isAddModalOpen}
         onClose={() => setAddModalOpen(false)}
-      />
-
-      {/* Edit Agent Modal */}
-      <EditAgentModal
-        isOpen={!!editingAgentId}
-        onClose={() => setEditingAgentId(null)}
-        agent={
-          editingAgentId
-            ? (agents.find((a) => a.id === editingAgentId) ?? null)
-            : null
-        }
       />
     </div>
   );

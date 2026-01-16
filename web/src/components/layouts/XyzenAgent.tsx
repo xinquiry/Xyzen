@@ -7,6 +7,7 @@ import {
 } from "@/components/animate-ui/components/animate/tooltip";
 import { Badge } from "@/components/base/Badge";
 import { useAuth } from "@/hooks/useAuth";
+import { formatTime } from "@/lib/formatDate";
 import {
   PencilIcon,
   ShoppingBagIcon,
@@ -17,8 +18,8 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import AddAgentModal from "@/components/modals/AddAgentModal";
+import AgentSettingsModal from "@/components/modals/AgentSettingsModal";
 import ConfirmationModal from "@/components/modals/ConfirmationModal";
-import EditAgentModal from "@/components/modals/EditAgentModal";
 import { useMyMarketplaceListings } from "@/hooks/useMarketplace";
 import { useXyzen } from "@/store";
 // import { knowledgeSetService } from "@/service/knowledgeSetService";
@@ -29,6 +30,7 @@ import type { Agent } from "@/types/agents";
 interface AgentCardProps {
   agent: Agent;
   isMarketplacePublished?: boolean;
+  lastConversationTime?: string;
   onClick?: (agent: Agent) => void;
   onEdit?: (agent: Agent) => void;
   onDelete?: (agent: Agent) => void;
@@ -160,6 +162,7 @@ const ContextMenu: React.FC<ContextMenuProps> = ({
 const AgentCard: React.FC<AgentCardProps> = ({
   agent,
   isMarketplacePublished = false,
+  lastConversationTime,
   onClick,
   onEdit,
   onDelete,
@@ -319,6 +322,13 @@ const AgentCard: React.FC<AgentCardProps> = ({
           <p className="mt-1 text-xs text-neutral-600 dark:text-neutral-400 line-clamp-2">
             {agent.description}
           </p>
+
+          {/* Last conversation time */}
+          {lastConversationTime && (
+            <p className="mt-1.5 text-[10px] text-neutral-400 dark:text-neutral-500">
+              {formatTime(lastConversationTime)}
+            </p>
+          )}
         </div>
       </motion.div>
 
@@ -368,6 +378,7 @@ export default function XyzenAgent({
 
     createDefaultChannel,
     deleteAgent,
+    updateAgent,
 
     chatHistory,
     channels,
@@ -392,6 +403,21 @@ export default function XyzenAgent({
     }
     return ids;
   }, [myListings]);
+
+  // Compute last conversation time per agent from chat history
+  const lastConversationTimeByAgent = useMemo(() => {
+    const timeMap: Record<string, string> = {};
+    for (const topic of chatHistory) {
+      const channel = channels[topic.id];
+      if (!channel?.agentId) continue;
+      const agentId = channel.agentId;
+      const existing = timeMap[agentId];
+      if (!existing || topic.updatedAt > existing) {
+        timeMap[agentId] = topic.updatedAt;
+      }
+    }
+    return timeMap;
+  }, [chatHistory, channels]);
 
   // Note: fetchAgents is called in App.tsx during initial load
   // No need to fetch again here - agents are already in the store
@@ -500,6 +526,7 @@ export default function XyzenAgent({
             key={agent.id}
             agent={agent}
             isMarketplacePublished={publishedAgentIds.has(agent.id)}
+            lastConversationTime={lastConversationTimeByAgent[agent.id]}
             onClick={handleAgentClick}
             onEdit={handleEditClick}
             onDelete={handleDeleteClick}
@@ -515,12 +542,34 @@ export default function XyzenAgent({
           isOpen={isAddModalOpen}
           onClose={() => setAddModalOpen(false)}
         />
-        <EditAgentModal
-          key={editingAgent?.id || "new"}
-          isOpen={isEditModalOpen}
-          onClose={() => setEditModalOpen(false)}
-          agent={editingAgent}
-        />
+        {editingAgent && (
+          <AgentSettingsModal
+            key={editingAgent.id}
+            isOpen={isEditModalOpen}
+            onClose={() => {
+              setEditModalOpen(false);
+              setEditingAgent(null);
+            }}
+            sessionId=""
+            agentId={editingAgent.id}
+            agentName={editingAgent.name}
+            agent={editingAgent}
+            currentAvatar={editingAgent.avatar ?? undefined}
+            onAvatarChange={(avatarUrl) => {
+              updateAgent({ ...editingAgent, avatar: avatarUrl });
+            }}
+            onGridSizeChange={() => {}}
+            onDelete={
+              publishedAgentIds.has(editingAgent.id)
+                ? undefined
+                : () => {
+                    deleteAgent(editingAgent.id);
+                    setEditModalOpen(false);
+                    setEditingAgent(null);
+                  }
+            }
+          />
+        )}
         {agentToDelete && (
           <ConfirmationModal
             isOpen={isConfirmModalOpen}
