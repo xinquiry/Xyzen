@@ -267,20 +267,39 @@ function InnerWorkspace() {
     return ids;
   }, [myListings]);
 
+  // Extract stable agentId mapping from channels
+  // Only changes when channel agentIds actually change, not on every message update
+  const channelAgentIds = Object.entries(channels)
+    .filter(([, ch]) => ch.agentId)
+    .map(([topicId, ch]) => `${topicId}:${ch.agentId}`)
+    .sort()
+    .join(",");
+
+  const channelAgentIdMap = useMemo(() => {
+    const map: Record<string, string> = {};
+    for (const [topicId, channel] of Object.entries(channels)) {
+      if (channel.agentId) {
+        map[topicId] = channel.agentId;
+      }
+    }
+    return map;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [channelAgentIds]);
+
   // Compute last conversation time per agent from chat history
+  // Now only depends on chatHistory and the stable agentId mapping
   const lastConversationTimeByAgent = useMemo(() => {
     const timeMap: Record<string, string> = {};
     for (const topic of chatHistory) {
-      const channel = channels[topic.id];
-      if (!channel?.agentId) continue;
-      const agentId = channel.agentId;
+      const agentId = channelAgentIdMap[topic.id];
+      if (!agentId) continue;
       const existing = timeMap[agentId];
       if (!existing || topic.updatedAt > existing) {
         timeMap[agentId] = topic.updatedAt;
       }
     }
     return timeMap;
-  }, [chatHistory, channels]);
+  }, [chatHistory, channelAgentIdMap]);
 
   const [nodes, setNodes, onNodesChange] = useNodesState<AgentFlowNode>([]);
   const [edges, , onEdgesChange] = useEdgesState([]);
