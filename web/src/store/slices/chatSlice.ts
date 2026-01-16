@@ -67,7 +67,7 @@ export interface ChatSlice {
       provider_id?: string;
       model?: string;
       model_tier?: "ultra" | "pro" | "standard" | "lite";
-      google_search_enabled?: boolean;
+      knowledge_set_id?: string | null;
     },
   ) => Promise<void>;
   updateSessionProviderAndModel: (
@@ -270,7 +270,7 @@ export const createChatSlice: StateCreator<
           let sessionProviderId = undefined;
           let sessionModel = undefined;
           let sessionModelTier = undefined;
-          let googleSearchEnabled = undefined;
+          let sessionKnowledgeSetId = undefined;
 
           for (const session of sessions) {
             const topic = session.topics.find((t) => t.id === topicId);
@@ -281,7 +281,7 @@ export const createChatSlice: StateCreator<
               sessionProviderId = session.provider_id;
               sessionModel = session.model;
               sessionModelTier = session.model_tier;
-              googleSearchEnabled = session.google_search_enabled;
+              sessionKnowledgeSetId = session.knowledge_set_id;
               break;
             }
           }
@@ -296,7 +296,7 @@ export const createChatSlice: StateCreator<
               provider_id: sessionProviderId,
               model: sessionModel,
               model_tier: sessionModelTier,
-              google_search_enabled: googleSearchEnabled,
+              knowledge_set_id: sessionKnowledgeSetId,
               connected: false,
               error: null,
             };
@@ -464,7 +464,6 @@ export const createChatSlice: StateCreator<
               provider_id: session.provider_id,
               model: session.model,
               model_tier: session.model_tier,
-              google_search_enabled: session.google_search_enabled,
               connected: false,
               error: null,
             };
@@ -500,7 +499,6 @@ export const createChatSlice: StateCreator<
                 provider_id: session.provider_id,
                 model: session.model,
                 model_tier: session.model_tier,
-                google_search_enabled: session.google_search_enabled,
                 connected: false,
                 error: null,
               };
@@ -1741,7 +1739,7 @@ export const createChatSlice: StateCreator<
               provider_id: existingSession.provider_id,
               model: existingSession.model,
               model_tier: existingSession.model_tier,
-              google_search_enabled: existingSession.google_search_enabled,
+              knowledge_set_id: existingSession.knowledge_set_id,
               connected: false,
               error: null,
             };
@@ -1845,7 +1843,6 @@ export const createChatSlice: StateCreator<
             provider_id: newSession.provider_id,
             model: newSession.model,
             model_tier: newSession.model_tier,
-            google_search_enabled: newSession.google_search_enabled,
             connected: false,
             error: null,
           };
@@ -1906,7 +1903,6 @@ export const createChatSlice: StateCreator<
             provider_id: newSession.provider_id,
             model: newSession.model,
             model_tier: newSession.model_tier,
-            google_search_enabled: newSession.google_search_enabled,
             connected: false,
             error: null,
           };
@@ -2106,8 +2102,8 @@ export const createChatSlice: StateCreator<
             state.channels[activeChannelId].model = updatedSession.model;
             state.channels[activeChannelId].model_tier =
               updatedSession.model_tier;
-            state.channels[activeChannelId].google_search_enabled =
-              updatedSession.google_search_enabled;
+            state.channels[activeChannelId].knowledge_set_id =
+              updatedSession.knowledge_set_id;
           }
         });
       } catch (error) {

@@ -96,7 +96,6 @@ class SessionRepository:
             provider_id=session_data.provider_id,
             model=session_data.model,
             spatial_layout=getattr(session_data, "spatial_layout", None),
-            google_search_enabled=session_data.google_search_enabled,
         )
         self.db.add(session)
         await self.db.flush()
@@ -134,6 +133,11 @@ class SessionRepository:
                     f"clearing model to trigger re-selection"
                 )
                 session.model = None
+
+        # Handle explicit null for knowledge_set_id (to allow clearing it)
+        # This must be done before exclude_none filtering removes it
+        if "knowledge_set_id" in update_data and update_data["knowledge_set_id"] is None:
+            session.knowledge_set_id = None
 
         # Only update fields that are not None to avoid null constraint violations
         # But we already handled model clearing above for tier changes
