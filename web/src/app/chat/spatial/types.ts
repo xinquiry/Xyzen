@@ -71,6 +71,7 @@ export interface AgentNodeRuntimeData {
   onAvatarChange?: (id: string, avatarUrl: string) => void;
   onDelete?: (agentId: string) => void;
   isFocused?: boolean;
+  isNewlyCreated?: boolean;
 }
 
 export type AgentNodeData = AgentData & AgentNodeRuntimeData;

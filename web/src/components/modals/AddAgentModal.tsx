@@ -24,11 +24,12 @@ import { McpServerItem } from "./McpServerItem";
 interface AddAgentModalProps {
   isOpen: boolean;
   onClose: () => void;
+  onCreated?: (agentId: string) => void;
 }
 
 type TabMode = "custom" | "system";
 
-function AddAgentModal({ isOpen, onClose }: AddAgentModalProps) {
+function AddAgentModal({ isOpen, onClose, onCreated }: AddAgentModalProps) {
   const { t } = useTranslation();
   const {
     createAgent,
@@ -115,24 +116,29 @@ function AddAgentModal({ isOpen, onClose }: AddAgentModalProps) {
     if (isSubmitting) return;
     setIsSubmitting(true);
     try {
+      let newAgentId: string | undefined;
       if (tabMode === "custom") {
         if (!agent.name) {
           alert(t("agents.errors.nameRequired"));
           return;
         }
-        await createAgent(buildCustomAgentPayload());
+        newAgentId = await createAgent(buildCustomAgentPayload());
       } else {
         if (!selectedTemplateKey) {
           alert(t("agents.errors.templateRequired"));
           return;
         }
         // Use the new from-template endpoint
-        await createAgentFromTemplate(
+        newAgentId = await createAgentFromTemplate(
           selectedTemplateKey,
           customName || undefined,
         );
       }
       handleClose();
+      // Notify parent about the created agent
+      if (newAgentId && onCreated) {
+        onCreated(newAgentId);
+      }
     } catch (error) {
       console.error("Failed to create agent:", error);
       alert(t("agents.errors.createFailed"));

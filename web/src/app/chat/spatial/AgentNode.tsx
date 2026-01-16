@@ -403,6 +403,22 @@ export function AgentNode({ id, data, selected }: AgentFlowNodeProps) {
           data.isFocused ? "z-50" : "z-0", // focused node higher z-index
         )}
       >
+        {/* Newly Created Glow - Pulsing highlight effect */}
+        {data.isNewlyCreated && (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.8 }}
+            animate={{
+              opacity: [0, 0.6, 0.3, 0.6, 0.3, 0],
+              scale: [0.95, 1.05, 1.02, 1.05, 1.02, 1],
+            }}
+            transition={{
+              duration: 2.5,
+              ease: "easeInOut",
+            }}
+            className="absolute -inset-3 -z-30 rounded-[40px] bg-linear-to-r from-emerald-400 via-cyan-400 to-blue-500 blur-xl pointer-events-none"
+          />
+        )}
+
         {/* IsFocused Glow - BEHIND CARD */}
         {data.isFocused && (
           <motion.div
