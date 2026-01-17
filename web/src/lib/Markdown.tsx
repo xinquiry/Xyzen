@@ -582,7 +582,7 @@ const MarkdownImage: React.FC<React.ImgHTMLAttributes<HTMLImageElement>> = (
               src={imageSrc}
               alt={alt}
               {...rest}
-              className="block max-w-80 max-h-80 w-auto h-auto rounded-lg transition-all duration-200 group-hover/img:scale-[1.02] group-hover/img:shadow-lg"
+              className="block w-[95%] sm:max-w-80 max-h-80 h-auto rounded-lg transition-all duration-200 group-hover/img:scale-[1.02] group-hover/img:shadow-lg"
             />
             {/* Hover overlay */}
             <span className="absolute inset-0 rounded-lg bg-black/0 group-hover/img:bg-black/10 transition-colors pointer-events-none" />
