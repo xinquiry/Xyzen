@@ -22,7 +22,6 @@ import AgentSettingsModal from "@/components/modals/AgentSettingsModal";
 import ConfirmationModal from "@/components/modals/ConfirmationModal";
 import { useMyMarketplaceListings } from "@/hooks/useMarketplace";
 import { useXyzen } from "@/store";
-// import { knowledgeSetService } from "@/service/knowledgeSetService";
 
 // Import types from separate file
 import type { Agent } from "@/types/agents";
@@ -207,22 +206,8 @@ const AgentCard: React.FC<AgentCardProps> = ({
     }
   };
 
-  // const [knowledgeSetName, setKnowledgeSetName] = useState<string | null>(null);
-
   // Check if it's a default agent based on tags
   const isDefaultAgent = agent.tags?.some((tag) => tag.startsWith("default_"));
-
-  // Fetch knowledge set name if agent has one
-  // useEffect(() => {
-  //   if (agent.knowledge_set_id) {
-  //     knowledgeSetService
-  //       .getKnowledgeSet(agent.knowledge_set_id)
-  //       .then((ks) => setKnowledgeSetName(ks.name))
-  //       .catch(() => setKnowledgeSetName(null));
-  //   } else {
-  //     setKnowledgeSetName(null);
-  //   }
-  // }, [agent.knowledge_set_id]);
 
   const handleContextMenu = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -378,7 +363,7 @@ export default function XyzenAgent({
 
     createDefaultChannel,
     deleteAgent,
-    updateAgent,
+    updateAgentAvatar,
 
     chatHistory,
     channels,
@@ -556,7 +541,8 @@ export default function XyzenAgent({
             agent={editingAgent}
             currentAvatar={editingAgent.avatar ?? undefined}
             onAvatarChange={(avatarUrl) => {
-              updateAgent({ ...editingAgent, avatar: avatarUrl });
+              setEditingAgent({ ...editingAgent, avatar: avatarUrl });
+              updateAgentAvatar(editingAgent.id, avatarUrl);
             }}
             onGridSizeChange={() => {}}
             onDelete={

@@ -86,7 +86,7 @@ const TIERS: TierInfo[] = [
     features: ["快速翻译", "文本摘要", "简单问答"],
     models: [
       { name: "Gemini 2.5 Flash-Lite", provider: "google" },
-      { name: "Qwen3 30B", provider: "qwen" },
+      { name: "Qwen3 30B A3B", provider: "qwen" },
       { name: "GPT-5 Nano", provider: "openai" },
     ],
   },
@@ -102,7 +102,8 @@ const TIERS: TierInfo[] = [
     buttonStyle: "bg-blue-600 hover:bg-blue-500",
     features: ["日常闲聊与助手", "邮件撰写", "知识问答"],
     models: [
-      { name: "DeepSeek V3", provider: "deepseek" },
+      { name: "Claude Haiku 4.5", provider: "anthropic" },
+      { name: "DeepSeek V3.2", provider: "deepseek" },
       { name: "Gemini 3 Flash", provider: "google" },
       { name: "GPT-5 Mini", provider: "openai" },
     ],
@@ -120,10 +121,10 @@ const TIERS: TierInfo[] = [
     recommended: true,
     features: ["PDF 文档深度分析", "代码编写与调试", "复杂任务规划与拆解"],
     models: [
-      { name: "Gemini 3 Pro", provider: "google" },
-      { name: "Qwen3 Max", provider: "qwen" },
       { name: "Claude Sonnet 4.5", provider: "anthropic" },
+      { name: "Gemini 3 Pro", provider: "google" },
       { name: "GPT-5.2", provider: "openai" },
+      { name: "Qwen3 Max", provider: "qwen" },
     ],
   },
   {
@@ -141,7 +142,6 @@ const TIERS: TierInfo[] = [
       "bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500",
     features: ["深度逻辑推理能力", "科研级学术分析", "复杂数学与算法求解"],
     models: [
-      { name: "GLMv4.7", provider: "glm" },
       { name: "Claude Opus 4.5", provider: "anthropic" },
       { name: "GPT-5.2 Pro", provider: "openai" },
     ],
