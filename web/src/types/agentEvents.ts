@@ -5,6 +5,8 @@
  * These define the structure of agent execution events received via WebSocket.
  */
 
+import type { ToolCall } from "@/store/types";
+
 /**
  * Flat context metadata included with all agent events.
  * Allows frontend to track agent execution, depth, and timing.
@@ -53,31 +55,13 @@ export interface AgentErrorData {
   node_id?: string;
 }
 
-// === Phase Events ===
-
-export interface PhaseStartData {
-  phase_id: string;
-  phase_name: string;
-  description?: string;
-  expected_duration_ms?: number;
-  context: AgentExecutionContext;
-}
-
-export interface PhaseEndData {
-  phase_id: string;
-  phase_name: string;
-  status: string; // "completed", "failed", "skipped"
-  duration_ms: number;
-  output_summary?: string;
-  context: AgentExecutionContext;
-}
-
 // === Node Events ===
 
 export interface NodeStartData {
   node_id: string;
   node_name: string;
   node_type: string; // "llm", "tool", "router", etc.
+  component_key?: string; // e.g., "system:deep_research:clarify"
   input_summary?: string;
   context: AgentExecutionContext;
 }
@@ -86,6 +70,7 @@ export interface NodeEndData {
   node_id: string;
   node_name: string;
   node_type: string;
+  component_key?: string; // e.g., "system:deep_research:clarify"
   status: string; // "completed", "failed", "skipped"
   duration_ms: number;
   output_summary?: string;
@@ -122,30 +107,6 @@ export interface ProgressUpdateData {
   context: AgentExecutionContext;
 }
 
-// === Iteration Events ===
-
-export interface IterationStartData {
-  iteration_number: number; // 1-indexed
-  max_iterations: number;
-  reason?: string;
-  context: AgentExecutionContext;
-}
-
-export interface IterationEndData {
-  iteration_number: number;
-  will_continue: boolean;
-  reason?: string;
-  context: AgentExecutionContext;
-}
-
-// === State Events ===
-
-export interface StateUpdateData {
-  updated_keys: string[];
-  summary: Record<string, string>;
-  context: AgentExecutionContext;
-}
-
 // === Execution State Types (for UI state management) ===
 
 export type ExecutionStatus =
@@ -158,6 +119,7 @@ export type ExecutionStatus =
 export interface PhaseExecution {
   id: string;
   name: string;
+  componentKey?: string; // e.g., "system:deep_research:clarify" - for specialized rendering
   description?: string;
   status: ExecutionStatus;
   startedAt?: number;
@@ -167,6 +129,8 @@ export interface PhaseExecution {
   nodes: NodeExecution[];
   // Streamed content during this phase (for per-node output display)
   streamedContent?: string;
+  // Tool calls made during this phase
+  toolCalls?: ToolCall[];
 }
 
 export interface NodeExecution {

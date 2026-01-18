@@ -6,6 +6,7 @@ import {
   Squares2X2Icon,
   UserGroupIcon,
   UserIcon,
+  PuzzlePieceIcon,
   WrenchScrewdriverIcon,
 } from "@heroicons/react/24/outline";
 import { Handle, Position, type NodeProps } from "@xyflow/react";
@@ -20,6 +21,7 @@ const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
   "arrows-exchange": ArrowPathIcon,
   "arrows-parallel": Squares2X2Icon,
   user: UserIcon,
+  puzzle: PuzzlePieceIcon,
 };
 
 /**

@@ -71,6 +71,14 @@ class StreamContext:
     node_start_time: float = 0.0
     # Agent state metadata (for persistence)
     agent_state: dict[str, Any] | None = None
+    # Track if we've seen current turn's HumanMessage (to distinguish history from new response)
+    seen_current_human_message: bool = False
+    # Set of historical AI message contents (to skip re-streaming history)
+    historical_ai_contents: set[str] = field(default_factory=set)
+    # Set of historical tool call IDs (to skip re-emitting tool events)
+    historical_tool_call_ids: set[str] = field(default_factory=set)
+    # Set of tool call IDs that we've emitted results for (to skip duplicates)
+    emitted_tool_result_ids: set[str] = field(default_factory=set)
 
 
 class ToolEventHandler:
@@ -512,6 +520,9 @@ class TokenStreamProcessor:
         """
         Extract text from a message chunk.
 
+        Handles both plain string content and structured content blocks
+        (e.g., [{'type': 'text', 'text': '...'}]).
+
         Args:
             message_chunk: Chunk from LLM streaming
 
@@ -520,16 +531,29 @@ class TokenStreamProcessor:
         """
         if isinstance(message_chunk, str):
             return message_chunk
-        if hasattr(message_chunk, "content"):
-            return getattr(message_chunk, "content") or None
-        if hasattr(message_chunk, "text"):
-            return getattr(message_chunk, "text") or None
 
-        # Fallback best-effort
-        try:
-            return str(message_chunk)
-        except Exception:
+        content = getattr(message_chunk, "content", None)
+        if content is None:
+            # Try alternate attribute
+            if hasattr(message_chunk, "text"):
+                return getattr(message_chunk, "text") or None
             return None
+
+        # Handle structured content (list of content blocks)
+        if isinstance(content, list):
+            texts = []
+            for item in content:
+                if isinstance(item, dict) and item.get("type") == "text":
+                    texts.append(item.get("text", ""))
+                elif isinstance(item, str):
+                    texts.append(item)
+            return "".join(texts) if texts else None
+
+        # Handle plain string
+        if isinstance(content, str) and content:
+            return content
+
+        return None
 
     @staticmethod
     def extract_usage_metadata(message_chunk: Any) -> tuple[int, int, int] | None:

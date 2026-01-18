@@ -337,6 +337,44 @@ export function reconstructAgentExecutionFromMetadata(
     | Record<string, string>
     | undefined;
 
+  // Get tool calls from metadata (node_id -> array of tool calls)
+  const toolCallsMap = agent_metadata.tool_calls as
+    | Record<
+        string,
+        Array<{
+          id: string;
+          name: string;
+          arguments?: Record<string, unknown>;
+          status: string;
+          result?: unknown;
+          error?: string;
+          timestamp: number;
+        }>
+      >
+    | undefined;
+
+  // Build nodeId -> componentKey map from timeline
+  const componentKeyMap = new Map<string, string>();
+  const timeline = agent_metadata.timeline as
+    | Array<{
+        event_type: string;
+        node_id?: string;
+        metadata?: { component_key?: string };
+      }>
+    | undefined;
+
+  if (timeline) {
+    for (const entry of timeline) {
+      if (
+        entry.event_type === "node_start" &&
+        entry.node_id &&
+        entry.metadata?.component_key
+      ) {
+        componentKeyMap.set(entry.node_id, entry.metadata.component_key);
+      }
+    }
+  }
+
   // Use preserved execution order from metadata, or fallback to object keys order
   const nodeOrder =
     (agent_metadata.node_order as string[] | undefined) ||
@@ -347,14 +385,32 @@ export function reconstructAgentExecutionFromMetadata(
       const output = nodeOutputs[nodeId];
       const content = extractNodeContent(output);
 
+      // Convert tool calls from backend format to frontend format
+      const nodeToolCalls = toolCallsMap?.[nodeId]?.map((tc) => ({
+        id: tc.id,
+        name: tc.name,
+        arguments: tc.arguments || {},
+        status: (tc.status || "completed") as ToolCall["status"],
+        result: tc.result
+          ? typeof tc.result === "string"
+            ? tc.result
+            : JSON.stringify(tc.result)
+          : undefined,
+        error: tc.error,
+        timestamp: new Date(tc.timestamp).toISOString(),
+      }));
+
       phases.push({
         id: nodeId,
         name: getNodeDisplayName(nodeId, nodeNames),
+        componentKey: componentKeyMap.get(nodeId), // Restore componentKey from timeline
         status: "completed",
         nodes: [],
         outputSummary: content ? truncate(content, 200) : undefined,
         // Store full content for expandable view (empty string if no content)
         streamedContent: content || "",
+        // Restore tool calls for this phase
+        toolCalls: nodeToolCalls,
       });
     }
   }
@@ -365,13 +421,31 @@ export function reconstructAgentExecutionFromMetadata(
       const output = nodeOutputs[nodeId];
       const content = extractNodeContent(output);
 
+      // Convert tool calls from backend format to frontend format
+      const nodeToolCalls = toolCallsMap?.[nodeId]?.map((tc) => ({
+        id: tc.id,
+        name: tc.name,
+        arguments: tc.arguments || {},
+        status: (tc.status || "completed") as ToolCall["status"],
+        result: tc.result
+          ? typeof tc.result === "string"
+            ? tc.result
+            : JSON.stringify(tc.result)
+          : undefined,
+        error: tc.error,
+        timestamp: new Date(tc.timestamp).toISOString(),
+      }));
+
       phases.push({
         id: nodeId,
         name: getNodeDisplayName(nodeId, nodeNames),
+        componentKey: componentKeyMap.get(nodeId), // Restore componentKey from timeline
         status: "completed",
         nodes: [],
         outputSummary: content ? truncate(content, 200) : undefined,
         streamedContent: content || "",
+        // Restore tool calls for this phase
+        toolCalls: nodeToolCalls,
       });
     }
   }

@@ -3,6 +3,8 @@ Agent Event Data Types - Typed dictionaries for agent execution events.
 
 This module defines the data structures for complex agent execution events,
 providing flat context metadata for tracking nested agent execution.
+
+Also includes timeline data structures for AgentRun persistence.
 """
 
 from __future__ import annotations
@@ -10,6 +12,51 @@ from __future__ import annotations
 from typing import Any, TypedDict
 
 from typing_extensions import NotRequired
+
+
+# === Timeline Data Structures ===
+
+
+class TimelineEntryDict(TypedDict, total=False):
+    """
+    Single entry in the AgentRun execution timeline.
+
+    Stored in AgentRun.node_data["timeline"] for execution replay.
+    """
+
+    event_type: str  # "agent_start", "node_start", "node_end", "agent_end"
+    timestamp: float  # Unix timestamp
+
+    # Node information (for node_start/node_end events)
+    node_id: str
+    node_name: str
+    node_type: str  # "llm", "tool", "router"
+
+    # Completion information (for node_end/agent_end events)
+    status: str  # "completed", "failed", "skipped"
+    duration_ms: int
+
+    # Node output (for node_end events)
+    output: Any  # Full structured output for timeline display
+
+    # Additional metadata
+    metadata: dict[str, Any]
+
+
+class NodeDataDict(TypedDict, total=False):
+    """
+    Complete node execution data stored in AgentRun.node_data.
+
+    Contains both timeline (for replay) and convenience maps (for quick access).
+    """
+
+    # Full execution timeline
+    timeline: list[TimelineEntryDict]
+
+    # Convenience maps for quick access
+    node_outputs: dict[str, Any]  # node_id -> output
+    node_order: list[str]  # Execution order of nodes
+    node_names: dict[str, str]  # node_id -> display name
 
 
 class AgentExecutionContext(TypedDict):
@@ -73,30 +120,6 @@ class AgentErrorData(TypedDict):
     node_id: NotRequired[str]  # Node where error occurred
 
 
-# === Phase Events ===
-
-
-class PhaseStartData(TypedDict):
-    """Data for PHASE_START event."""
-
-    phase_id: str
-    phase_name: str
-    description: NotRequired[str]
-    expected_duration_ms: NotRequired[int]
-    context: AgentExecutionContext
-
-
-class PhaseEndData(TypedDict):
-    """Data for PHASE_END event."""
-
-    phase_id: str
-    phase_name: str
-    status: str  # "completed", "failed", "skipped"
-    duration_ms: int
-    output_summary: NotRequired[str]
-    context: AgentExecutionContext
-
-
 # === Node Events ===
 
 
@@ -106,6 +129,7 @@ class NodeStartData(TypedDict):
     node_id: str
     node_name: str
     node_type: str  # "llm", "tool", "router", etc.
+    component_key: NotRequired[str]  # e.g., "system:deep_research:clarify"
     input_summary: NotRequired[str]
     context: AgentExecutionContext
 
@@ -116,6 +140,7 @@ class NodeEndData(TypedDict):
     node_id: str
     node_name: str
     node_type: str
+    component_key: NotRequired[str]  # e.g., "system:deep_research:clarify"
     status: str  # "completed", "failed", "skipped"
     duration_ms: int
     output_summary: NotRequired[str]
@@ -158,80 +183,19 @@ class ProgressUpdateData(TypedDict):
     context: AgentExecutionContext
 
 
-# === Iteration Events ===
-
-
-class IterationStartData(TypedDict):
-    """Data for ITERATION_START event."""
-
-    iteration_number: int  # 1-indexed
-    max_iterations: int
-    reason: NotRequired[str]  # Why iteration is needed
-    context: AgentExecutionContext
-
-
-class IterationEndData(TypedDict):
-    """Data for ITERATION_END event."""
-
-    iteration_number: int
-    will_continue: bool  # Whether another iteration will follow
-    reason: NotRequired[str]  # Why continuing or stopping
-    context: AgentExecutionContext
-
-
-# === State Events ===
-
-
-class StateUpdateData(TypedDict):
-    """
-    Data for STATE_UPDATE event.
-
-    Only includes non-sensitive state changes that are safe to display.
-    """
-
-    updated_keys: list[str]  # State keys that changed
-    summary: dict[str, str]  # Key -> human-readable summary of new value
-    context: AgentExecutionContext
-
-
-# === Human-in-the-Loop Events ===
-
-
-class HumanInputRequiredData(TypedDict):
-    """Data for HUMAN_INPUT_REQUIRED event."""
-
-    prompt: str  # Message to display to user
-    input_type: str  # "text", "choice", "confirm", "form"
-    choices: NotRequired[list[str]]  # For "choice" type
-    form_schema: NotRequired[dict[str, Any]]  # JSON Schema for "form" type
-    timeout_seconds: NotRequired[int]
-    context: AgentExecutionContext
-
-
-class HumanInputReceivedData(TypedDict):
-    """Data for HUMAN_INPUT_RECEIVED event."""
-
-    input_value: Any  # The user's input
-    input_type: str
-    context: AgentExecutionContext
-
-
 # Export all types
 __all__ = [
+    # Timeline types
+    "TimelineEntryDict",
+    "NodeDataDict",
+    # Context types
     "AgentExecutionContext",
     "AgentStartData",
     "AgentEndData",
     "AgentErrorData",
-    "PhaseStartData",
-    "PhaseEndData",
     "NodeStartData",
     "NodeEndData",
     "SubagentStartData",
     "SubagentEndData",
     "ProgressUpdateData",
-    "IterationStartData",
-    "IterationEndData",
-    "StateUpdateData",
-    "HumanInputRequiredData",
-    "HumanInputReceivedData",
 ]

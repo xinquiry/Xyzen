@@ -1,6 +1,8 @@
 import logging
+from typing import Any
 from uuid import UUID
 
+from sqlalchemy.ext.asyncio import async_sessionmaker
 from sqlmodel import col, select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
@@ -94,12 +96,19 @@ class MessageRepository:
             return False
 
         # Delete associated citations (always cascade)
+        from app.repos.agent_run import AgentRunRepository
         from app.repos.citation import CitationRepository
 
         citation_repo = CitationRepository(self.db)
         deleted_citations = await citation_repo.delete_citations_by_message(message_id)
         if deleted_citations > 0:
             logger.info(f"Deleted {deleted_citations} citations for message {message_id}")
+
+        # Delete associated agent run (always cascade)
+        agent_run_repo = AgentRunRepository(self.db)
+        deleted_agent_run = await agent_run_repo.delete_by_message_id(message_id)
+        if deleted_agent_run:
+            logger.info(f"Deleted agent run for message {message_id}")
 
         # Delete associated files if cascade is enabled
         if cascade_files:
@@ -175,7 +184,11 @@ class MessageRepository:
                 count += 1
         return count
 
-    async def create_message_in_isolated_transaction(self, message_data: MessageCreate) -> None:
+    async def create_message_in_isolated_transaction(
+        self,
+        message_data: MessageCreate,
+        session_factory: async_sessionmaker[Any] | None = None,
+    ) -> None:
         """
         Creates and commits a tool event message in a separate, short-lived session.
 
@@ -184,9 +197,15 @@ class MessageRepository:
 
         Args:
             message_data: The Pydantic model containing the data for the new message.
+            session_factory: Optional session factory to use. If not provided, uses the
+                global AsyncSessionLocal. Callers in Celery tasks should pass their
+                task-scoped session factory to avoid event loop issues.
         """
         logger.debug(f"Creating isolated tool event message for topic_id: {message_data.topic_id}")
-        async with AsyncSessionLocal() as db:
+        # Use provided session factory or fall back to global AsyncSessionLocal
+        # Celery tasks must provide their own session factory bound to their event loop
+        factory = session_factory or AsyncSessionLocal
+        async with factory() as db:
             isolated_repo = MessageRepository(db)
             await isolated_repo.create_message(message_data=message_data)
             await db.commit()
@@ -355,6 +374,7 @@ class MessageRepository:
         Returns:
             List of MessageReadWithFilesAndCitations instances with attachments and citations populated.
         """
+        from app.repos.agent_run import AgentRunRepository
         from app.repos.citation import CitationRepository
         from app.repos.file import FileRepository
 
@@ -366,6 +386,7 @@ class MessageRepository:
         # Get files and citations for each message
         file_repo = FileRepository(self.db)
         citation_repo = CitationRepository(self.db)
+        agent_run_repo = AgentRunRepository(self.db)
         messages_with_files_and_citations = []
 
         for message in messages:
@@ -387,6 +408,24 @@ class MessageRepository:
             # Get citations
             citations = await citation_repo.get_citations_as_read(message.id)
 
+            # Get agent metadata from AgentRun table
+            agent_metadata = None
+            if message.role == "assistant":
+                agent_run = await agent_run_repo.get_by_message_id(message.id)
+                if agent_run:
+                    # Build agent_metadata from AgentRun record
+                    agent_metadata = {
+                        "execution_id": agent_run.execution_id,
+                        "agent_id": agent_run.agent_id,
+                        "agent_name": agent_run.agent_name,
+                        "agent_type": agent_run.agent_type,
+                        "status": agent_run.status,
+                        "started_at": agent_run.started_at,
+                        "ended_at": agent_run.ended_at,
+                        "duration_ms": agent_run.duration_ms,
+                        **(agent_run.node_data or {}),
+                    }
+
             message_with_files_and_citations = MessageReadWithFilesAndCitations(
                 id=message.id,
                 role=message.role,
@@ -396,7 +435,7 @@ class MessageRepository:
                 attachments=file_reads_with_urls,
                 citations=citations,
                 thinking_content=message.thinking_content,
-                agent_metadata=message.agent_metadata,
+                agent_metadata=agent_metadata,
             )
             messages_with_files_and_citations.append(message_with_files_and_citations)
 
@@ -435,3 +474,71 @@ class MessageRepository:
         )
 
         return message_with_citations
+
+    async def search_messages_by_agent(
+        self,
+        user_id: str,
+        agent_id: UUID,
+        query: str,
+        limit: int = 10,
+        exclude_topic_id: UUID | None = None,
+    ) -> list[dict]:
+        """
+        Search messages across all sessions for a specific agent.
+
+        Searches message content using case-insensitive ILIKE matching.
+        Results are scoped to sessions where:
+        - The session belongs to the specified user
+        - The session has the specified agent assigned
+
+        Args:
+            user_id: User ID for access control
+            agent_id: Agent ID to scope the search
+            query: Search query string (will be wrapped with % for ILIKE)
+            limit: Maximum number of results to return
+            exclude_topic_id: Optional topic ID to exclude (e.g., current conversation)
+
+        Returns:
+            List of dicts with message content, role, topic_name, and created_at
+        """
+        from app.models.sessions import Session as SessionModel
+        from app.models.topic import Topic as TopicModel
+
+        logger.debug(f"Searching messages for agent {agent_id}, user {user_id}, query: {query}")
+
+        # Build the query with joins: Message -> Topic -> Session
+        statement = (
+            select(
+                MessageModel.content,
+                MessageModel.role,
+                MessageModel.created_at,
+                TopicModel.name.label("topic_name"),  # type: ignore[union-attr]
+            )
+            .join(TopicModel, MessageModel.topic_id == TopicModel.id)  # type: ignore[arg-type]
+            .join(SessionModel, TopicModel.session_id == SessionModel.id)  # type: ignore[arg-type]
+            .where(
+                SessionModel.user_id == user_id,
+                SessionModel.agent_id == agent_id,
+                MessageModel.content.ilike(f"%{query}%"),  # type: ignore[union-attr]
+            )
+        )
+
+        # Exclude current topic if specified
+        if exclude_topic_id:
+            statement = statement.where(MessageModel.topic_id != exclude_topic_id)
+
+        # Order by most recent first, apply limit
+        statement = statement.order_by(col(MessageModel.created_at).desc()).limit(limit)
+
+        result = await self.db.exec(statement)  # type: ignore[arg-type]
+        rows = result.all()
+
+        return [
+            {
+                "content": row.content,  # type: ignore[attr-defined]
+                "role": row.role,  # type: ignore[attr-defined]
+                "topic_name": row.topic_name,  # type: ignore[attr-defined]
+                "created_at": row.created_at,  # type: ignore[attr-defined]
+            }
+            for row in rows
+        ]

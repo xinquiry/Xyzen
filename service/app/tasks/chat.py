@@ -16,9 +16,10 @@ from app.core.consume import create_consume_for_chat
 from app.core.consume_calculator import ConsumptionCalculator
 from app.core.consume_strategy import ConsumptionContext
 from app.infra.database import ASYNC_DATABASE_URL
+from app.models.agent_run import AgentRunCreate
 from app.models.citation import CitationCreate
 from app.models.message import Message, MessageCreate
-from app.repos import CitationRepository, FileRepository, MessageRepository, TopicRepository
+from app.repos import AgentRunRepository, CitationRepository, FileRepository, MessageRepository, TopicRepository
 from app.repos.session import SessionRepository
 from app.schemas.chat_event_payloads import CitationData
 from app.schemas.chat_event_types import ChatEventType
@@ -176,6 +177,10 @@ async def _process_chat_message_async(
             output_tokens: int = 0
             total_tokens: int = 0
 
+            # Agent run tracking (for new timeline-based persistence)
+            agent_run_id: UUID | None = None
+            agent_run_start_time: float | None = None
+
             # Incremental save tracking - save content every 3 seconds during streaming
             import time
 
@@ -190,8 +195,12 @@ async def _process_chat_message_async(
                 # Logic copied and adapted from chat.py
                 event_type = stream_event["type"]
 
+                # Debug: Log ALL events received
+                logger.info(f"[EVENT] Received event type: {event_type} (repr: {repr(event_type)})")
+
                 if stream_event["type"] == ChatEventType.STREAMING_START:
                     ai_message_id = stream_event["data"]["id"]
+                    agent_run_start_time = time.time()  # Track agent run start time
                     if not ai_message_obj:
                         ai_message_create = MessageCreate(role="assistant", content="", topic_id=topic_id)
                         ai_message_obj = await message_repo.create_message(ai_message_create)
@@ -236,9 +245,56 @@ async def _process_chat_message_async(
                                 # Handle structured output - extract text content
                                 full_content = final_content.get("content", str(final_content))
 
-                    if agent_state_data and ai_message_obj:
-                        ai_message_obj.agent_metadata = agent_state_data
-                        db.add(ai_message_obj)
+                    # Only create AgentRun from streaming_end if not already created via AGENT_START
+                    # This maintains backward compatibility with agents that don't emit lifecycle events
+                    if agent_state_data and ai_message_obj and not agent_run_id:
+                        # Save AgentRun record (agent_metadata is now stored in AgentRun table)
+                        try:
+                            agent_run_end_time = time.time()
+                            agent_run_repo = AgentRunRepository(db)
+                            agent_run_create = AgentRunCreate(
+                                message_id=ai_message_obj.id,
+                                execution_id=agent_state_data.get("execution_id", ai_message_id or ""),
+                                agent_id=agent_state_data.get("agent_id", ""),
+                                agent_name=agent_state_data.get("agent_name", ""),
+                                agent_type=agent_state_data.get("agent_type", "react"),
+                                status="completed",
+                                started_at=agent_run_start_time or agent_run_end_time,
+                                ended_at=agent_run_end_time,
+                                duration_ms=int(
+                                    (agent_run_end_time - (agent_run_start_time or agent_run_end_time)) * 1000
+                                ),
+                                node_data={
+                                    "timeline": agent_state_data.get("timeline"),
+                                    "node_outputs": agent_state_data.get("node_outputs"),
+                                    "node_order": agent_state_data.get("node_order"),
+                                    "node_names": agent_state_data.get("node_names"),
+                                },
+                            )
+                            await agent_run_repo.create(agent_run_create)
+                            logger.debug(f"Saved AgentRun for message {ai_message_obj.id} (via streaming_end fallback)")
+                        except Exception as e:
+                            logger.error(f"Failed to save AgentRun: {e}")
+                    elif agent_state_data and ai_message_obj and agent_run_id:
+                        # AgentRun was already created via AGENT_START, update with final node_outputs
+                        try:
+                            agent_run_repo = AgentRunRepository(db)
+                            await agent_run_repo.finalize(
+                                agent_run_id=agent_run_id,
+                                status="completed",
+                                ended_at=time.time(),
+                                duration_ms=int((time.time() - (agent_run_start_time or time.time())) * 1000),
+                                final_node_data={
+                                    "timeline": agent_state_data.get("timeline", []),
+                                    "node_outputs": agent_state_data.get("node_outputs", {}),
+                                    "node_order": agent_state_data.get("node_order", []),
+                                    "node_names": agent_state_data.get("node_names", {}),
+                                },
+                            )
+                            logger.debug(f"Updated AgentRun {agent_run_id} with final node_outputs")
+                        except Exception as e:
+                            logger.warning(f"Failed to update AgentRun with final data: {e}")
+
                     await publisher.publish(json.dumps(stream_event))
 
                 elif stream_event["type"] == ChatEventType.TOKEN_USAGE:
@@ -267,7 +323,9 @@ async def _process_chat_message_async(
                             ),
                             topic_id=topic_id,
                         )
-                        await message_repo.create_message_in_isolated_transaction(tool_message)
+                        await message_repo.create_message_in_isolated_transaction(
+                            tool_message, session_factory=TaskSessionLocal
+                        )
                     except Exception as e:
                         logger.warning(f"Failed to persist tool call request message: {e}")
                     await publisher.publish(json.dumps(stream_event))
@@ -289,7 +347,9 @@ async def _process_chat_message_async(
                             ),
                             topic_id=topic_id,
                         )
-                        await message_repo.create_message_in_isolated_transaction(tool_message)
+                        await message_repo.create_message_in_isolated_transaction(
+                            tool_message, session_factory=TaskSessionLocal
+                        )
                     except Exception as e:
                         logger.warning(f"Failed to persist tool call response message: {e}")
                     await publisher.publish(json.dumps(stream_event))
@@ -348,6 +408,135 @@ async def _process_chat_message_async(
                     await publisher.publish(json.dumps(stream_event))
 
                 elif stream_event["type"] == ChatEventType.THINKING_END:
+                    await publisher.publish(json.dumps(stream_event))
+
+                # Handle AGENT_START - Create AgentRun record early
+                elif stream_event["type"] == ChatEventType.AGENT_START:
+                    agent_run_start_time = time.time()
+                    context_data = stream_event["data"].get("context", {})
+
+                    # Ensure we have a message object to link to
+                    if not ai_message_obj:
+                        ai_message_create = MessageCreate(role="assistant", content="", topic_id=topic_id)
+                        ai_message_obj = await message_repo.create_message(ai_message_create)
+
+                    # Create AgentRun record with status="running"
+                    # Include agent_start as the first timeline entry
+                    try:
+                        agent_run_repo = AgentRunRepository(db)
+                        initial_timeline = [
+                            {
+                                "event_type": "agent_start",
+                                "timestamp": agent_run_start_time,
+                                "metadata": {
+                                    "agent_id": context_data.get("agent_id", ""),
+                                    "agent_name": context_data.get("agent_name", ""),
+                                    "agent_type": context_data.get("agent_type", "react"),
+                                },
+                            }
+                        ]
+                        agent_run_create = AgentRunCreate(
+                            message_id=ai_message_obj.id,
+                            execution_id=context_data.get("execution_id", f"exec_{int(time.time())}"),
+                            agent_id=context_data.get("agent_id", ""),
+                            agent_name=context_data.get("agent_name", ""),
+                            agent_type=context_data.get("agent_type", "react"),
+                            status="running",
+                            started_at=agent_run_start_time,
+                            node_data={
+                                "timeline": initial_timeline,
+                                "node_outputs": {},
+                                "node_order": [],
+                                "node_names": {},
+                            },
+                        )
+                        agent_run = await agent_run_repo.create(agent_run_create)
+                        agent_run_id = agent_run.id
+                        logger.debug(f"Created AgentRun {agent_run_id} for message {ai_message_obj.id}")
+                    except Exception as e:
+                        logger.error(f"Failed to create AgentRun: {e}")
+
+                    await publisher.publish(json.dumps(stream_event))
+
+                # Handle NODE_END - Append to timeline incrementally
+                elif stream_event["type"] == ChatEventType.NODE_END:
+                    if agent_run_id:
+                        try:
+                            agent_run_repo = AgentRunRepository(db)
+                            node_data = stream_event["data"]
+                            timeline_entry: dict[str, Any] = {
+                                "event_type": "node_end",
+                                "timestamp": time.time(),
+                                "node_id": node_data.get("node_id"),
+                                "node_name": node_data.get("node_name"),
+                                "node_type": node_data.get("node_type"),
+                                "status": node_data.get("status"),
+                                "duration_ms": node_data.get("duration_ms"),
+                            }
+                            # Include component_key for frontend rendering
+                            component_key = node_data.get("component_key")
+                            if component_key:
+                                timeline_entry["metadata"] = {"component_key": component_key}
+                            await agent_run_repo.append_timeline_entry(agent_run_id, timeline_entry)
+                        except Exception as e:
+                            logger.warning(f"Failed to append timeline entry: {e}")
+
+                    await publisher.publish(json.dumps(stream_event))
+
+                # Handle NODE_START - Track node start in timeline
+                elif stream_event["type"] == ChatEventType.NODE_START:
+                    logger.info(f"[NODE_START] Received node_start event, agent_run_id={agent_run_id}")
+                    if agent_run_id:
+                        try:
+                            agent_run_repo = AgentRunRepository(db)
+                            node_data = stream_event["data"]
+                            timeline_entry: dict[str, Any] = {
+                                "event_type": "node_start",
+                                "timestamp": time.time(),
+                                "node_id": node_data.get("node_id"),
+                                "node_name": node_data.get("node_name"),
+                                "node_type": node_data.get("node_type"),
+                            }
+                            # Include component_key for frontend rendering
+                            component_key = node_data.get("component_key")
+                            if component_key:
+                                timeline_entry["metadata"] = {"component_key": component_key}
+                            logger.info(f"[NODE_START] Appending timeline entry: {timeline_entry}")
+                            await agent_run_repo.append_timeline_entry(agent_run_id, timeline_entry)
+                            logger.info("[NODE_START] Successfully appended timeline entry")
+                        except Exception as e:
+                            logger.warning(f"Failed to append timeline entry: {e}")
+
+                    await publisher.publish(json.dumps(stream_event))
+
+                # Handle AGENT_END - Finalize AgentRun
+                elif stream_event["type"] == ChatEventType.AGENT_END:
+                    if agent_run_id:
+                        try:
+                            agent_run_repo = AgentRunRepository(db)
+                            end_data = stream_event["data"]
+                            status = end_data.get("status", "completed")
+
+                            # Add agent_end to timeline
+                            timeline_entry = {
+                                "event_type": "agent_end",
+                                "timestamp": time.time(),
+                                "status": status,
+                                "duration_ms": end_data.get("duration_ms", 0),
+                            }
+                            await agent_run_repo.append_timeline_entry(agent_run_id, timeline_entry)
+
+                            # Finalize the AgentRun
+                            await agent_run_repo.finalize(
+                                agent_run_id=agent_run_id,
+                                status=status,
+                                ended_at=time.time(),
+                                duration_ms=end_data.get("duration_ms", 0),
+                            )
+                            logger.debug(f"Finalized AgentRun {agent_run_id} with status={status}")
+                        except Exception as e:
+                            logger.error(f"Failed to finalize AgentRun: {e}")
+
                     await publisher.publish(json.dumps(stream_event))
 
                 else:
