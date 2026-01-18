@@ -1,17 +1,17 @@
 "use client";
 
 import { HoleBackground } from "@/components/animate-ui/components/backgrounds/hole";
+import {
+  DeepSeekIcon,
+  GeminiIcon,
+  QwenIcon,
+} from "@/components/icons/LlmIcons";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
 import { Bot, Brain, Check, Code2, Cpu, Sparkles, Zap } from "lucide-react";
 import { motion } from "motion/react";
 import { useTranslation } from "react-i18next";
-import {
-  SiAlibabadotcom,
-  SiAnthropic,
-  SiGoogle,
-  SiOpenai,
-} from "react-icons/si";
+import { SiAnthropic, SiOpenai } from "react-icons/si";
 
 interface TierInfoModalProps {
   open: boolean;
@@ -29,13 +29,9 @@ const ProviderIcon = ({
   const icons: Record<string, React.ReactElement> = {
     anthropic: <SiAnthropic className={className} />,
     openai: <SiOpenai className={className} />,
-    google: <SiGoogle className={className} />,
-    qwen: <SiAlibabadotcom className={className} />,
-    deepseek: (
-      <svg viewBox="0 0 24 24" className={className} fill="currentColor">
-        <path d="M16.4 7c.2 0 .5-.1.7-.2l.6-.2c.2 0 .5-.1.7-.2.2-.1.5-.2.7-.3.2-.1.5-.2.7-.3.2-.1.5-.3.7-.4.2-.2.5-.3.7-.5.2-.2.4-.3.6-.5.2-.2.4-.4.6-.6.2-.2.4-.4.5-.7.2-.2.3-.5.5-.7.1-.3.3-.5.4-.8.1-.3.2-.6.3-.9.1-.3.1-.6.2-.9 0-.3.1-.6.1-1 0-.3 0-.7-.1-1-.1-.3-.2-.6-.3-1-.1-.3-.3-.6-.4-.9-.2-.3-.3-.5-.5-.8-.2-.3-.4-.5-.6-.7-.2-.2-.4-.4-.7-.6-.2-.2-.5-.3-.7-.5-.3-.1-.5-.3-.8-.4-.3-.1-.6-.2-.9-.3-.3-.1-.6-.2-.9-.2H12c-.3 0-.6.1-.9.2-.3.1-.6.2-.9.3-.3.1-.6.2-.8.4-.3.1-.5.3-.7.5-.2.2-.5.3-.7.6-.2.2-.4.4-.6.7-.2.3-.3.5-.5.8-.1.3-.3.6-.4.9-.1.3-.2.6-.3 1s-.1.7-.1 1c0 .3 0 .7.1 1 .1.3.1.6.2.9.1.3.2.6.3.9.1.3.3.5.4.8.2.2.3.5.5.7.2.2.4.4.5.7.2.2.4.6.6.2.2.4.3.6.5.2.2.5.3.7.4.2.1.5.2.7.3.2.1.5.2.7.3.2.1.5.2.7.2.2.1.5.1.7.2zm-4.4 2.8c.6 0 1 .4 1 1s-.4 1-1 1-1-.4-1-1 .4-1 1-1z" />
-      </svg>
-    ),
+    google: <GeminiIcon className={className} />,
+    qwen: <QwenIcon className={className} />,
+    deepseek: <DeepSeekIcon className={className} />,
     glm: (
       <svg viewBox="0 0 24 24" className={className} fill="currentColor">
         <path d="M12 2L2 12l10 10 10-10L12 2zm0 18l-8-8 8-8 8 8-8 8z" />
@@ -124,6 +120,7 @@ const TIERS: TierInfo[] = [
     recommended: true,
     features: ["PDF 文档深度分析", "代码编写与调试", "复杂任务规划与拆解"],
     models: [
+      { name: "Gemini 3 Pro", provider: "google" },
       { name: "Qwen3 Max", provider: "qwen" },
       { name: "Claude Sonnet 4.5", provider: "anthropic" },
       { name: "GPT-5.2", provider: "openai" },
@@ -203,7 +200,7 @@ export function TierInfoModal({ open, onOpenChange }: TierInfoModalProps) {
                   <div className="flex items-center justify-between mb-4 pb-4 border-b border-zinc-100 dark:border-white/10">
                     <div
                       className={cn(
-                        "p-2 rounded-lg bg-zinc-100 dark:bg-white/5 mx-auto md:mx-0",
+                        "p-2 rounded-lg bg-zinc-100 dark:bg-white/5 md:mx-0",
                         tier.accentColor,
                       )}
                     >
