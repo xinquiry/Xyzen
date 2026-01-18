@@ -27,7 +27,7 @@ export default defineConfig(() => {
       plugins.push(
         VitePWA({
           registerType: "autoUpdate",
-          includeAssets: ["pwa-icon-dark.png", "pwa-icon-light.png"],
+          includeAssets: ["icon.png"],
           manifest: {
             name: "Xyzen",
             short_name: "Xyzen",
