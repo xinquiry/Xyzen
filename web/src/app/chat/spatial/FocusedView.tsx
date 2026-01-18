@@ -126,7 +126,7 @@ export function FocusedView({
               Active Agents
             </h3>
           </div>
-          <div className="overflow-y-auto p-2 space-y-1">
+          <div className="overflow-y-auto p-2 space-y-1 custom-scrollbar">
             {agents.map((a) => (
               <button
                 key={a.id}
