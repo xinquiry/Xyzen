@@ -18,6 +18,12 @@ uv run alembic revision --autogenerate -m "Some message"
 uv run alembic upgrade head
 ```
 
+<!-- Back to last migration -->
+```sh
+uv run alembic downgrade -1
+```
+
+
 ## Use in Docker
 
 ```sh
@@ -26,4 +32,8 @@ docker exec -it sciol-xyzen-service-1 sh -c "uv run alembic revision --autogener
 
 ```sh
 docker exec -it sciol-xyzen-service-1 sh -c "uv run alembic upgrade head"
+```
+
+```sh
+docker exec -it sciol-xyzen-service-1 sh -c "uv run alembic downgrade -1"
 ```
