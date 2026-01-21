@@ -2,6 +2,12 @@
 
 All notable changes to Xyzen will be documented in this file.
 
+## [1.0.4](https://github.com/ScienceOL/Xyzen/compare/v1.0.3...v1.0.4) (2026-01-21)
+
+### 🐛 Bug Fixes
+
+* update dependency installation command in Dockerfile ([7321352](https://github.com/ScienceOL/Xyzen/commit/73213528c52f15824a4d43838ea32183ce72448d))
+
 ## [1.0.3](https://github.com/ScienceOL/Xyzen/compare/v1.0.2...v1.0.3) (2026-01-21)
 
 ### 🐛 Bug Fixes
