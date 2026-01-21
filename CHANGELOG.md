@@ -2,6 +2,12 @@
 
 All notable changes to Xyzen will be documented in this file.
 
+## [1.0.5](https://github.com/ScienceOL/Xyzen/compare/v1.0.4...v1.0.5) (2026-01-21)
+
+### 🐛 Bug Fixes
+
+* correct redemption API path and wallet query key ([#190](https://github.com/ScienceOL/Xyzen/issues/190)) ([eae25d5](https://github.com/ScienceOL/Xyzen/commit/eae25d5c1a008cefbb994687ad75c280547cbba9))
+
 ## [1.0.4](https://github.com/ScienceOL/Xyzen/compare/v1.0.3...v1.0.4) (2026-01-21)
 
 ### 🐛 Bug Fixes
