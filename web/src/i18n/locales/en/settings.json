@@ -219,5 +219,10 @@
     "errors": {
       "empty": "Please enter a redemption code"
     }
+  },
+  "about": {
+    "frontend": "Frontend",
+    "backend": "Backend",
+    "versionMismatch": "Version mismatch detected. Try refreshing the page."
   }
 }

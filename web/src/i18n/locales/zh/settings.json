@@ -198,5 +198,10 @@
     "errors": {
       "empty": "请输入兑换码"
     }
+  },
+  "about": {
+    "frontend": "前端",
+    "backend": "后端",
+    "versionMismatch": "检测到版本不匹配，请尝试刷新页面。"
   }
 }

@@ -38,7 +38,7 @@ jobs:
       - name: Semantic Release
         id: semantic
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.SCIENCEOL_GITHUB_TOKEN }}
         run: yarn release
 
   build-and-deploy:
