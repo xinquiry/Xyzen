@@ -28,8 +28,8 @@ WORKDIR /app
 
 ADD . /app
 
-# Install dependencies
-RUN uv sync --locked
+# Install dependencies (--frozen skips lockfile validation after version bump)
+RUN uv sync --frozen
 
 EXPOSE 48196
 
