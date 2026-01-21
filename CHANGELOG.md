@@ -2,6 +2,12 @@
 
 All notable changes to Xyzen will be documented in this file.
 
+## [1.0.7](https://github.com/ScienceOL/Xyzen/compare/v1.0.6...v1.0.7) (2026-01-21)
+
+### 🐛 Bug Fixes
+
+* add uv installation and update version sync process ([a3c32b5](https://github.com/ScienceOL/Xyzen/commit/a3c32b54909b249db637e4a4df1cf8aded5fbee2))
+
 ## [1.0.6](https://github.com/ScienceOL/Xyzen/compare/v1.0.5...v1.0.6) (2026-01-21)
 
 ### 🐛 Bug Fixes
