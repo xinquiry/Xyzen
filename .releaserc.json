@@ -69,7 +69,8 @@
         "assets": [
           "CHANGELOG.md",
           "web/package.json",
-          "service/pyproject.toml"
+          "service/pyproject.toml",
+          "service/uv.lock"
         ],
         "message": "chore(release): ${nextRelease.version} [skip ci]\n\n${nextRelease.notes}"
       }
