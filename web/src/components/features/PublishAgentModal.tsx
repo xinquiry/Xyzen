@@ -17,7 +17,9 @@ interface PublishAgentModalProps {
   agentId: string;
   agentName: string;
   agentDescription?: string;
+  /** Legacy prompt field - used for preview display only, not for validation */
   agentPrompt?: string;
+  graphConfig?: Record<string, unknown> | null;
   mcpServers?: Array<{ id: string; name: string; description?: string }>;
   knowledgeSetInfo?: { name: string; file_count: number };
   isPublished?: boolean;
@@ -38,6 +40,7 @@ export default function PublishAgentModal({
   agentName,
   agentDescription,
   agentPrompt,
+  graphConfig,
   mcpServers = [],
   knowledgeSetInfo,
   isPublished = false,
@@ -80,7 +83,9 @@ export default function PublishAgentModal({
     }
   };
 
-  const canPublish = commitMessage.trim().length > 0 && agentPrompt;
+  // Check for non-empty graphConfig to match backend validation (Python {} is falsy)
+  const hasValidConfig = !!graphConfig && Object.keys(graphConfig).length > 0;
+  const canPublish = commitMessage.trim().length > 0 && hasValidConfig;
 
   return (
     <Modal isOpen={open} onClose={() => onOpenChange(false)}>
@@ -100,12 +105,12 @@ export default function PublishAgentModal({
 
         <div className="space-y-6 py-4">
           {/* Validation Alert */}
-          {!agentPrompt && (
+          {!hasValidConfig && (
             <div className="relative w-full rounded-lg border border-red-500/50 bg-red-50 p-4 text-red-900 dark:bg-red-950/50 dark:text-red-400">
               <div className="flex gap-2">
                 <ExclamationTriangleIcon className="h-4 w-4 shrink-0" />
                 <div className="text-sm">
-                  {t("marketplace.publish.validation.noPrompt")}
+                  {t("marketplace.publish.validation.noConfig")}
                 </div>
               </div>
             </div>
