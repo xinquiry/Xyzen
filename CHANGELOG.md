@@ -2,6 +2,12 @@
 
 All notable changes to Xyzen will be documented in this file.
 
+## [1.0.6](https://github.com/ScienceOL/Xyzen/compare/v1.0.5...v1.0.6) (2026-01-21)
+
+### 🐛 Bug Fixes
+
+* restore redemption API path from /business to /redemption ([#191](https://github.com/ScienceOL/Xyzen/issues/191)) ([7cf22ff](https://github.com/ScienceOL/Xyzen/commit/7cf22ff551afd0577a8fad4bf14572ca4c7fdd3b))
+
 ## [1.0.5](https://github.com/ScienceOL/Xyzen/compare/v1.0.4...v1.0.5) (2026-01-21)
 
 ### 🐛 Bug Fixes
