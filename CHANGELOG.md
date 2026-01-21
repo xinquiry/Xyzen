@@ -2,6 +2,12 @@
 
 All notable changes to Xyzen will be documented in this file.
 
+## [1.0.1](https://github.com/ScienceOL/Xyzen/compare/v1.0.0...v1.0.1) (2026-01-21)
+
+### 🐛 Bug Fixes
+
+* require graph_config for marketplace publishing ([#188](https://github.com/ScienceOL/Xyzen/issues/188)) ([cf31d1e](https://github.com/ScienceOL/Xyzen/commit/cf31d1ef6bab2afdc00267f22a01c570b7036cce))
+
 ## 1.0.0 (2026-01-21)
 
 ### ✨ Features
