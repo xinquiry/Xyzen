@@ -29,6 +29,7 @@ import type {
 export interface ChatSlice {
   // Chat panel state
   activeChatChannel: string | null;
+  activeTopicByAgent: Record<string, string>; // agentId -> topicId mapping
   chatHistory: ChatHistoryItem[];
   chatHistoryLoading: boolean;
   channels: Record<string, ChatChannel>;
@@ -117,6 +118,7 @@ export const createChatSlice: StateCreator<
   return {
     // Chat panel state
     activeChatChannel: null,
+    activeTopicByAgent: {},
     chatHistory: [],
     chatHistoryLoading: true,
     channels: {},
@@ -240,6 +242,15 @@ export const createChatSlice: StateCreator<
       }
 
       set({ activeChatChannel: topicId });
+
+      // Track active topic per agent
+      const existingChannel = channels[topicId];
+      if (existingChannel?.agentId) {
+        set((state: ChatSlice) => {
+          state.activeTopicByAgent[existingChannel.agentId!] = topicId;
+        });
+      }
+
       let channel = channels[topicId];
 
       if (!channel) {
@@ -398,31 +409,21 @@ export const createChatSlice: StateCreator<
     /**
      * Activate or create a chat channel for a specific agent.
      * This is used by the spatial workspace to open chat with an agent.
-     * - If a session exists for the agent, activates the most recent topic
+     * - If user previously had an active topic for this agent, restore it
+     * - If no previous topic, activates the most recent topic
      * - If no session exists, creates one with a default topic
      */
     activateChannelForAgent: async (agentId: string) => {
-      const { channels, chatHistory, backendUrl } = get();
+      const { backendUrl, activeTopicByAgent, channels } = get();
 
-      // First, check if we already have a channel for this agent
-      const existingChannel = Object.values(channels).find(
-        (ch) => ch.agentId === agentId,
-      );
-
-      if (existingChannel) {
-        // Already have a channel, activate it
-        await get().activateChannel(existingChannel.id);
+      // First check if there's a previously active topic for this agent
+      const previousTopicId = activeTopicByAgent[agentId];
+      if (previousTopicId && channels[previousTopicId]) {
+        await get().activateChannel(previousTopicId);
         return;
       }
 
-      // Check chat history for existing topics with this agent
-      const existingHistory = chatHistory.find((h) => h.sessionId === agentId);
-      if (existingHistory) {
-        await get().activateChannel(existingHistory.id);
-        return;
-      }
-
-      // No existing channel, try to find or create a session for this agent
+      // No previous topic, fetch from backend to get the most recent topic
       const token = authService.getToken();
       if (!token) {
         console.error("No authentication token available");
@@ -446,8 +447,8 @@ export const createChatSlice: StateCreator<
 
           // Get the most recent topic for this session, or create one
           if (session.topics && session.topics.length > 0) {
-            // Activate the most recent topic
-            const latestTopic = session.topics[session.topics.length - 1];
+            // Activate the most recent topic (backend returns topics ordered by updated_at descending)
+            const latestTopic = session.topics[0];
 
             // Create channel if doesn't exist
             const channel: ChatChannel = {
