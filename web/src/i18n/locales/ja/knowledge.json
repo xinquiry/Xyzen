@@ -30,6 +30,14 @@
       "uploadFailed": "アップロードに失敗しました"
     }
   },
+  "uploadProgress": {
+    "uploading": "{{count}}個のファイルをアップロード中",
+    "complete": "アップロード完了",
+    "completed": "完了",
+    "failed": "失敗",
+    "cancelled": "キャンセルされました",
+    "cancelAll": "すべてキャンセル"
+  },
   "toolbar": {
     "home": "ホーム",
     "searchFilesPlaceholder": "ファイルを検索...",

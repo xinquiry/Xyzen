@@ -2,11 +2,12 @@ import {
   Sheet,
   SheetContent,
 } from "@/components/animate-ui/components/radix/sheet";
-import { fileService } from "@/service/fileService";
+import { fileService, type UploadHandle } from "@/service/fileService";
 import { folderService, type Folder } from "@/service/folderService";
 import { knowledgeSetService } from "@/service/knowledgeSetService";
 import { DialogDescription, DialogTitle } from "@radix-ui/react-dialog";
 import { VisuallyHidden } from "@radix-ui/react-visually-hidden";
+import { AnimatePresence } from "framer-motion";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { CreateKnowledgeSetModal } from "./CreateKnowledgeSetModal";
@@ -15,6 +16,7 @@ import { KnowledgeToolbar } from "./KnowledgeToolbar";
 import { Sidebar } from "./Sidebar";
 import { StatusBar } from "./StatusBar";
 import type { KnowledgeTab, StorageStats, ViewMode } from "./types";
+import { UploadProgress, type UploadItem } from "./UploadProgress";
 
 export const KnowledgeLayout = () => {
   const { t } = useTranslation();
@@ -103,6 +105,10 @@ export const KnowledgeLayout = () => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const fileListRef = useRef<FileListHandle>(null);
 
+  // Upload progress tracking
+  const [uploads, setUploads] = useState<UploadItem[]>([]);
+  const uploadHandlesRef = useRef<Map<string, UploadHandle>>(new Map());
+
   useEffect(() => {
     // Initial stats fetch
     fetchStats();
@@ -133,63 +139,135 @@ export const KnowledgeLayout = () => {
     async (files: File[]) => {
       if (files.length === 0) return;
 
-      try {
-        // Capture current context at upload time
-        const folderId = activeTab === "folders" ? currentFolderId : null;
-        const knowledgeSetId =
-          activeTab === "knowledge" ? currentKnowledgeSetId : null;
+      // Capture current context at upload time
+      const folderId = activeTab === "folders" ? currentFolderId : null;
+      const knowledgeSetId =
+        activeTab === "knowledge" ? currentKnowledgeSetId : null;
 
-        // Validate files before upload
-        for (const file of files) {
-          // Check if file exceeds max size
-          if (stats.maxFileSize && file.size > stats.maxFileSize) {
-            const maxSizeMB = (stats.maxFileSize / (1024 * 1024)).toFixed(0);
-            const fileSizeMB = (file.size / (1024 * 1024)).toFixed(2);
-            alert(
-              t("knowledge.upload.errors.fileTooLarge", {
-                name: file.name,
-                fileSizeMB,
-                maxSizeMB,
-              }),
-            );
-            continue;
-          }
-
-          // Check if upload would exceed storage quota
-          if (
-            stats.availableBytes !== undefined &&
-            file.size > stats.availableBytes
-          ) {
-            const availableMB = (stats.availableBytes / (1024 * 1024)).toFixed(
-              2,
-            );
-            const fileSizeMB = (file.size / (1024 * 1024)).toFixed(2);
-            alert(
-              t("knowledge.upload.errors.notEnoughStorage", {
-                fileSizeMB,
-                availableMB,
-              }),
-            );
-            continue;
-          }
-
-          await fileService.uploadFile(
-            file,
-            "private",
-            undefined,
-            folderId,
-            knowledgeSetId,
+      // Validate and start uploads
+      for (const file of files) {
+        // Check if file exceeds max size
+        if (stats.maxFileSize && file.size > stats.maxFileSize) {
+          const maxSizeMB = (stats.maxFileSize / (1024 * 1024)).toFixed(0);
+          const fileSizeMB = (file.size / (1024 * 1024)).toFixed(2);
+          alert(
+            t("knowledge.upload.errors.fileTooLarge", {
+              name: file.name,
+              fileSizeMB,
+              maxSizeMB,
+            }),
           );
+          continue;
         }
-        // Trigger refresh
-        setRefreshKey((prev) => prev + 1);
-      } catch (error) {
-        console.error("Upload failed", error);
-        alert(t("knowledge.upload.errors.uploadFailed"));
+
+        // Check if upload would exceed storage quota
+        if (
+          stats.availableBytes !== undefined &&
+          file.size > stats.availableBytes
+        ) {
+          const availableMB = (stats.availableBytes / (1024 * 1024)).toFixed(2);
+          const fileSizeMB = (file.size / (1024 * 1024)).toFixed(2);
+          alert(
+            t("knowledge.upload.errors.notEnoughStorage", {
+              fileSizeMB,
+              availableMB,
+            }),
+          );
+          continue;
+        }
+
+        // Create upload item
+        const uploadId = `${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
+        const uploadItem: UploadItem = {
+          id: uploadId,
+          fileName: file.name,
+          progress: 0,
+          status: "uploading",
+        };
+
+        setUploads((prev) => [...prev, uploadItem]);
+
+        // Start upload with progress tracking
+        const handle = fileService.uploadFileWithProgress(
+          file,
+          "private",
+          undefined,
+          folderId,
+          knowledgeSetId,
+          (progress) => {
+            setUploads((prev) =>
+              prev.map((u) =>
+                u.id === uploadId ? { ...u, progress: progress.percentage } : u,
+              ),
+            );
+          },
+        );
+
+        uploadHandlesRef.current.set(uploadId, handle);
+
+        // Handle completion
+        handle.promise
+          .then(() => {
+            setUploads((prev) =>
+              prev.map((u) =>
+                u.id === uploadId
+                  ? { ...u, status: "completed", progress: 100 }
+                  : u,
+              ),
+            );
+            uploadHandlesRef.current.delete(uploadId);
+            // Trigger refresh after successful upload
+            setRefreshKey((prev) => prev + 1);
+          })
+          .catch((error: Error) => {
+            if (error.message === "Upload cancelled") {
+              setUploads((prev) =>
+                prev.map((u) =>
+                  u.id === uploadId ? { ...u, status: "cancelled" } : u,
+                ),
+              );
+            } else {
+              setUploads((prev) =>
+                prev.map((u) =>
+                  u.id === uploadId
+                    ? { ...u, status: "error", error: error.message }
+                    : u,
+                ),
+              );
+            }
+            uploadHandlesRef.current.delete(uploadId);
+          });
       }
     },
     [activeTab, currentFolderId, currentKnowledgeSetId, stats, t],
   );
+
+  // Cancel upload handler
+  const handleCancelUpload = useCallback((uploadId: string) => {
+    const handle = uploadHandlesRef.current.get(uploadId);
+    if (handle) {
+      handle.abort();
+    }
+  }, []);
+
+  // Dismiss upload item
+  const handleDismissUpload = useCallback((uploadId: string) => {
+    setUploads((prev) => prev.filter((u) => u.id !== uploadId));
+  }, []);
+
+  // Dismiss all uploads
+  const handleDismissAllUploads = useCallback(() => {
+    // Cancel any active uploads
+    uploads.forEach((u) => {
+      if (u.status === "uploading") {
+        const handle = uploadHandlesRef.current.get(u.id);
+        if (handle) {
+          handle.abort();
+        }
+      }
+    });
+    setUploads([]);
+  }, [uploads]);
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
@@ -427,6 +505,18 @@ export const KnowledgeLayout = () => {
         onClose={() => setIsCreateKnowledgeSetOpen(false)}
         onCreate={handleSubmitCreateKnowledgeSet}
       />
+
+      {/* Upload Progress Floating Panel */}
+      <AnimatePresence>
+        {uploads.length > 0 && (
+          <UploadProgress
+            uploads={uploads}
+            onCancel={handleCancelUpload}
+            onDismiss={handleDismissUpload}
+            onDismissAll={handleDismissAllUploads}
+          />
+        )}
+      </AnimatePresence>
     </div>
   );
 };
