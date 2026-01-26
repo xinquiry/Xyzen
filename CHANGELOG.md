@@ -2,6 +2,12 @@
 
 All notable changes to Xyzen will be documented in this file.
 
+## [1.0.12](https://github.com/ScienceOL/Xyzen/compare/v1.0.11...v1.0.12) (2026-01-26)
+
+### 🐛 Bug Fixes
+
+* add file upload progress tracking and UI component ([415731e](https://github.com/ScienceOL/Xyzen/commit/415731e5a6ad10e5c51afdfc847b5c2f8ec0a5f9))
+
 ## [1.0.11](https://github.com/ScienceOL/Xyzen/compare/v1.0.10...v1.0.11) (2026-01-26)
 
 ### 🐛 Bug Fixes
