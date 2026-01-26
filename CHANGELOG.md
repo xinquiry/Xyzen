@@ -2,6 +2,12 @@
 
 All notable changes to Xyzen will be documented in this file.
 
+## [1.0.13](https://github.com/ScienceOL/Xyzen/compare/v1.0.12...v1.0.13) (2026-01-26)
+
+### 🐛 Bug Fixes
+
+* refactor GitHub Actions workflow for building and pushing Docker images ([20983b9](https://github.com/ScienceOL/Xyzen/commit/20983b947e7b601d0523567e654feadadcb95b77))
+
 ## [1.0.12](https://github.com/ScienceOL/Xyzen/compare/v1.0.11...v1.0.12) (2026-01-26)
 
 ### 🐛 Bug Fixes
