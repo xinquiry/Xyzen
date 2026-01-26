@@ -2,6 +2,12 @@
 
 All notable changes to Xyzen will be documented in this file.
 
+## [1.0.14](https://github.com/ScienceOL/Xyzen/compare/v1.0.13...v1.0.14) (2026-01-26)
+
+### 🐛 Bug Fixes
+
+* add GitHub Actions workflow for syncing base Docker images ([7b87b7a](https://github.com/ScienceOL/Xyzen/commit/7b87b7a4b81b52c4e2ddbd18258aaf7167d90a48))
+
 ## [1.0.13](https://github.com/ScienceOL/Xyzen/compare/v1.0.12...v1.0.13) (2026-01-26)
 
 ### 🐛 Bug Fixes
