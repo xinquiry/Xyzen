@@ -1,4 +1,20 @@
 {
+  "upload": {
+    "dropHere": "将文件拖放到此处上传",
+    "dropToKnowledgeSet": "文件将添加到「{{name}}」",
+    "dropToFolder": "文件将添加到此文件夹",
+    "dropToUpload": "将上传文件",
+    "errors": {
+      "fileTooLarge": "文件「{{name}}」({{fileSizeMB}}MB) 超过最大文件大小限制 {{maxSizeMB}}MB",
+      "notEnoughStorage": "存储空间不足。文件大小：{{fileSizeMB}}MB，可用空间：{{availableMB}}MB。请先删除一些文件。",
+      "uploadFailed": "上传失败"
+    }
+  },
+  "fileList": {
+    "bulkDelete": {
+      "message": "确定要删除 {{count}} 个选中的项目吗？"
+    }
+  },
   "sidebar": {
     "deleteKnowledgeSet": "删除知识库",
     "deleteTitle": "删除知识库",

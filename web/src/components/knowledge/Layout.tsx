@@ -128,10 +128,13 @@ export const KnowledgeLayout = () => {
     fileInputRef.current?.click();
   };
 
-  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files.length > 0) {
+  // Upload files with current context
+  const uploadFiles = useCallback(
+    async (files: File[]) => {
+      if (files.length === 0) return;
+
       try {
-        const files = Array.from(e.target.files);
+        // Capture current context at upload time
         const folderId = activeTab === "folders" ? currentFolderId : null;
         const knowledgeSetId =
           activeTab === "knowledge" ? currentKnowledgeSetId : null;
@@ -184,8 +187,60 @@ export const KnowledgeLayout = () => {
         console.error("Upload failed", error);
         alert(t("knowledge.upload.errors.uploadFailed"));
       }
+    },
+    [activeTab, currentFolderId, currentKnowledgeSetId, stats, t],
+  );
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files.length > 0) {
+      const files = Array.from(e.target.files);
+      await uploadFiles(files);
+      // Reset input so user can upload same file again
+      e.target.value = "";
     }
   };
+
+  // Drag and drop state
+  const [isDragOver, setIsDragOver] = useState(false);
+  const dragCounterRef = useRef(0);
+
+  const handleDragEnter = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    dragCounterRef.current++;
+    if (e.dataTransfer.types.includes("Files")) {
+      setIsDragOver(true);
+    }
+  }, []);
+
+  const handleDragLeave = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    dragCounterRef.current--;
+    if (dragCounterRef.current === 0) {
+      setIsDragOver(false);
+    }
+  }, []);
+
+  const handleDragOver = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+  }, []);
+
+  const handleDrop = useCallback(
+    async (e: React.DragEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+      setIsDragOver(false);
+      dragCounterRef.current = 0;
+
+      const files = Array.from(e.dataTransfer.files);
+      if (files.length > 0) {
+        await uploadFiles(files);
+      }
+    },
+    [uploadFiles],
+  );
 
   const handleEmptyTrash = () => {
     if (fileListRef.current) {
@@ -284,7 +339,33 @@ export const KnowledgeLayout = () => {
       </Sheet>
 
       {/* Main Area */}
-      <div className="flex flex-1 flex-col min-w-0 bg-white dark:bg-black">
+      <div
+        className="flex flex-1 flex-col min-w-0 bg-white dark:bg-black relative"
+        onDragEnter={handleDragEnter}
+        onDragLeave={handleDragLeave}
+        onDragOver={handleDragOver}
+        onDrop={handleDrop}
+      >
+        {/* Drag Overlay */}
+        {isDragOver && activeTab !== "trash" && (
+          <div className="absolute inset-0 z-50 flex items-center justify-center bg-indigo-500/10 backdrop-blur-sm border-2 border-dashed border-indigo-500 rounded-lg m-2 pointer-events-none">
+            <div className="text-center">
+              <div className="text-4xl mb-2">📁</div>
+              <div className="text-lg font-medium text-indigo-600 dark:text-indigo-400">
+                {t("knowledge.upload.dropHere")}
+              </div>
+              <div className="text-sm text-neutral-500 dark:text-neutral-400">
+                {activeTab === "knowledge" && currentKnowledgeSetName
+                  ? t("knowledge.upload.dropToKnowledgeSet", {
+                      name: currentKnowledgeSetName,
+                    })
+                  : activeTab === "folders"
+                    ? t("knowledge.upload.dropToFolder")
+                    : t("knowledge.upload.dropToUpload")}
+              </div>
+            </div>
+          </div>
+        )}
         {/* Toolbar */}
         <KnowledgeToolbar
           title={getTitle()}

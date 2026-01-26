@@ -20,6 +20,10 @@
     "createKnowledgeSetFailed": "Failed to create knowledge set"
   },
   "upload": {
+    "dropHere": "Drop files here to upload",
+    "dropToKnowledgeSet": "Files will be added to {{name}}",
+    "dropToFolder": "Files will be added to this folder",
+    "dropToUpload": "Files will be uploaded",
     "errors": {
       "fileTooLarge": "File \"{{name}}\" ({{fileSizeMB}}MB) exceeds the maximum file size limit of {{maxSizeMB}}MB",
       "notEnoughStorage": "Not enough storage space. File size: {{fileSizeMB}}MB, Available: {{availableMB}}MB. Please delete some files first.",
@@ -104,6 +108,9 @@
     "deleteItem": {
       "title": "Delete {{itemType}}",
       "message": "Are you sure you want to delete this {{itemType}}?"
+    },
+    "bulkDelete": {
+      "message": "Are you sure you want to delete {{count}} selected items?"
     },
     "moveToTrash": {
       "message": "Are you sure you want to move this file to Trash?"
