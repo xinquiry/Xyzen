@@ -19,6 +19,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
+      max-parallel: 1
       matrix:
         include:
           # Alpine
@@ -61,11 +62,18 @@ jobs:
 
           echo "Syncing $SOURCE -> $TARGET"
 
-          docker buildx imagetools create \
-            --tag "$TARGET" \
-            "$SOURCE"
+          # Retry up to 3 times with delay
+          for i in 1 2 3; do
+            if docker buildx imagetools create --tag "$TARGET" "$SOURCE"; then
+              echo "✅ Synced: $TARGET"
+              exit 0
+            fi
+            echo "Attempt $i failed, waiting 30s before retry..."
+            sleep 30
+          done
 
-          echo "✅ Synced: $TARGET"
+          echo "❌ Failed to sync after 3 attempts"
+          exit 1
 
   summary:
     name: Summary
