@@ -2,6 +2,12 @@
 
 All notable changes to Xyzen will be documented in this file.
 
+## [1.0.15](https://github.com/ScienceOL/Xyzen/compare/v1.0.14...v1.0.15) (2026-01-26)
+
+### 🐛 Bug Fixes
+
+* improve Docker image sync retries and error handling ([fc77c81](https://github.com/ScienceOL/Xyzen/commit/fc77c81ba99ee384ec18e02fb8c1e85bdc1beb41))
+
 ## [1.0.14](https://github.com/ScienceOL/Xyzen/compare/v1.0.13...v1.0.14) (2026-01-26)
 
 ### 🐛 Bug Fixes
