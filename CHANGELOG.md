@@ -2,6 +2,12 @@
 
 All notable changes to Xyzen will be documented in this file.
 
+## [1.0.10](https://github.com/ScienceOL/Xyzen/compare/v1.0.9...v1.0.10) (2026-01-26)
+
+### 🐛 Bug Fixes
+
+* move tool_costs outside the tier_rate computing ([#204](https://github.com/ScienceOL/Xyzen/issues/204)) ([f391ca9](https://github.com/ScienceOL/Xyzen/commit/f391ca9d2604b704737d949f0f29ccedadfcb167))
+
 ## [1.0.9](https://github.com/ScienceOL/Xyzen/compare/v1.0.8...v1.0.9) (2026-01-26)
 
 ### 🐛 Bug Fixes
