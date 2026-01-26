@@ -2,6 +2,12 @@
 
 All notable changes to Xyzen will be documented in this file.
 
+## [1.0.9](https://github.com/ScienceOL/Xyzen/compare/v1.0.8...v1.0.9) (2026-01-26)
+
+### 🐛 Bug Fixes
+
+* fix fork problem and add lock mode ([#202](https://github.com/ScienceOL/Xyzen/issues/202)) ([73342cb](https://github.com/ScienceOL/Xyzen/commit/73342cba59bfd14f1bde3d3559f6e2e076b6075f)), closes [#200](https://github.com/ScienceOL/Xyzen/issues/200) [#192](https://github.com/ScienceOL/Xyzen/issues/192) [#193](https://github.com/ScienceOL/Xyzen/issues/193)
+
 ## [1.0.8](https://github.com/ScienceOL/Xyzen/compare/v1.0.7...v1.0.8) (2026-01-22)
 
 ### 🐛 Bug Fixes
