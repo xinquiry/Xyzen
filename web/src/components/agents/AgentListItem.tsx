@@ -404,6 +404,7 @@ const CompactAgentListItem: React.FC<CompactVariantProps> = ({
   return (
     <>
       <button
+        data-agent-id={agent.id}
         onClick={() => {
           if (isLongPress.current) return;
           onClick?.(agent);
