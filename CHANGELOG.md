@@ -2,6 +2,12 @@
 
 All notable changes to Xyzen will be documented in this file.
 
+## [1.0.16](https://github.com/ScienceOL/Xyzen/compare/v1.0.15...v1.0.16) (2026-01-28)
+
+### 🐛 Bug Fixes
+
+* enhance development setup instructions and add auto-scroll for agent selection ([5212c29](https://github.com/ScienceOL/Xyzen/commit/5212c29c156412c447f0f3f73dbfd5683c2dadfa))
+
 ## [1.0.15](https://github.com/ScienceOL/Xyzen/compare/v1.0.14...v1.0.15) (2026-01-26)
 
 ### 🐛 Bug Fixes
