@@ -1,6 +1,7 @@
 import ProfileIcon from "@/assets/ProfileIcon";
 // import { TYPEWRITER_CONFIG } from "@/configs/typewriterConfig";
 // import { useStreamingTypewriter } from "@/hooks/useTypewriterEffect";
+import { getLastNonEmptyPhaseContent } from "@/core/chat/agentExecution";
 import Markdown from "@/lib/Markdown";
 import { useXyzen } from "@/store";
 import type { Message } from "@/store/types";
@@ -129,16 +130,7 @@ function ChatBubble({ message }: ChatBubbleProps) {
       return content;
     }
 
-    if (agentExecution && agentExecution.phases.length > 0) {
-      for (let i = agentExecution.phases.length - 1; i >= 0; i -= 1) {
-        const phaseContent = agentExecution.phases[i]?.streamedContent;
-        if (phaseContent && phaseContent.trim().length > 0) {
-          return phaseContent;
-        }
-      }
-    }
-
-    return "";
+    return getLastNonEmptyPhaseContent(agentExecution?.phases) ?? "";
   }, [agentExecution, content]);
 
   const handleCopy = () => {

@@ -1,4 +1,5 @@
 import { generateClientId, groupToolMessagesWithAssistant } from "@/core/chat";
+import { getLastNonEmptyPhaseContent } from "@/core/chat/agentExecution";
 import { providerCore } from "@/core/provider";
 import { authService } from "@/service/authService";
 import { sessionService } from "@/service/sessionService";
@@ -802,13 +803,11 @@ export const createChatSlice: StateCreator<
                     messageFinal.agentExecution &&
                     messageFinal.agentExecution.phases.length > 0
                   ) {
-                    const phases = messageFinal.agentExecution.phases;
-                    for (let i = phases.length - 1; i >= 0; i -= 1) {
-                      const phaseContent = phases[i]?.streamedContent;
-                      if (phaseContent && phaseContent.trim().length > 0) {
-                        messageFinal.content = phaseContent;
-                        break;
-                      }
+                    const phaseContent = getLastNonEmptyPhaseContent(
+                      messageFinal.agentExecution.phases,
+                    );
+                    if (phaseContent) {
+                      messageFinal.content = phaseContent;
                     }
                   }
                   // Remove transient flags
