@@ -15,6 +15,15 @@
       "label": "Thinking...",
       "showThinking": "Show thinking",
       "hideThinking": "Hide thinking"
+    },
+    "toolCall": {
+      "arguments": "Arguments",
+      "result": "Result",
+      "error": "Error",
+      "executedAt": "Executed at",
+      "expandImage": "Click to expand",
+      "imageAlt": "Generated image",
+      "confirmExecute": "Confirm"
     }
   },
   "activityBar": {
@@ -73,6 +82,24 @@
     "send": "Send",
     "enterToSend": "Send",
     "shiftEnterForNewline": "New line"
+  },
+  "authStatus": {
+    "checking": "Checking authentication...",
+    "authInfoTitle": "Authentication Info",
+    "loggedIn": "Signed in",
+    "accountLabel": "Account",
+    "pointsBalance": "Points Balance",
+    "pointsInfo": "Points Info",
+    "credentialsLabel": "Credentials",
+    "accessTokenLabel": "access_token",
+    "copy": "Copy",
+    "openInApp": "Open in App",
+    "clickToCopy": "Click to copy",
+    "noAccessToken": "No access_token",
+    "settings": "Settings",
+    "logout": "Sign out",
+    "unauthorized": "Unauthorized user",
+    "authError": "Authentication error or not configured"
   },
   "modelCapabilities": {
     "vision": "Vision Support",
