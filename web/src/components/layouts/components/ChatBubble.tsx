@@ -131,7 +131,7 @@ function ChatBubble({ message }: ChatBubbleProps) {
     }
 
     return getLastNonEmptyPhaseContent(agentExecution?.phases) ?? "";
-  }, [agentExecution, content]);
+  }, [agentExecution?.phases, content]);
 
   const handleCopy = () => {
     if (!copyText) return;

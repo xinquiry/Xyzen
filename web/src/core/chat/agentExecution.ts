@@ -1,9 +1,7 @@
-type PhaseWithStreamedContent = {
-  streamedContent?: string | null;
-};
+import type { PhaseExecution } from "@/types/agentEvents";
 
 export const getLastNonEmptyPhaseContent = (
-  phases: PhaseWithStreamedContent[] | null | undefined,
+  phases: Pick<PhaseExecution, "streamedContent">[] | null | undefined,
 ): string | null => {
   if (!phases || phases.length === 0) {
     return null;
