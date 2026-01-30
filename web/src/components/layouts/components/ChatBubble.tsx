@@ -124,13 +124,30 @@ function ChatBubble({ message }: ChatBubbleProps) {
     );
   };
 
+  const copyText = useMemo(() => {
+    if (content) {
+      return content;
+    }
+
+    if (agentExecution && agentExecution.phases.length > 0) {
+      for (let i = agentExecution.phases.length - 1; i >= 0; i -= 1) {
+        const phaseContent = agentExecution.phases[i]?.streamedContent;
+        if (phaseContent && phaseContent.trim().length > 0) {
+          return phaseContent;
+        }
+      }
+    }
+
+    return "";
+  }, [agentExecution, content]);
+
   const handleCopy = () => {
-    if (!content) return;
+    if (!copyText) return;
 
     // Fallback function for older browsers or restricted environments
     const fallbackCopy = () => {
       const textArea = document.createElement("textarea");
-      textArea.value = content;
+      textArea.value = copyText;
       textArea.style.position = "fixed"; // Prevent scrolling to bottom
       textArea.style.opacity = "0";
       document.body.appendChild(textArea);
@@ -157,7 +174,7 @@ function ChatBubble({ message }: ChatBubbleProps) {
 
     // Use modern Clipboard API if available and in a secure context
     if (navigator.clipboard && window.isSecureContext) {
-      navigator.clipboard.writeText(content).then(
+      navigator.clipboard.writeText(copyText).then(
         () => {
           setIsCopied(true);
           setTimeout(() => setIsCopied(false), 2000); // Reset after 2 seconds

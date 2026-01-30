@@ -796,6 +796,21 @@ export const createChatSlice: StateCreator<
                     isLoading?: boolean;
                     isStreaming?: boolean;
                   };
+
+                  if (
+                    !messageFinal.content &&
+                    messageFinal.agentExecution &&
+                    messageFinal.agentExecution.phases.length > 0
+                  ) {
+                    const phases = messageFinal.agentExecution.phases;
+                    for (let i = phases.length - 1; i >= 0; i -= 1) {
+                      const phaseContent = phases[i]?.streamedContent;
+                      if (phaseContent && phaseContent.trim().length > 0) {
+                        messageFinal.content = phaseContent;
+                        break;
+                      }
+                    }
+                  }
                   // Remove transient flags
                   delete messageFinal.isLoading;
                   delete messageFinal.isStreaming;
